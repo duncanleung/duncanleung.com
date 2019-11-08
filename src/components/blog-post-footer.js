@@ -11,7 +11,7 @@ function BlogFooter() {
       >
         <img
           src={kent}
-          alt="Kent C. Dodds"
+          alt="Duncan Leung"
           style={{
             maxWidth: 80,
             borderRadius: '50%',
@@ -19,12 +19,9 @@ function BlogFooter() {
         />
       </div>
       <p>
-        <strong>Kent C. Dodds</strong>
+        <strong>Duncan Leung</strong>
         {`
-          is a JavaScript software engineer and teacher. He's taught hundreds
-          of thousands of people how to make the world a better place with
-          quality software development tools and practices. He lives with his
-          wife and four kids in Utah.
+          is a JavaScript software engineer passionate about developing quality software products with maintainable practices. He lives with his wife and two kids in Irvine, California.
         `}
       </p>
     </div>

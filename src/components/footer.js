@@ -65,7 +65,7 @@ const Footer = ({subscribeForm = <SubscribeForm />, maxWidth}) => (
         <Link to="/" aria-label="Return to homepage">
           <img
             src={Signature}
-            alt="Kent C. Dodds"
+            alt="Duncan Leung"
             css={css`
               max-width: 100px;
             `}

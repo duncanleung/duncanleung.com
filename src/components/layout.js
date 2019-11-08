@@ -152,7 +152,7 @@ const DefaultHero = styled.section`
 function Layout({
   data,
   headerLink,
-  siteTitle = 'Kent C. Dodds',
+  siteTitle = 'Duncan Leung',
   frontmatter = {},
   hero = <DefaultHero />,
   subscribeForm,

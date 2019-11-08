@@ -1,10 +1,10 @@
 {
-  "name": "kentcdodds.com",
+  "name": "duncanleung.com",
   "private": true,
-  "description": "Kent's personal website",
+  "description": "Duncan's personal website",
   "version": "1.0.5",
-  "author": "Kent C. Dodds <kent@doddsfamily.us> (https://kentcdodds.com)",
-  "repository": "https://github.com/kentcdodds/kentcdodds.com",
+  "author": "Duncan Leung <duncan@leung.house> (https://duncanleung.com)",
+  "repository": "https://github.com/duncanleung/duncanleung.com",
   "dependencies": {
     "@emotion/core": "^10.0.17",
     "@emotion/styled": "^10.0.17",

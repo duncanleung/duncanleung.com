@@ -163,15 +163,15 @@ module.exports = {
         feeds: [
           getBlogFeed({
             filePathRegex: `//content/blog//`,
-            blogUrl: 'https://kentcdodds.com/blog',
+            blogUrl: 'https://duncanleung.com/blog',
             output: '/blog/rss.xml',
-            title: 'Kent C. Dodds Blog RSS Feed',
+            title: 'Duncan Leung Blog RSS Feed',
           }),
           getBlogFeed({
             filePathRegex: `//content/writing-blog//`,
-            blogUrl: 'https://kentcdodds.com/writing/blog',
+            blogUrl: 'https://duncanleung.com/writing/blog',
             output: '/writing/blog/rss.xml',
-            title: `Kent's Writing Blog RSS Feed`,
+            title: `Duncans Writing Blog RSS Feed`,
           }),
         ],
       },
@@ -226,32 +226,14 @@ function getBlogFeed({filePathRegex, blogUrl, ...overrides}) {
             <div style="display: flex;">
               <div style="padding-right: 20px;">
                 <img
-                  src="https://kentcdodds.com/images/small-circular-kent.png"
-                  alt="Kent C. Dodds"
+                  src="https://duncanleung.com/images/small-circular-kent.png"
+                  alt="Duncan Leung"
                   style="max-width: 80px; border-radius: 50%;"
                 />
               </div>
               <p>
-                <strong>Kent C. Dodds</strong> is a JavaScript software engineer and
-                teacher. He's taught hundreds of thousands of people how to make the world
-                a better place with quality software development tools and practices. He
-                lives with his wife and four kids in Utah.
+                <strong>Duncan Leung</strong> is a JavaScript software engineer passionate about developing quality software products with maintainable practices. He lives with his wife and two kids in Irvine, California.
               </p>
-            </div>
-            <div>
-              <p>Learn more with Kent C. Dodds:</p>
-              <ul>
-                <li>
-                  <a href="https://kentcdodds.com/workshops">Live, professional workshops</a>:
-                  Join Kent C. Dodds from the comfort of your home for live remote workshops.
-                  Tickets are limited! 🎟
-                </li>
-                <li>
-                  <a href="https://testingjavascript.com">TestingJavaScript.com</a>: Jump on
-                  this self-paced workshop and learn the smart, efficient way to test any
-                  JavaScript application. 🏆
-                </li>
-              </ul>
             </div>
           </div>
         `

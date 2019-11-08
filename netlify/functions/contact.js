@@ -42,7 +42,7 @@ exports.handler = async event => {
   const acceptable =
     (origin.hostname === 'localhost' &&
       process.env.NODE_ENV !== 'production') ||
-    origin.hostname === 'kentcdodds.com'
+    origin.hostname === 'duncanleung.com'
   if (!acceptable) {
     return Promise.reject({
       statusCode: 403,
@@ -100,7 +100,7 @@ exports.handler = async event => {
 
   const message = {
     from: sender,
-    to: `"KCD Team" <team@kentcdodds.com>`,
+    to: `"Duncan Leung" <contact@leung.house>`,
     cc: sender,
     subject,
     text,

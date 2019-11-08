@@ -12,7 +12,7 @@ import photoOfKent from '../images/hero/kent.png'
 
 function Hero({
   children,
-  title = `Hi, I'm Kent C. Dodds. I help people make the world better through quality software.`,
+  title = `Hi, I'm Duncan Leung. I'm a Javascript Engineer passionate about developing quality software products with maintainable practices..`,
   text,
   background = `url(${heroImageRight}), url(${heroImageLeft}),
   linear-gradient(-213deg, #5e31dc 0%, #3155dc 100%)`,

@@ -7,7 +7,7 @@ import Container from 'components/container'
 import SEO from 'components/seo'
 import Layout from 'components/layout'
 import BigHero from 'components/big-hero'
-import {TinyLetterSubscribe} from 'components/forms/subscribe'
+// import {TinyLetterSubscribe} from 'components/forms/subscribe'
 import theme from '../../../config/theme'
 
 export default function MarkdownPage({children, pageContext: {frontmatter}}) {
@@ -18,7 +18,7 @@ export default function MarkdownPage({children, pageContext: {frontmatter}}) {
         hero={<BigHero message={frontmatter.heroMessage} />}
         frontmatter={frontmatter}
         headerColor={theme.colors.white}
-        subscribeForm={<TinyLetterSubscribe />}
+        subscribeForm={null}
       >
         <Container>{children}</Container>
       </Layout>

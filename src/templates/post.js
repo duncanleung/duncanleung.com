@@ -8,7 +8,8 @@ import {css} from '@emotion/core'
 import Container from 'components/container'
 import Layout from 'components/layout'
 import Share from 'components/share'
-import SubscribeForm, {TinyLetterSubscribe} from 'components/forms/subscribe'
+// import SubscribeForm, {TinyLetterSubscribe} from 'components/forms/subscribe'
+// isWriting ? <TinyLetterSubscribe /> : <SubscribeForm />
 import BlogPostFooter from 'components/blog-post-footer'
 import TestingCta from 'components/testing-cta'
 import {
@@ -63,7 +64,7 @@ function Post({data: {site, mdx}}) {
       frontmatter={mdx.fields}
       headerLink={isWriting ? '/writing/blog' : '/blog'}
       noFooter={noFooter}
-      subscribeForm={isWriting ? <TinyLetterSubscribe /> : <SubscribeForm />}
+      subscribeForm={isWriting ? null : null}
     >
       <SEO
         frontmatter={mdx.fields}

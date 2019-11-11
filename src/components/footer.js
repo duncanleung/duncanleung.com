@@ -3,13 +3,13 @@ import Link from '../components/link'
 import {css} from '@emotion/core'
 import theme from '../../config/theme'
 import {bpMaxSM} from '../lib/breakpoints'
-import SubscribeForm from './forms/subscribe'
+// import SubscribeForm from './forms/subscribe'
 import {Twitter, GitHub, YouTube, RSS} from './social'
 import Container from './container'
 
 import Signature from '../images/signature.png'
 
-const Footer = ({subscribeForm = <SubscribeForm />, maxWidth}) => (
+const Footer = ({subscribeForm = null, maxWidth}) => (
   <footer
     css={css`
       background: ${theme.colors.purple_dark};

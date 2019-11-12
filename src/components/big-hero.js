@@ -6,17 +6,13 @@ import {rhythm, fonts} from '../lib/typography'
 import Markdown from 'react-markdown'
 import Container from 'components/container'
 
-import heroImageRight from '../images/hero/path-right.svg'
-import heroImageLeft from '../images/hero/path-left.svg'
-import photoOfKent from '../images/hero/kent.png'
+import photoOfDuncan from '../images/hero/duncan.jpg'
 
 function Hero({
   children,
-  title = `Hi, I'm Duncan Leung. I'm a Javascript Engineer passionate about developing quality software products with maintainable practices..`,
+  title = `Hi, I'm Duncan Leung. I'm a Javascript Engineer passionate about developing quality software products with maintainable practices.`,
   text,
-  background = `url(${heroImageRight}), url(${heroImageLeft}),
-  linear-gradient(-213deg, #5e31dc 0%, #3155dc 100%)`,
-  image = `${photoOfKent}`,
+  image = `${photoOfDuncan}`,
 }) {
   return (
     <section
@@ -25,8 +21,7 @@ function Hero({
           color: ${theme.colors.white};
         }
         width: 100%;
-        background: #3155dc;
-        background-image: ${background};
+        background: ${theme.colors.black};
         background-position: center right, center left;
         background-repeat: no-repeat;
         background-size: contain;
@@ -49,9 +44,8 @@ function Hero({
         css={css`
           display: flex;
           flex-direction: row;
-          align-items: center;
+          align-items: end;
           justify-content: space-between;
-          //justify-content: center;
           padding-bottom: 0;
           ${bpMaxMD} {
             flex-direction: column;
@@ -68,18 +62,15 @@ function Hero({
               visibility: visible;
               width: 250px;
               height: 250px;
-              //background: #241d44;
-              ${image === photoOfKent &&
+              ${image === photoOfDuncan &&
                 `
                 width: 160px;
               height: 160px;
               overflow: 'hidden';
               border-radius: 50%;
-              background: #4b4ddf;
               `}
               background-image: url(${image});
               background-size: cover;
-              background-position-y: 10px;
               background-repeat: no-repeat;
               margin-bottom: 25px;
             }
@@ -101,8 +92,7 @@ function Hero({
               font-size: 30px;
               height: 100%;
               display: flex;
-              //align-self: center;
-              padding-bottom: ${image === photoOfKent ? '40px' : '0'};
+              padding-bottom: ${image === photoOfDuncan ? '40px' : '0'};
             `}
           >
             {title}
@@ -132,9 +122,9 @@ function Hero({
         </div>
         <div
           css={{
-            marginRight: '-160px',
-            width: 380,
-            height: 336,
+            marginRight: '-60px',
+            width: 230,
+            height: 230,
             display: 'flex',
             [bpMaxMD]: {
               display: 'none',
@@ -144,8 +134,13 @@ function Hero({
         >
           <img
             src={image}
-            alt="Kent C. Dodds"
-            css={{maxWidth: '100%', marginBottom: 0}}
+            alt="Duncan Leung"
+            css={{
+              maxWidth: '100%',
+              maxHeight: '100%',
+              marginBottom: 0,
+              borderRadius: '50%',
+            }}
           />
         </div>
       </Container>

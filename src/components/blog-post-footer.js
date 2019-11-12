@@ -1,5 +1,5 @@
 import React from 'react'
-import kent from '../images/kent.png'
+import photoOfDuncan from '../images/duncan.jpg'
 
 function BlogFooter() {
   return (
@@ -10,7 +10,7 @@ function BlogFooter() {
         }}
       >
         <img
-          src={kent}
+          src={photoOfDuncan}
           alt="Duncan Leung"
           style={{
             maxWidth: 80,

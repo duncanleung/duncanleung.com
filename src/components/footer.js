@@ -12,7 +12,7 @@ import Signature from '../images/signature.png'
 const Footer = ({subscribeForm = null, maxWidth}) => (
   <footer
     css={css`
-      background: ${theme.colors.purple_dark};
+      background: ${theme.colors.black};
       color: white;
       margin-top: 70px;
     `}

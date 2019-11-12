@@ -1,13 +1,13 @@
 import React from 'react'
-import Link from '../components/link'
+// import Link from '../components/link'
 import {css} from '@emotion/core'
 import theme from '../../config/theme'
 import {bpMaxSM} from '../lib/breakpoints'
 // import SubscribeForm from './forms/subscribe'
-import {Twitter, GitHub, YouTube, RSS} from './social'
+import {Twitter, GitHub, RSS} from './social'
 import Container from './container'
 
-import Signature from '../images/signature.png'
+// import Signature from '../images/signature.png'
 
 const Footer = ({subscribeForm = null, maxWidth}) => (
   <footer
@@ -58,11 +58,11 @@ const Footer = ({subscribeForm = null, maxWidth}) => (
         <div>
           <Twitter />
           <GitHub />
-          <YouTube />
+          {/* <YouTube /> */}
           <RSS />
         </div>
 
-        <Link to="/" aria-label="Return to homepage">
+        {/* <Link to="/" aria-label="Return to homepage">
           <img
             src={Signature}
             alt="Duncan Leung"
@@ -70,7 +70,7 @@ const Footer = ({subscribeForm = null, maxWidth}) => (
               max-width: 100px;
             `}
           />
-        </Link>
+        </Link> */}
       </div>
     </Container>
   </footer>

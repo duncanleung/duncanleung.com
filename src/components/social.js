@@ -16,6 +16,7 @@ export const Twitter = ({
         color: rgba(255, 255, 255, 1);
       }
     `}
+    unstyled={true}
     aria-label="Visit my Twitter"
   >
     <svg
@@ -46,6 +47,7 @@ export const LinkedIn = ({
         color: rgba(255, 255, 255, 1);
       }
     `}
+    unstyled={true}
     aria-label="Visit my LinkedIn"
   >
     <svg
@@ -75,6 +77,7 @@ export const GitHub = ({
         color: rgba(255, 255, 255, 1);
       }
     `}
+    unstyled={true}
     aria-label="Visit my GitHub"
   >
     <svg
@@ -105,6 +108,7 @@ export const YouTube = ({
         color: rgba(255, 255, 255, 1);
       }
     `}
+    unstyled={true}
     aria-label="Visit my YouTube"
   >
     <svg
@@ -134,6 +138,7 @@ export const RSS = ({
         color: rgba(255, 255, 255, 1);
       }
     `}
+    unstyled={true}
     aria-label="Subscribe to my RSS Feed"
   >
     <svg

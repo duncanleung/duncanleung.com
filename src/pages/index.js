@@ -11,98 +11,98 @@ import theme from '../../config/theme'
 import {bpMaxMD, bpMaxSM} from '../lib/breakpoints'
 import {rhythm, fonts} from '../lib/typography'
 
-import workshopsImg from '../images/workshops.svg'
-import talksImg from '../images/talks.svg'
-import minutesImg from '../images/3-minutes.svg'
-import devtipsImg from '../images/devtips.svg'
+// import workshopsImg from '../images/workshops.svg'
+// import talksImg from '../images/talks.svg'
+// import minutesImg from '../images/3-minutes.svg'
+// import devtipsImg from '../images/devtips.svg'
 
-const Card = ({
-  backgroundColor = '#E75248',
-  image,
-  title,
-  description,
-  link,
-  big = false,
-}) => (
-  <Link
-    to={link}
-    aria-label={`View ${title}`}
-    css={css`
-      * {
-        color: white;
-        margin: 0;
-      }
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      h4 {
-        font-size: 22px;
-        padding: ${big ? '0 20px 0 40px' : '40px 40px 0 40px'};
-      }
-      p {
-        padding: 20px 40px 0 40px;
-        font-size: 16px;
-        opacity: 0.85;
-        ${bpMaxSM} {
-          padding: 20px 20px 0 40px;
-        }
-      }
-      ${bpMaxMD} {
-          flex-direction: column;
-          align-items: center;
-          ${big &&
-            `
-          text-align: center;
-          h4 {
-            padding: 40px 40px 0 40px;
-          }
-          img {
-            width: 100%;
-          }
-          p {
-            padding-bottom: 40px;
-          }
-          `}
-        }
-      ${!big &&
-        `
-        align-items: flex-start;
-        flex-direction: column; 
-        img {
-          margin-top: 20px;
-        }
-        ${bpMaxMD} {
-          align-items: center;
-          img {
-            width: 100%;
-          }
-         h4 {
-           padding: 40px 0 0 0;
-         }
-        }
-      `}
-      background: ${backgroundColor};
-      overflow: hidden;
-      border-radius: 5px;
-      margin-bottom: ${big ? '20px' : '0'};
-      img {
-        transition: ${theme.transition.ease};
-      }
-      @media (hover: hover) {
-      :hover:not(.touch) {
-        transform: scale(1.03);
-        box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.15);
-      }
-      }
-    `}
-  >
-    <div>
-      <h4>{title}</h4>
-      {description && <p>{description}</p>}
-    </div>
-    <img src={image} alt={title} />
-  </Link>
-)
+// const Card = ({
+//   backgroundColor = '#E75248',
+//   image,
+//   title,
+//   description,
+//   link,
+//   big = false,
+// }) => (
+//   <Link
+//     to={link}
+//     aria-label={`View ${title}`}
+//     css={css`
+//       * {
+//         color: white;
+//         margin: 0;
+//       }
+//       display: flex;
+//       justify-content: space-between;
+//       align-items: center;
+//       h4 {
+//         font-size: 22px;
+//         padding: ${big ? '0 20px 0 40px' : '40px 40px 0 40px'};
+//       }
+//       p {
+//         padding: 20px 40px 0 40px;
+//         font-size: 16px;
+//         opacity: 0.85;
+//         ${bpMaxSM} {
+//           padding: 20px 20px 0 40px;
+//         }
+//       }
+//       ${bpMaxMD} {
+//           flex-direction: column;
+//           align-items: center;
+//           ${big &&
+//             `
+//           text-align: center;
+//           h4 {
+//             padding: 40px 40px 0 40px;
+//           }
+//           img {
+//             width: 100%;
+//           }
+//           p {
+//             padding-bottom: 40px;
+//           }
+//           `}
+//         }
+//       ${!big &&
+//         `
+//         align-items: flex-start;
+//         flex-direction: column;
+//         img {
+//           margin-top: 20px;
+//         }
+//         ${bpMaxMD} {
+//           align-items: center;
+//           img {
+//             width: 100%;
+//           }
+//          h4 {
+//            padding: 40px 0 0 0;
+//          }
+//         }
+//       `}
+//       background: ${backgroundColor};
+//       overflow: hidden;
+//       border-radius: 5px;
+//       margin-bottom: ${big ? '20px' : '0'};
+//       img {
+//         transition: ${theme.transition.ease};
+//       }
+//       @media (hover: hover) {
+//       :hover:not(.touch) {
+//         transform: scale(1.03);
+//         box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.15);
+//       }
+//       }
+//     `}
+//   >
+//     <div>
+//       <h4>{title}</h4>
+//       {description && <p>{description}</p>}
+//     </div>
+//     {image && <img src={image} alt={title} />}
+//   </Link>
+// )
 
 const PostTitle = styled.h3`
   margin-bottom: ${rhythm(0.3)};
@@ -110,7 +110,7 @@ const PostTitle = styled.h3`
   font-size: 22px;
   font-family: ${fonts.regular};
   :hover {
-    color: ${theme.brand.primary};
+    color: ${theme.colors.link_color_hover};
     transition: ${theme.transition.ease};
   }
 `
@@ -123,7 +123,7 @@ const Description = styled.p`
 
 export default function Index({data: {allMdx}}) {
   return (
-    <Layout headerColor={theme.colors.white} logo={false} hero={<Hero />}>
+    <Layout headerColor={theme.brand.primary} logo={false} hero={<Hero />}>
       <SEO />
       <Container
         css={css`
@@ -143,6 +143,7 @@ export default function Index({data: {allMdx}}) {
           h2 {
             margin-bottom: ${rhythm(1.5)};
           }
+          box-shadow: -4px 8px 27px -7px rgba(77, 77, 77, 0.54);
         `}
       >
         <h2>Blog</h2>
@@ -177,15 +178,15 @@ export default function Index({data: {allMdx}}) {
       </Container>
 
       <Container>
-        <Card
+        {/* <Card
           big
           backgroundColor={theme.colors.red}
           title="DevTips"
           description="My YouTube channel where I livestream every weekday about Web Development. Come join me and learn something new."
           image={devtipsImg}
           link="http://kcd.im/devtips"
-        />
-        <div
+        /> */}
+        {/* <div
           css={css`
             display: grid;
             grid-template-columns: repeat(auto-fit, 226px);
@@ -197,23 +198,23 @@ export default function Index({data: {allMdx}}) {
         >
           <Card
             backgroundColor={theme.colors.purple}
-            title="Workshops"
-            image={workshopsImg}
+            title="Code Snippets"
+            image={null}
             link="/workshops"
           />
           <Card
-            title="Talks"
+            title="Today I Learned"
             backgroundColor={theme.colors.blue}
-            image={talksImg}
+            image={null}
             link="/talks"
           />
           <Card
-            title="3 Minutes with Kent"
+            title="React"
             backgroundColor={theme.colors.yellow}
-            image={minutesImg}
+            image={null}
             link="https://www.briefs.fm/3-minutes-with-kent"
           />
-        </div>
+        </div> */}
       </Container>
     </Layout>
   )

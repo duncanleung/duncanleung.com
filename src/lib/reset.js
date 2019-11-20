@@ -1,4 +1,5 @@
 import {css} from '@emotion/core'
+import {transparentize} from 'polished'
 import theme from '../../config/theme'
 import typography, {fonts} from '../lib/typography'
 
@@ -38,16 +39,19 @@ const reset = css`
     background-color: ${theme.colors.bg_color};
   }
   ::selection {
-    color: ${theme.colors.white};
-    background-color: ${theme.colors.link_color};
+    background-color: ${transparentize(0.8, theme.brand.primary)};
   }
   a {
-    color: ${theme.colors.link_color};
-    transition: all 0.3s ease-in-out;
+    color: ${theme.colors.black};
+    transition: all 0.1s ease-in-out;
     text-decoration: none;
+    background-color: ${transparentize(0.8, theme.brand.primary)};
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+
     &:hover,
     &:focus {
-      color: ${theme.colors.link_color_hover};
+      background-color: ${transparentize(0.3, theme.brand.primary)};
+      border-bottom-color: #1a1a1a;
     }
   }
   a:not([href]):not([tabindex]) {
@@ -62,6 +66,7 @@ const reset = css`
       outline: 0;
     }
   }
+
   blockquote {
     border-left: 5px solid ${theme.colors.link_color};
     padding-left: 1rem !important;

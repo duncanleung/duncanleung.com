@@ -4,11 +4,11 @@ import {css} from '@emotion/core'
 import styled from '@emotion/styled'
 import theme from '../../config/theme'
 import {fonts} from '../lib/typography'
-import kent from '../images/kent.png'
+import photoOfDuncan from '../images/duncan.jpg'
 import MobileNav from './mobile-nav'
 import Container from './container'
 import {bpMaxSM} from '../lib/breakpoints'
-import {lighten} from 'polished'
+// import {lighten} from 'polished'
 
 function HeaderLink({headerColor, activeClassName = 'active', ...props}) {
   return (
@@ -18,21 +18,22 @@ function HeaderLink({headerColor, activeClassName = 'active', ...props}) {
       css={{
         textDecoration: 'none',
         color: headerColor ? headerColor : theme.colors.body_color,
+        backgroundColor: 'unset',
+        borderBottom: 'none',
+
         '&:hover,&:focus': {
-          background:
-            headerColor === theme.colors.white
-              ? 'rgba(40, 28, 77, 0.3)'
-              : lighten(0.4, theme.brand.primary),
           color:
             headerColor === theme.colors.white
               ? 'white'
               : theme.colors.link_color_hover,
+          backgroundColor: 'unset',
         },
         '&.active': {
-          background:
-            headerColor === theme.colors.white
-              ? 'rgba(40, 28, 77, 0.3)'
-              : lighten(0.4, theme.brand.primary),
+          // background:
+          //   headerColor === theme.colors.white
+          //     ? 'rgba(40, 28, 77, 0.3)'
+          //     : lighten(0.4, theme.brand.primary),
+          borderBottom: `1px solid ${theme.brand.primary}`,
         },
       }}
       {...props}
@@ -42,11 +43,20 @@ function HeaderLink({headerColor, activeClassName = 'active', ...props}) {
 
 const NavLink = styled(HeaderLink)({
   padding: '8px 10px',
-  borderRadius: '3px',
   background: 'transparent',
   '& + &': {marginLeft: 10},
   [bpMaxSM]: {
     display: 'none',
+  },
+  borderBottom: `1px solid ${theme.colors.black}`,
+
+  '&:hover,&:focus': {
+    color: ({headerColor}) =>
+      headerColor === theme.colors.white
+        ? 'white'
+        : theme.colors.link_color_hover,
+    backgroundColor: 'unset',
+    borderBottom: `1px solid ${theme.brand.primary}`,
   },
 })
 
@@ -111,7 +121,7 @@ function Header({
               },
             }}
           >
-            {headerImage && <img src={kent} alt="Kent C. Dodds" />}{' '}
+            {headerImage && <img src={photoOfDuncan} alt="Duncan Leung" />}{' '}
             <span>{siteTitle}</span>
           </HeaderLink>
           <div
@@ -138,7 +148,7 @@ function Header({
             >
               Blog
             </NavLink>
-            <NavLink
+            {/* <NavLink
               headerColor={headerColor}
               to="/talks/"
               aria-label="View talks page"
@@ -158,7 +168,7 @@ function Header({
               aria-label="View podcast page"
             >
               Podcast
-            </NavLink>
+            </NavLink> */}
             <NavLink
               headerColor={headerColor}
               to="/about/"

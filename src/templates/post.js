@@ -26,6 +26,7 @@ import flatMap from 'lodash/flatMap'
 import first from 'lodash/first'
 import UpcomingWorkshops from 'components/workshops/upcoming-workshops'
 import titleCase from 'ap-style-title-case'
+import theme from '../../config/theme'
 
 export default function PostPage(props) {
   return (
@@ -37,7 +38,7 @@ export default function PostPage(props) {
 
 function Post({data: {site, mdx}}) {
   const {
-    isWriting,
+    // isWriting,
     editLink,
     title,
     slug,
@@ -62,9 +63,10 @@ function Post({data: {site, mdx}}) {
     <Layout
       site={site}
       frontmatter={mdx.fields}
-      headerLink={isWriting ? '/writing/blog' : '/blog'}
+      headerColor={theme.brand.primary}
+      headerLink="/blog"
       noFooter={noFooter}
-      subscribeForm={isWriting ? null : null}
+      subscribeForm={null}
     >
       <SEO
         frontmatter={mdx.fields}

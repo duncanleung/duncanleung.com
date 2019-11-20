@@ -14,6 +14,7 @@ import theme from '../../config/theme'
 import reset from '../lib/reset'
 import {fonts} from '../lib/typography'
 import config from '../../config/website'
+import {transparentize} from 'polished'
 
 export const globalStyles = css`
   .button-secondary {
@@ -114,10 +115,10 @@ export const globalStyles = css`
     }
   }
   .highlight-line {
-    background-color: rgba(201, 167, 255, 0.2);
+    background-color: ${transparentize(0.8, theme.brand.primary)};
     margin: 0 -10px;
     padding: 0 5px;
-    border-left: 5px solid #c9a7ff;
+    border-left: 5px solid ${theme.brand.primary};
   }
   ${reset};
 `
@@ -130,11 +131,7 @@ const DefaultHero = styled.section`
   ${({headerColor}) =>
     headerColor
       ? css`
-          background: #3155dc;
-          background-image: linear-gradient(-213deg, #5e31dc 0%, #3155dc 100%);
-          background-position: center right, center left;
-          background-repeat: no-repeat;
-          background-size: contain;
+          background: ${theme.colors.black};
         `
       : null} position: relative;
   z-index: 0;

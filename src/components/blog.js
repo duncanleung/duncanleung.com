@@ -22,7 +22,7 @@ function Blog({data: {allMdx}, pageContext: {pagination}, subscribeForm}) {
     .filter(post => post !== undefined)
 
   return (
-    <Layout headerColor={theme.colors.white} subscribeForm={subscribeForm}>
+    <Layout headerColor={theme.brand.primary} subscribeForm={subscribeForm}>
       <SEO />
       <Container
         noVerticalPadding

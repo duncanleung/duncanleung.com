@@ -20,7 +20,7 @@ function MarkdownPage({children, pageContext: {frontmatter}}) {
         }
         noFooter={frontmatter.noFooter}
         frontmatter={frontmatter}
-        headerColor={theme.colors.white}
+        headerColor={theme.brand.primary}
       >
         <Container>{children}</Container>
       </Layout>

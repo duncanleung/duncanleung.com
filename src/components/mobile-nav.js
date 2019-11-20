@@ -1,12 +1,26 @@
 import React, {useState} from 'react'
 import {css} from '@emotion/core'
+import styled from '@emotion/styled'
 import theme from '../../config/theme'
 import Container from './container'
 import {Link} from 'gatsby'
 
+const MenuLink = styled(Link)`
+  background-color: unset;
+  borderBottom: ${theme.colors.black};
+
+  &:hover,
+  &:focus {
+    color: ${theme.colors.link_color_hover};
+    background-color: unset;
+    border-bottom: 1px solid ${theme.brand.primary};
+  },
+`
+
 const Toggle = ({color = 'white'}) => {
   const [isToggledOn, setToggle] = useState(false)
   const toggle = () => setToggle(!isToggledOn)
+
   return (
     <div className="mobile-nav">
       <button
@@ -75,7 +89,7 @@ const Toggle = ({color = 'white'}) => {
             height: 100vh;
             display: flex;
             align-items: center;
-            background: ${theme.brand.primary};
+            background: ${theme.colors.black};
           `}
         >
           <Container
@@ -85,28 +99,20 @@ const Toggle = ({color = 'white'}) => {
               align-items: center;
               justify-content: space-evenly;
               a {
-                color: white;
+                color: ${theme.brand.primary};
                 font-size: 22px;
                 margin: 10px 0;
                 padding: 10px;
-                border-radius: 5px;
                 :hover {
-                  background: rgba(0, 0, 0, 0.2);
+                  // background: rgba(0, 0, 0, 0.2);
                 }
               }
               .active {
-                background: rgba(0, 0, 0, 0.2);
+                // background: rgba(0, 0, 0, 0.2);
               }
             `}
           >
-            <Link
-              aria-label="View blog page"
-              to="/blog"
-              activeClassName="active"
-            >
-              Blog
-            </Link>
-            <Link
+            {/* <Link
               aria-label="View talks page"
               to="/talks"
               activeClassName="active"
@@ -126,14 +132,21 @@ const Toggle = ({color = 'white'}) => {
               activeClassName="active"
             >
               Podcast
-            </Link>
-            <Link
+            </Link> */}
+            <MenuLink
+              aria-label="View blog page"
+              to="/blog"
+              activeClassName="active"
+            >
+              Blog
+            </MenuLink>
+            <MenuLink
               aria-label="View about page"
               to="/about"
               activeClassName="active"
             >
               About
-            </Link>
+            </MenuLink>
           </Container>
         </div>
       )}

@@ -1,6 +1,6 @@
 import React from 'react'
 import {css} from '@emotion/core'
-import theme from 'prism-react-renderer/themes/nightOwl'
+import theme from 'prism-react-renderer/themes/oceanicNext'
 import {bpDesktopOnly} from '../../lib/breakpoints'
 import Highlight, {defaultProps} from 'prism-react-renderer'
 

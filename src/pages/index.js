@@ -7,7 +7,6 @@ import SimpleListing from '../components/SimpleListing'
 import SEO from '../components/SEO'
 import config from '../../data/SiteConfig'
 import speaking from '../../data/speaking'
-import podcasts from '../../data/podcasts'
 import quotes from '../../data/quotes'
 import tania from '../../content/images/tania-avatar.jpg'
 import patreon from '../../content/thumbnails/patreon.png'
@@ -83,11 +82,6 @@ export default class Index extends Component {
               </Link>
             </h2>
             <PostListing simple postEdges={popularPostEdges} />
-          </section>
-
-          <section className="section">
-            <h2>Interviews</h2>
-            <SimpleListing simple data={podcasts} />
           </section>
 
           <section className="section">

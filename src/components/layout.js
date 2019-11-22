@@ -1,20 +1,23 @@
 import React from 'react'
 import Helmet from 'react-helmet'
-import {graphql, StaticQuery} from 'gatsby'
 import {MDXProvider} from '@mdx-js/react'
 import {Global, css} from '@emotion/core'
 import styled from '@emotion/styled'
 import {ThemeProvider} from 'emotion-theming'
+import {transparentize} from 'polished'
+
 import NotificationMessage from 'components/notification-message'
 import Header from 'components/header'
 import Footer from 'components/footer'
 import mdxComponents from 'components/mdx'
+
 import {bpMaxMD, bpMaxSM} from '../lib/breakpoints'
 import theme from '../../config/theme'
 import reset from '../lib/reset'
 import {fonts} from '../lib/typography'
 import config from '../../config/website'
-import {transparentize} from 'polished'
+
+import useSiteMetadata from '../hooks/useSiteMetadata'
 
 export const globalStyles = css`
   .button-secondary {
@@ -146,8 +149,7 @@ const DefaultHero = styled.section`
   }
 `
 
-function Layout({
-  data,
+export default function Layout({
   headerLink,
   siteTitle = 'Duncan Leung',
   frontmatter = {},
@@ -165,11 +167,11 @@ function Layout({
   maxWidth = 720,
 }) {
   const {
-    site: {
-      siteMetadata,
-      siteMetadata: {description: siteDescription, keywords: siteKeywords},
-    },
-  } = data
+    author,
+    description: siteDescription,
+    keywords: siteKeywords,
+    siteLanguage,
+  } = useSiteMetadata()
 
   const {
     keywords = siteKeywords,
@@ -189,7 +191,7 @@ function Layout({
           {name: 'keywords', content: keywords.join()},
         ]}
       >
-        <html lang="en" />
+        <html lang={siteLanguage} />
         <script src="https://js.tito.io/v1" async />
         <noscript>This site runs best with JavaScript enabled.</noscript>
       </Helmet>
@@ -223,34 +225,12 @@ function Layout({
           {noFooter ? null : (
             <Footer
               maxWidth={maxWidth}
-              author={siteMetadata.author.name}
+              author={author.name}
               subscribeForm={subscribeForm}
             />
           )}
         </div>
       </div>
     </ThemeProvider>
-  )
-}
-
-export default function LayoutWithSiteData(props) {
-  return (
-    <StaticQuery
-      query={graphql`
-        {
-          site {
-            siteMetadata {
-              title
-              description
-              author {
-                name
-              }
-              keywords
-            }
-          }
-        }
-      `}
-      render={data => <Layout data={data} {...props} />}
-    />
   )
 }

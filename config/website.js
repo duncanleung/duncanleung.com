@@ -5,9 +5,10 @@ module.exports = {
   siteUrl: process.env.ROOT_URL || 'https://duncanleung.com', // Domain of your site. No trailing slash!
   siteLanguage: 'en', // Language Tag on <html> element
   siteLogo: 'images/logo.png', // Used for SEO and manifest, path to your image you placed in the 'static' folder
-  siteDescription: 'Duncan Leung - Javascript Engineer.',
+  siteDescription: 'Duncan Leung - Javascript Front End Engineer.',
+  keywords: ['Software Engineer', 'Javascript Engineer', 'Front End Engineer'],
   minibio: `
-    <strong>Duncan Leung</strong> is a JavaScript software engineer passionate about developing quality software products with maintainable practices. He lives with his wife and two kids in Irvine, California.
+    <strong>Duncan Leung</strong> is a JavaScript software engineer passionate about developing quality software products with maintainable practices.
   `,
   author: 'Duncan Leung', // Author for schemaORGJSONLD
   organization: 'Duncan Leung',
@@ -19,8 +20,8 @@ module.exports = {
   googleAnalyticsID: 'UA-11663860-1',
 
   // Manifest and Progress color
-  themeColor: '#4147DC',
-  backgroundColor: '#231C42',
+  themeColor: '#FFD700',
+  backgroundColor: '#282C34',
 
   // Social component
   twitter: 'https://twitter.com/leungd/',

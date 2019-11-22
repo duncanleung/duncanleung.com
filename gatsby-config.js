@@ -31,14 +31,11 @@ module.exports = {
   },
   siteMetadata: {
     siteUrl,
+    siteLanguage: config.siteLanguage,
     title: config.siteTitle,
     twitterHandle: config.twitterHandle,
     description: config.siteDescription,
-    keywords: [
-      'Software Engineer',
-      'React Training',
-      'Testing JavaScript Training',
-    ],
+    keywords: config.keywords,
     canonicalUrl: siteUrl,
     image: config.siteLogo,
     author: {

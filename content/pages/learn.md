@@ -10,12 +10,12 @@ There's a lot I want to learn, and a lot I've learned and documented. Here's whe
 
 My current focus is **Computer Science** fundamentals and all things **JavaScript**. (They stay here until I write about it.)
 
-### JavaScript
+<!-- ### JavaScript
 
 #### Concepts
 
-- [x] Bind, Call, Apply and `this`
-- [x] Bitwise Operators
+- [ ] Bind, Call, Apply and `this`
+- [ ] Bitwise Operators
 - [ ] Map, Set, WeakMap, and WeakSet
 - [ ] Closures
 - [ ] Promises, Async/Await, Microtasks,and the Event Loop
@@ -37,8 +37,8 @@ My current focus is **Computer Science** fundamentals and all things **JavaScrip
 
 - [ ] GraphQL
 - [ ] NoSQL (MongoDB, Firebase)
-- [x] Swagger - UI, Codegen, Docs
-- [x] JWT token generation and client side handling
+- [ ] Swagger - UI, Codegen, Docs
+- [ ] JWT token generation and client side handling
 
 ### DevOps and CI/CD
 
@@ -47,18 +47,18 @@ My current focus is **Computer Science** fundamentals and all things **JavaScrip
 
 ### Tools/Frameworks/Concepts
 
-- [x] Webpack
-- [x] Vuex
-- [x] Git
-  - [x] Merge, Rebase, Branch, Stash, Pull Request
+- [ ] Webpack
+- [ ] Vuex
+- [ ] Git
+  - [ ] Merge, Rebase, Branch, Stash, Pull Request
 
 ### Computer Science
 
 #### Algorithms
 
-- [x] Complexity (Big O notation)
-  - [x] Size complexity
-  - [x] Time complexity
+- [ ] Complexity (Big O notation)
+  - [ ] Size complexity
+  - [ ] Time complexity
 - [ ] Sorting
   - [ ] Bubble
   - [ ] Insertion
@@ -87,7 +87,11 @@ My current focus is **Computer Science** fundamentals and all things **JavaScrip
 - [ ] Heap
 - [ ] Graph
 
-## Learned
+### Serverless
+
+- [ ] Serverless -->
+
+<!-- ## Learned
 
 This is not everything I know, but a good amount of the things I've documented since I started this site.
 
@@ -95,99 +99,73 @@ This is not everything I know, but a good amount of the things I've documented s
 
 #### Concepts
 
-- [x] [Syntax and Code Structure](/understanding-syntax-and-code-structure-in-javascript)
-- [x] [Comments](/how-to-write-comments-in-javascript)
-- [x] [Datatypes](/javascript-day-one)
-- [x] [Strings](/how-to-work-with-strings-in-javascript)
-- [x] [Strings (cont.)](/how-to-index-split-and-manipulate-strings-in-javascript)
-- [x] [Variables, Scope and Hoisting](/understanding-variables-scope-hoisting-in-javascript)
-- [x] [Math](/how-to-do-math-in-javascript-with-operators)
-- [x] [Arrays](/understanding-arrays-in-javascript)
-- [x] [Array Methods - Mutator](/how-to-use-array-methods-in-javascript-mutator-methods)
-- [x] [Array Methods - Accessor](/how-to-use-array-methods-in-javascript-accessor-methods)
-- [x] [Array Methods - Iteration](/how-to-use-array-methods-in-javascript-iteration-methods)
-- [x] [Objects](/understanding-objects-in-javascript)
-- [x] [Object Methods](/how-to-use-object-methods-in-javascript)
-- [x] [Date and Time](/understanding-date-and-time-in-javascript)
-- [x] [Conditional Statements and Logic](/how-to-write-conditional-statements-in-javascript)
-- [x] [Switch](/how-to-use-the-switch-statement-in-javascript)
-- [x] [While and Do While Loops](/while-do-while-loops-javascript)
-- [x] [For Loops](/how-to-construct-for-loops-in-javascript)
-- [x] [Functions](/how-to-define-functions-in-javascript)
-- [x] [Prototypes and Inheritance](/understanding-prototypes-and-inheritance-in-javascript)
-- [x] [Classes](/understanding-classes-in-javascript)
-- [x] [ES6](/es6-syntax-and-feature-overview/)
-- [x] [Buffers](/bits-bytes-bases-and-a-hex-dump-javascript/)
-- [x] [MVC - Model View Controller](/javascript-mvc-todo-app)
+- [ ] [Syntax and Code Structure](/understanding-syntax-and-code-structure-in-javascript)
+- [ ] [Variables, Scope and Hoisting](/understanding-variables-scope-hoisting-in-javascript)
+- [ ] [Objects](/understanding-objects-in-javascript)
+- [ ] [Object Methods](/how-to-use-object-methods-in-javascript)
+- [ ] [Date and Time](/understanding-date-and-time-in-javascript)
+- [ ] [Conditional Statements and Logic](/how-to-write-conditional-statements-in-javascript)
+- [ ] [Switch](/how-to-use-the-switch-statement-in-javascript)
+- [ ] [While and Do While Loops](/while-do-while-loops-javascript)
+- [ ] [For Loops](/how-to-construct-for-loops-in-javascript)
+- [ ] [Functions](/how-to-define-functions-in-javascript)
+- [ ] [Prototypes and Inheritance](/understanding-prototypes-and-inheritance-in-javascript)
+- [ ] [Classes](/understanding-classes-in-javascript)
+- [ ] [ES6](/es6-syntax-and-feature-overview/)
+- [ ] [Buffers](/bits-bytes-bases-and-a-hex-dump-javascript/)
+- [ ] [MVC - Model View Controller](/javascript-mvc-todo-app)
 
 #### Document Object Model (DOM)
 
-- [x] [The DOM](/introduction-to-the-dom)
-- [x] [DOM Tree and Nodes](/understanding-the-dom-tree-and-nodes)
-- [x] [Accessing the DOM](/how-to-access-elements-in-the-dom)
-- [x] [Traversing the DOM](/how-to-traverse-the-dom)
-- [x] [Changing the DOM](/how-to-make-changes-to-the-dom)
-- [x] [Events](/understanding-events-in-javascript)
-- [x] [Local and Session Storage](/how-to-use-local-storage-with-javascript/)
+- [ ] [The DOM](/introduction-to-the-dom)
+- [ ] [DOM Tree and Nodes](/understanding-the-dom-tree-and-nodes)
+- [ ] [Accessing the DOM](/how-to-access-elements-in-the-dom)
+- [ ] [Traversing the DOM](/how-to-traverse-the-dom)
+- [ ] [Changing the DOM](/how-to-make-changes-to-the-dom)
+- [ ] [Events](/understanding-events-in-javascript)
+- [ ] [Local and Session Storage](/how-to-use-local-storage-with-javascript/)
 
 #### Frameworks/Libraries
 
-- [x] [Vue.js](/getting-started-with-vue)
-- [x] [React](/getting-started-with-react/)
-  - [x] [Hooks API](/crud-app-in-react-with-hooks/)
-  - [x] [Context API](https://www.taniarascia.com/using-context-api-in-react/)
-  - [x] [Content Editable](/content-editable-elements-in-javascript-react/)
-- [x] [jQuery](/how-to-use-jquery-a-javascript-library/)
-
-#### Databases/APIs
-
-- [x] [Production Node.js, Express REST API with PostgreSQL + Deploying to Heroku](/node-express-postgresql-heroku)
-
-### PHP
-
-- [x] [Authentication, Routing, Sessions (via Laconia MVC)](https://laconia.dev)
-- [x] [CRUD: Creating and Reading](/create-a-simple-database-app-connecting-to-mysql-with-php/)
-- [x] [CRUD: Updating and Deleting](/create-a-simple-crud-database-app-php-update-delete/)
-- [x] [File Uploads](/how-to-upload-files-to-a-server-with-plain-javascript-and-php/)
-- [x] [WordPress Basics](/developing-a-wordpress-theme-from-scratch/)
-- [x] [WordPress Intermediate](/wordpress-from-scratch-part-two/)
-- [x] [WordPress Custom Fields](/wordpress-part-three-custom-fields-and-metaboxes/)
+- [ ] [React](/getting-started-with-react/)
+  - [ ] [Hooks API](/crud-app-in-react-with-hooks/)
+  - [ ] [Context API](/using-context-api-in-react/)
 
 ### CSS
 
-- [x] [Responsive (Media Queries, Breakpoints)](/you-dont-need-a-framework/)
-- [x] [Shapes](https://tympanus.net/codrops/2018/11/29/an-introduction-to-css-shapes/)
-- [x] [Sass](/learn-sass-now/)
-- [x] [Bootstrap](/what-is-bootstrap-and-how-do-i-use-it/)
+- [ ] [Responsive (Media Queries, Breakpoints)](/you-dont-need-a-framework/)
+- [ ] Critical render path
+- [ ] Animation
+
+### Git
+
+- [ ] [Push, Pull, Commit](/getting-started-with-git/)
+- [ ] Add remote upstream
+- [ ] git remote prune origin
 
 ### Tools/Frameworks/Concepts
 
-- [x] Git
-  - [x] [Push, Pull, Commit](/getting-started-with-git/)
-- [x] [Mac Development](/setting-up-a-brand-new-mac-for-development/)
-- [x] [Command Line](/how-to-use-the-command-line-for-apple-macos-and-linux/)
-- [x] [Grunt](/getting-started-with-grunt-and-sass/)
-- [x] [Gulp](/getting-started-with-gulp/)
-- [x] [Node.js Ecosystem](/how-to-install-and-use-node-js-and-npm-mac-and-windows/)
-- [x] [Express](https://code.tutsplus.com/tutorials/code-your-first-api-with-nodejs-and-express-set-up-the-server--cms-31698)
-- [x] [LAMP Environment](/local-environment/)
-- [x] [Apache/Virtual Hosts](/setting-up-virtual-hosts/)
-- [x] [JSON](/how-to-use-json-data-with-php-or-javascript/)
-- [x] [REST API](/how-to-connect-to-an-api-with-javascript/)
-- [x] [SSL/TLS](<(/https-ssl-tls-certificate-how-to/)>)
-- [x] [Static Site Generators](/make-a-static-website-with-jekyll/)
-- [x] [Bash](/how-to-create-and-use-bash-scripts/)
-- [x] [Object-Oriented Paradigm](/object-oriented-pattern-javascript-php-classes/)
+- [ ] [Mac Development](/setting-up-a-brand-new-mac-for-development/)
+- [ ] [Command Line](/how-to-use-the-command-line-for-apple-macos-and-linux/)
+- [ ] [Node.js Ecosystem](/how-to-install-and-use-node-js-and-npm-mac-and-windows/)
+- [ ] [Express](https://code.tutsplus.com/tutorials/code-your-first-api-with-nodejs-and-express-set-up-the-server--cms-31698)
+- [ ] [REST API](/how-to-connect-to-an-api-with-javascript/)
+- [ ] [SSL/TLS](<(/https-ssl-tls-certificate-how-to/)>)
+- [ ] [Bash](/how-to-create-and-use-bash-scripts/)
+- [ ] [Object-Oriented Paradigm](/object-oriented-pattern-javascript-php-classes/)
 
 ### Databases
 
-- [x] [SQL](/overview-of-sql-commands-and-pdo-operations/)
+- [ ] [SQL](/overview-of-sql-commands-and-pdo-operations/)
+
+#### Databases/APIs
+
+- [ ] [Production Node.js, Express REST API with PostgreSQL + Deploying to Heroku](/node-express-postgresql-heroku)
 
 ### Testing
 
-- [x] [JavaScript Unit Tests with Jest or Mocha](/unit-testing-in-javascript/)
-
-### DevOps and CI/CD
-
-- [x] [AWS S3, EC2, RDS, Route 53](/getting-started-with-aws-setting-up-a-virtual-server/)
-- [x] [Vagrant/VirtualBox](/what-are-vagrant-and-virtualbox-and-how-do-i-use-them/)
+- [ ][javascript unit tests with jest or mocha](/unit-testing-in-javascript/)
+- [ ] with Redux
+- [ ] with async render formik
+- [ ] other utils?
+- [ ] mocking patterns -->

@@ -56,14 +56,6 @@ Highly motivated and versatile web developer and technical writer who is passion
 - Established company conventions/standards and documented development processes
 - Designed and developed 15+ restaurant websites, such as Cafe Ba-Ba-Reeba!, Shaw’s Crab House, Krispy Kreme PNW, Tokio Pub, Beatrix, M Burger, and Stripburger
 
-## Open Source Projects
-
-- [TakeNote](https://github.com/taniarascia/takenote) - Web-based note-taking app
-- [Chip8.js](https://github.com/taniarascia/chip8) - Node.js emulator
-- [Laconia](https://github.com/taniarascia/laconia) - MVC web framework
-- [Primitive](https://github.com/taniarascia/primitive) - Sass boilerplate/CSS framework
-- [New Moon](https://github.com/taniarascia/new-moon) - Optimized dark theme
-
 ## Talks
 
 #### An Introduction to React

@@ -223,13 +223,13 @@ function getBlogFeed({filePathRegex, blogUrl, ...overrides}) {
             <div style="display: flex;">
               <div style="padding-right: 20px;">
                 <img
-                  src="https://duncanleung.com/images/small-circular-kent.png"
+                  src="https://duncanleung.com/images/duncan.jpg"
                   alt="Duncan Leung"
                   style="max-width: 80px; border-radius: 50%;"
                 />
               </div>
               <p>
-                <strong>Duncan Leung</strong> is a JavaScript software engineer passionate about developing quality software products with maintainable practices. He lives with his wife and two kids in Irvine, California.
+                <strong>Duncan Leung</strong> is a JavaScript software engineer passionate about developing quality software products with maintainable practices.
               </p>
             </div>
           </div>

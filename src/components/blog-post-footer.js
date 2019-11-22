@@ -21,7 +21,7 @@ function BlogFooter() {
       <p>
         <strong>Duncan Leung</strong>
         {`
-          is a JavaScript software engineer passionate about developing quality software products with maintainable practices. He lives with his wife and two kids in Irvine, California.
+          is a JavaScript software engineer passionate about developing quality software products with maintainable practices.
         `}
       </p>
     </div>

@@ -119,7 +119,7 @@
     "postbuild": "node other/make-cache.js",
     "dev": "npm-run-all --parallel dev:*",
     "dev:gatsby": "gatsby develop",
-    "dev:functions": "dotenv -e ./netlify/.env netlify-lambda serve netlify/functions",
+    "dev--archive:functions": "dotenv -e ./netlify/.env netlify-lambda serve netlify/functions",
     "start": "gatsby serve --port 5020",
     "setup": "yarn && yarn validate",
     "netlify": "npm-run-all --parallel functions:build lint test netlify:cypress",

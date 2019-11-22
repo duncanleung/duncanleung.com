@@ -1,6 +1,6 @@
 const path = require('path')
 const config = require('./config/website')
-const proxy = require('http-proxy-middleware')
+// const proxy = require('http-proxy-middleware')
 
 const here = (...p) => path.join(__dirname, ...p)
 
@@ -18,16 +18,16 @@ const isNetlifyProduction = NETLIFY_ENV === 'production'
 const siteUrl = isNetlifyProduction ? NETLIFY_SITE_URL : NETLIFY_DEPLOY_URL
 
 module.exports = {
-  developMiddleware: app => {
-    app.use(
-      '/.netlify/functions/',
-      proxy({
-        target: 'http://localhost:9000',
-        pathRewrite: {
-          '/.netlify/functions/': '',
-        },
-      }),
-    )
+  developMiddleware: () => {
+    // app.use(
+    //   '/.netlify/functions/',
+    //   proxy({
+    //     target: 'http://localhost:9000',
+    //     pathRewrite: {
+    //       '/.netlify/functions/': '',
+    //     },
+    //   }),
+    // )
   },
   siteMetadata: {
     siteUrl,

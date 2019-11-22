@@ -1,8 +1,5 @@
-[[headers]]
-  for = "/rss.xml"
-  [headers.values]
-    Access-Control-Allow-Origin = "*"
-
 [build]
-  command = "npm run netlify"
-  # functions = ".netlify/functions/"
+  publish = "public"
+  command = "yarn run build"
+[build.environment]
+  YARN_VERSION = "1.16.0"

@@ -1,48 +1,43 @@
-# Duncan Leung's personal website
+# taniarascia.com
 
-[![Netlify Status](https://api.netlify.com/api/v1/badges/214fc38d-1f7f-44e3-a376-055ce62909c4/deploy-status)](https://app.netlify.com/sites/optimistic-davinci-6a51aa/deploys)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT) [![Netlify Status](https://api.netlify.com/api/v1/badges/0a51d0e9-f611-4dd8-887f-fc1889e68540/deploy-status)](https://app.netlify.com/sites/tania/deploys) 
 
-This was bootstrapped via
-[egghead-gatsby-starter](https://github.com/eggheadio/gatsby-starter-egghead-blog)
+Tania's personal website running on Gatsby, React, and Node.js.
 
-This is based on Robin Wieruch's
-https://github.com/rwieruch/gatsby-mdx-blog-starter-project
+## Note
 
-Lot's of nice pieces are also borrowed from Jason Lengstorf
-https://github.com/jlengstorf/lengstorf.com
+I've made my website open source for your inspiration, motivation, and curiosity. However, this theme is highly customized and personally tailored, and it would take more work to remove all my custom code than create your own. **I encourage you to be creative and create your own theme, design, and content.**
 
-A starter project in [Gatsby.js](https://www.gatsbyjs.org/) with
-[MDX](https://github.com/mdx-js/mdx).
+The [Gatsby Advanced Starter](https://github.com/vagr9k/gatsby-advanced-starter/) is a great place to start, and is the base for this blog.
 
 ## Features
 
-- MDX: JavaScript/React in Markdown
-- Prism.js: Syntax Highlighting
-- Pagination
-- Emotion
-- Typography.js
-- Self-hosted fonts ([Inter UI](https://rsms.me/inter/))
-- Social media share buttons
-- Site & Theme config files
-- ConvertKit subscribe form (Formik and Yup)
-- Placeholder illustrations by
-  [Katerina Limpitsouni](https://twitter.com/ninalimpi) from
-  [undraw.co](https://undraw.co/)
+- Posts and pages in Markdown
+- Tags and categories
+- Night mode
+- DOS mode (404)
+- Code theme (starring [New Moon](https://taniarascia.github.io/new-moon))
+- Sass (starring [Primitive](https://taniarascia.github.io/primitive))
+- Comments (custom API)
 
-## [➞ Demo](https://egghead-gatsby-starter.netlify.com/)
+## Contributing
 
-## Setup
+If you see any typos or formatting errors in a post, or any other issue that needs to be addressed, please do not hesitate to open a pull request and fix it!
 
-- `git clone git@github.com:eggheadio/gatsby-starter-egghead-blog.git`
-- `cd gatsby-starter-egghead-blog`
-- `npm install`
-- `gatsby develop`
-- visit http://localhost:8000
+## Acknowledgements
 
-## Setup via Gatsby CLI
+- Ruben Harutyunyan - [Gatsby Advanced Starter](https://github.com/vagr9k/gatsby-advanced-starter/)
+- Muhammad Muhsin - [Using React Context API with Gatsby](https://www.gatsbyjs.org/blog/2019-01-31-using-react-context-api-with-gatsby/)
+- Thomas Frössman - [ExitWP](https://github.com/thomasf/exitwp) - WordPress XML to Markdown
 
-- `gatsby new gatsby-starter-egghead-blog git@github.com:eggheadio/gatsby-starter-egghead-blog.git`
-- `cd gatsby-starter-egghead-blog`
-- `npm install`
-- `gatsby develop`
-- visit http://localhost:8000
+## Author
+
+- [Tania Rascia](https://www.taniarascia.com)
+
+<a href="https://patreon.com/taniarascia"><img src="https://img.shields.io/endpoint.svg?url=https://shieldsio-patreon.herokuapp.com/taniarascia&style=for-the-badge" alt="Patreon donate button" /> </a>
+
+[![ko-fi](https://www.ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/F1F1GNP8)
+
+## License
+
+This project is open source and available under the [MIT License](LICENSE).

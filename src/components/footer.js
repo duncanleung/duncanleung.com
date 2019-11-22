@@ -1,79 +1,55 @@
-import React from 'react'
-// import Link from '../components/link'
-import {css} from '@emotion/core'
-import theme from '../../config/theme'
-import {bpMaxSM} from '../lib/breakpoints'
-// import SubscribeForm from './forms/subscribe'
-import {Twitter, GitHub, RSS} from './social'
-import Container from './container'
+import React, { Component } from 'react'
+import { Link } from 'gatsby'
+import netlify from '../../content/images/netlify.png'
+import gatsby from '../../content/thumbnails/gatsby.png'
+import github from '../../content/images/github.png'
 
-// import Signature from '../images/signature.png'
-
-const Footer = ({subscribeForm = null, maxWidth}) => (
-  <footer
-    css={css`
-      background: ${theme.colors.black};
-      color: white;
-      margin-top: 70px;
-    `}
-  >
-    <Container
-      maxWidth={maxWidth}
-      css={css`
-        padding-top: 0;
-        padding-bottom: 0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        ${bpMaxSM} {
-          padding-top: 0;
-          flex-direction: column;
-        }
-      `}
-    >
-      {subscribeForm ? (
-        <div css={{marginTop: -40}}>
-          {subscribeForm}
-          <br />
-          <br />
-        </div>
-      ) : null}
-      <div
-        css={css`
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          div,
-          img {
-            margin: 50px 0;
-            ${bpMaxSM} {
-              margin: 20px 0;
-            }
-          }
-          ${bpMaxSM} {
-            align-items: center;
-          }
-        `}
-      >
+export default class Footer extends Component {
+  render() {
+    return (
+      <footer className="footer container">
         <div>
-          <Twitter />
-          <GitHub />
-          {/* <YouTube /> */}
-          <RSS />
+          <a href="https://ko-fi.com/taniarascia" target="_blank" rel="noopener noreferrer">
+            Ko-Fi
+          </a>
+          <a href="https://patreon.com/taniarascia" target="_blank" rel="noopener noreferrer">
+            Patreon
+          </a>
+          <Link to="/newsletter">Newsletter</Link>
+          <a href="https://www.taniarascia.com/rss.xml" target="_blank" rel="noopener noreferrer">
+            RSS
+          </a>
         </div>
-
-        {/* <Link to="/" aria-label="Return to homepage">
-          <img
-            src={Signature}
-            alt="Duncan Leung"
-            css={css`
-              max-width: 100px;
-            `}
-          />
-        </Link> */}
-      </div>
-    </Container>
-  </footer>
-)
-
-export default Footer
+        <div>
+          <a href="https://github.com/taniarascia" title="Open-source on GitHub">
+            <img
+              src={github}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="footer-img"
+              alt="GitHub"
+            />
+          </a>
+          <a href="https://www.netlify.com/" title="Hosted by Netlify">
+            <img
+              src={netlify}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="footer-img"
+              alt="GitHub"
+            />
+          </a>
+          <a href="https://www.gatsbyjs.org/" title="Built with Gatsby">
+            <img
+              src={gatsby}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="footer-img"
+              alt="GitHub"
+            />
+          </a>
+        </div>
+      </footer>
+    )
+  }
+}

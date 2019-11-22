@@ -1,6 +1,4 @@
-node_modules
-coverage
-.cache
-build
 public
-.netlify
+static
+.cache
+content

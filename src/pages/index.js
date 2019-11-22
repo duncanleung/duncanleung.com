@@ -3,10 +3,10 @@ import Helmet from 'react-helmet'
 import { graphql, Link } from 'gatsby'
 import Layout from '../layout'
 import PostListing from '../components/PostListing'
-import SimpleListing from '../components/SimpleListing'
+// import SimpleListing from '../components/SimpleListing'
 import SEO from '../components/SEO'
 import config from '../../data/SiteConfig'
-import speaking from '../../data/speaking'
+// import speaking from '../../data/speaking'
 import quotes from '../../data/quotes'
 import tania from '../../content/images/tania-avatar.jpg'
 import patreon from '../../content/thumbnails/patreon.png'
@@ -84,10 +84,10 @@ export default class Index extends Component {
             <PostListing simple postEdges={popularPostEdges} />
           </section>
 
-          <section className="section">
+          {/* <section className="section">
             <h2>Talks</h2>
             <SimpleListing simple data={speaking} />
-          </section>
+          </section> */}
 
           <section className="section">
             <h2>{`Other People's Opinions`}</h2>

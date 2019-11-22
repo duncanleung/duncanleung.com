@@ -56,16 +56,6 @@ Highly motivated and versatile web developer and technical writer who is passion
 - Established company conventions/standards and documented development processes
 - Designed and developed 15+ restaurant websites, such as Cafe Ba-Ba-Reeba!, Shaw’s Crab House, Krispy Kreme PNW, Tokio Pub, Beatrix, M Burger, and Stripburger
 
-## Talks
-
-#### An Introduction to React
-
-**JavaScript Chicago** - _2019 | Chicago, IL_
-
-#### Developing a WordPress Theme From Scratch
-
-**WordCamp Chicago** - _2017 | Chicago, IL_
-
 ## Education
 
 #### B.A. in Professional Studies

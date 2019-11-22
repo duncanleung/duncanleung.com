@@ -4,7 +4,7 @@ slug: me
 template: page
 ---
 
-I’m Tania Rascia, a web developer, technical writer, and former chef from Chicago. I currently work as a front end software engineer for a startup, and I've written for many [developer publications](/publications).
+I’m Tania Rascia, a web developer, technical writer, and former chef from Chicago. I currently work as a front end software engineer for a startup, and I've written for many developer publications
 
 I started this website as a place to document everything I learned while going through a [career change](/how-i-made-a-career-change-into-web-development/). I [learn in public](/learn) and write about everything I know.
 
@@ -34,18 +34,6 @@ A non-exhaustive list.
 - [Ben Schroeder](https://benschroeder.com/) – a dear friend of mine who is knowledgeable, hilarious, and eloquent
 - [Dave Bock](https://dkbock.com/) – an excellent designer and insightful friend
 - [Joe Carlyon](http://qualitytesting.tech/) – the automation expert and an awesome guy who makes great beer
-
-## Publications
-
-Articles I've written for developer publications.
-
-- [DigitalOcean](/publications/#DigitalOcean)
-- [LogRocket](/publications/#LogRocket)
-- [Codrops](/publications/#Codrops)
-- [Progress](/publications/#Progress)
-- [Envato Tuts+](/publications/#EnvatoTuts+)
-- [SitePoint](/publications/#SitePoint)
-- [Gatsby](/publications/#Gatsby)
 
 ## Music
 

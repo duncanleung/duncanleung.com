@@ -7,7 +7,6 @@ import PostListing from '../components/PostListing'
 import SEO from '../components/SEO'
 import config from '../../data/SiteConfig'
 // import speaking from '../../data/speaking'
-import quotes from '../../data/quotes'
 import tania from '../../content/images/tania-avatar.jpg'
 import patreon from '../../content/thumbnails/patreon.png'
 import github from '../../content/thumbnails/github.png'
@@ -89,17 +88,6 @@ export default class Index extends Component {
             <SimpleListing simple data={speaking} />
           </section> */}
 
-          <section className="section">
-            <h2>{`Other People's Opinions`}</h2>
-            <div className="quotations">
-              {quotes.map(quote => (
-                <blockquote className="quotation" key={quote.name}>
-                  <p>{quote.quote}</p>
-                  <cite>— {quote.name}</cite>
-                </blockquote>
-              ))}
-            </div>
-          </section>
         </div>
       </Layout>
     )

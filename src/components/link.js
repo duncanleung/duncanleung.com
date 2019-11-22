@@ -2,7 +2,7 @@ import React from 'react'
 import GatsbyLink from 'gatsby-link'
 import styled from '@emotion/styled'
 
-const Link = ({children, to, ...other}) => {
+const Link = ({children, to, unstyled, ...other}) => {
   const internal = /^\/(?!\/)/.test(to)
 
   if (internal) {

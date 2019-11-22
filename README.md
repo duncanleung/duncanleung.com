@@ -1,5 +1,7 @@
 # Duncan Leung's personal website
 
+[![Netlify Status](https://api.netlify.com/api/v1/badges/214fc38d-1f7f-44e3-a376-055ce62909c4/deploy-status)](https://app.netlify.com/sites/optimistic-davinci-6a51aa/deploys)
+
 This was bootstrapped via
 [egghead-gatsby-starter](https://github.com/eggheadio/gatsby-starter-egghead-blog)
 

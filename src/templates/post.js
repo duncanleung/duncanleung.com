@@ -8,23 +8,23 @@ import PostTags from '../components/PostTags'
 import SEO from '../components/SEO'
 import config from '../../data/SiteConfig'
 import { formatDate, editOnGithub } from '../utils/global'
-import NewsletterForm from '../components/NewsletterForm'
+// import NewsletterForm from '../components/NewsletterForm'
 
 export default class PostTemplate extends Component {
-  constructor(props) {
-    super(props)
+  // constructor(props) {
+  //   super(props)
 
-    this.state = {
-      error: false,
-    }
-  }
+  //   this.state = {
+  //     error: false,
+  //   }
+  // }
 
   render() {
-    const { comments, error } = this.state
+    // const { comments, error } = this.state
     const { slug } = this.props.pageContext
     const postNode = this.props.data.markdownRemark
     const post = postNode.frontmatter
-    const popular = postNode.frontmatter.categories.find(category => category === 'Popular')
+    // const popular = postNode.frontmatter.categories.find(category => category === 'Popular')
     let thumbnail
 
     if (!post.id) {
@@ -41,9 +41,10 @@ export default class PostTemplate extends Component {
 
     const date = formatDate(post.date)
     const githubLink = editOnGithub(post)
+    const blogPostUrl = `${config.siteUrl}${slug}`;
     const twitterShare = `http://twitter.com/share?text=${encodeURIComponent(post.title)}&url=${
       config.siteUrl
-    }/${post.slug}/&via=taniarascia`
+    }/${post.slug}/&via=leungd`
 
     return (
       <Layout>
@@ -52,7 +53,9 @@ export default class PostTemplate extends Component {
         </Helmet>
         <SEO postPath={slug} postNode={postNode} postSEO />
         <article className="single container">
-          <header className={`single-header ${!thumbnail ? 'no-thumbnail' : ''}`}>
+          <header
+            className={`single-header ${!thumbnail ? "no-thumbnail" : ""}`}
+          >
             {thumbnail && <Img fixed={post.thumbnail.childImageSharp.fixed} />}
             <div className="flex">
               <h1>{post.title}</h1>
@@ -80,9 +83,31 @@ export default class PostTemplate extends Component {
             </div>
           </header>
 
-          <div className="post" dangerouslySetInnerHTML={{ __html: postNode.html }} />
+          <div
+            className="post"
+            dangerouslySetInnerHTML={{ __html: postNode.html }}
+          />
         </article>
-        <div className="container no-comments">
+        <div className="single container">
+          <p css={{ textAlign: "right" }}>
+            <a
+              target="_blank"
+              rel="noopener noreferrer"
+              // using mobile.twitter.com because if people haven't upgraded
+              // to the new experience, the regular URL wont work for them
+              href={`https://mobile.twitter.com/search?q=${encodeURIComponent(
+                blogPostUrl
+              )}`}
+            >
+              Discuss on Twitter
+            </a>
+            <span css={{ marginLeft: 10, marginRight: 10 }}>{` • `}</span>
+            <a target="_blank" rel="noopener noreferrer" href={githubLink}>
+              Edit post on GitHub
+            </a>
+          </p>
+        </div>
+        {/* <div className="container no-comments">
           <h3>No comments?</h3>
           <p>
             There are intentionally no comments on this site. Enjoy! If you found any errors in this
@@ -92,20 +117,20 @@ export default class PostTemplate extends Component {
             </a>
             .
           </p>
-        </div>
-        <div className="container">
+        </div> */}
+        {/* <div className="container">
           <a
             className="button"
-            href="https://taniarascia.substack.com/"
+            href="https://duncanleung.substack.com/"
             target="_blank"
             rel="noopener noreferrer"
           >
             Subscribe to Newsletter
           </a>
-        </div>
+        </div> */}
         <UserInfo config={config} />
       </Layout>
-    )
+    );
   }
 }
 

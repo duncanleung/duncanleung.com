@@ -4,85 +4,41 @@ slug: me
 template: page
 ---
 
-I’m Tania Rascia, a web developer, technical writer, and former chef from Chicago. I currently work as a front end software engineer for a startup, and I've written for many developer publications
+👋 Hi! I’m Duncan Leung.
 
-I started this website as a place to document everything I learned while going through a [career change](/how-i-made-a-career-change-into-web-development/). I [learn in public](/learn) and write about everything I know.
+I'm a front end web engineer and former product manager. I write about JavaScript, React, and web development.
 
-I aim to create a beautiful corner of the web free of ads, sponsored posts, newsletter pop-ups, affiliate links, and the rest of the annoying noise we're so accustomed to seeing on the internet these days.
+I'm a self taught software developer 👨🏻‍💻, and this is a
+place for me to <a href="/learn"> 📝 learn in public</a> and keep
+track of code snippets.
 
-### Newsletter
+I currently work as a Front End Web Engineer at Turn, <a href="https://turncar.com" target="_blank">flexible car subscribscriptions</a>.
+
+<!-- ### Newsletter
 
 I send out a message whenever I write something new. Sign up for the newsletter to get notified.
 
-<a class="button" href="https://taniarascia.substack.com">Join the newsletter</a>
+<a class="button" href="https://duncanleung.substack.com">Join the newsletter</a> -->
 
-![Me](../images/taniafull.jpg)
+<!-- ![Me](../images/taniafull.jpg) -->
 
 ### Around the web
 
-- **Email**: [tania@taniarascia.com](mailto:tania[AT]taniarascia[DOT]com)
-- **GitHub**: [taniarascia](https://github.com/taniarascia)
-- **Twitter**: [taniarascia](https://twitter.com/taniarascia)
-
-## Links
-
-A non-exhaustive list.
-
-- [Vanya Sergeev](https://sergeev.io) – a brilliant programmer who is very important to me
-- [Teodor Nikolaev](https://teodor.co/) – a talented designer, developer, artist, photographer, and Bulgarian
-- [Craig Lam](http://craiglam.com/) – one of the funniest people I’ve ever met and the mastermind behind Scripto
-- [Ben Schroeder](https://benschroeder.com/) – a dear friend of mine who is knowledgeable, hilarious, and eloquent
-- [Dave Bock](https://dkbock.com/) – an excellent designer and insightful friend
-- [Joe Carlyon](http://qualitytesting.tech/) – the automation expert and an awesome guy who makes great beer
-
-## Music
-
-Sometimes I sing and play accordion/piano. I like to [record music](https://soundcloud.com/ivoryandivory) in my spare time. Here are some.
-
-- [I’d Like to Walk Around In Your Mind](https://soundcloud.com/ivoryandivory/id-like-to-walk-around-in-your-mind)
-- [Such Great Heights](https://soundcloud.com/john-termaat/such-great-heights) (duet)
-- [Night Nurse](https://soundcloud.com/john-termaat/night-nurse) (duet)
-- [El Pasadiscos](https://soundcloud.com/ivoryandivory/el-pasadiscos)
-- [Mad World](https://soundcloud.com/ivoryandivory/mad-world)
-- [You And I](https://soundcloud.com/ivoryandivory/you-and-i)
-- [Just Like Heaven](https://soundcloud.com/ivoryandivory/just-like-heaven)
-- [The Winner Takes It All](https://soundcloud.com/ivoryandivory/the-winner-takes-it-all)
-- [Wicked Game](https://soundcloud.com/ivoryandivory/wicked-game)
-- [Truce](https://soundcloud.com/ivoryandivory/truce)
-- [Something Wild](https://soundcloud.com/ivoryandivory/something-wild)
-- [Bridge Over Troubled Water](https://soundcloud.com/ivoryandivory/bridge-over-troubled-water)
-- [Rainy Monday](https://soundcloud.com/ivoryandivory/rainy-monday)
-- [Saloon](https://soundcloud.com/ivoryandivory/saloon)
-
-## 3D Printer
-
-- [Floppy Disk](https://github.com/taniarascia/3d#floppy-disk)
-- [Soap Holder](https://github.com/taniarascia/3d#soap-holder)
-
-## Portfolio
-
-A few sites I designed.
-
-- [Cafe Ba-Ba-Reeba!](https://www.cafebabareeba.com/) - 2017
-- [Shaw's Crab House](https://www.shawscrabhouse.com) - 2017
-- [Tokio Asian Fusion](https://www.tokioasianfusion.com/) - 2017
-- [Stripburger](https://www.stripburger.com/) - 2017
-- [Beatrix Market](https://www.beatrixrestaurants.com/) - 2017
-- [Krispy Kreme PNW](https://www.krispykremepacificnw.com/) - 2016
-- [Il Porcellino](https://www.ilporcellinochicago.com/) - 2016
-- [Reel Club](http://reel-club.com/) - 2016
+- **Email**: <a href="mailto:duncan[AT]leung[DOT]house" target="_blank">duncan@leung.house</a>
+- **GitHub**: <a href="https://github.com/duncanleung" target="_blank">duncanleung</a>
+- **Twitter**: <a href="https://twitter.com/leungd" target="_blank">leungd</a>
 
 ## Currently Using
 
-- **Computer:** MacBook Pro 2015
-- **Hosting:** [Netlify](https://netlify.com) (blog), [Heroku](https://heroku.com) (API)
-- **Editor:** [Visual Studio Code](https://code.visualstudio.com/)
-- **Static Site Generator:** [Gatsby](https://gatsbyjs.org)
-- **Syntax Highlighting:** [PrismJS](http://prismjs.com/)
-- **Code Theme:** [New Moon](https://taniarascia.github.io/new-moon)
-- **Newsletter:** [Substack](https://substack.com)
-- **Notes:** [SimpleNote](https://simplenote.com/)
+- **Computer:** MacBook Pro 2017
+- **Keyboard:** <a href="https://ergodox-ez.com/" target="_blank">ErgoDox EZ</a>
+- **Hosting:** [Netlify](https://netlify.com) (blog)<!-- , [Heroku](https://heroku.com) (API) -->
+- **Editor:** <a href="https://code.visualstudio.com/" target="_blank">Visual Studio Code</a>
+- **Static Site Generator:** <a href="https://gatsbyjs.org" target="_blank">Gatsby</a>
+- **Syntax Highlighting:** <a href="http://prismjs.com/" target="_blank">PrismJS</a>
+  <!-- - **Newsletter:** [Substack](https://substack.com) -->
+  <!-- - **Notes:** [SimpleNote](https://simplenote.com/) -->
 
-## Miscellaneous
+<!-- ## Miscellaneous
 
-- Won 3rd place for [Personal Developer Blog of the Year 2019](https://hackernoon.com/personal-developer-blog-of-the-year-hacker-noon-noonies-awards-2019-hz2tu32ql)
+- Won 3rd place for [Personal Developer Blog of the Year 2019](https://hackernoon.com/personal-developer-blog-of-the-year-hacker-noon-noonies-awards-2019-hz2tu32ql) -->

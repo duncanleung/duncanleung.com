@@ -4,21 +4,21 @@ slug: contact
 template: page
 ---
 
-I build open-source projects and write about modern JavaScript, Node.js, design and web development.
+I'm a Front End Web Engineer at [Turn](https://turncar.com) and write about things I'm learning in JavaScript, React, and web development.
 
-<div class="centered-iframe">
+<!-- <div class="centered-iframe">
   <iframe
     width="480"
     height="150"
-    src="https://taniarascia.substack.com/embed"
+    src="https://duncanleung.substack.com/embed"
     frameborder="0"
     scrolling="no"
   ></iframe>
-</div>
+</div> -->
 
 ### Around the web
 
-- **Email**: [tania@taniarascia.com](mailto:tania[AT]taniarascia[DOT]com)
-- **GitHub**: [taniarascia](https://github.com/taniarascia)
-- **Twitter**: [taniarascia](https://twitter.com/taniarascia)
-- **Feed**: [RSS](https://www.taniarascia.com/rss.xml)
+- **Email**: <a href="mailto:duncan[AT]leung[DOT]house" target="_blank">duncan@leung.house</a>
+- **GitHub**: <a href="https://github.com/duncanleung" target="_blank">duncanleung</a>
+- **Twitter**: <a href="https://twitter.com/leungd" target="_blank">leungd</a>
+- **Feed**: <a href="https://duncanleung.com/rss.xml" target="_blank">RSS</a>

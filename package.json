@@ -1,9 +1,9 @@
 {
-  "name": "taniarascia.com",
+  "name": "duncanleung.com",
   "description": "Personal website running on Gatsby, React, and Node.js.",
   "version": "1.0.1",
-  "author": "Tania Rascia <tania@taniarascia.com>",
-  "repository": "git@github.com:taniarascia/taniarascia.com",
+  "author": "Duncan Leung <duncan@leung.house>",
+  "repository": "git@github.com:duncanleung/duncanleung.com",
   "dependencies": {
     "eslint-utils": "^1.4.1",
     "gatsby": "^2.13.13",
@@ -58,9 +58,13 @@
     "write-good": "^1.0.1"
   },
   "keywords": [
-    "tania rascia",
+    "duncan leung",
+    "front end",
+    "software engineering",
+    "web development",
     "development",
     "dev",
+    "react",
     "tutorials",
     "tech",
     "articles",

@@ -1,22 +1,22 @@
-import React, { Component } from 'react'
-import Helmet from 'react-helmet'
-import { graphql, Link } from 'gatsby'
-import Layout from '../layout'
-import PostListing from '../components/PostListing'
+import React, { Component } from "react";
+import Helmet from "react-helmet";
+import { graphql, Link } from "gatsby";
+import Layout from "../layout";
+import PostListing from "../components/PostListing";
 // import SimpleListing from '../components/SimpleListing'
-import SEO from '../components/SEO'
-import config from '../../data/SiteConfig'
+import SEO from "../components/SEO";
+import config from "../../data/SiteConfig";
 // import speaking from '../../data/speaking'
-import tania from '../../content/images/tania-avatar.jpg'
-import patreon from '../../content/thumbnails/patreon.png'
-import github from '../../content/thumbnails/github.png'
+import duncan from "../../content/images/duncan-hero.jpg";
+// import patreon from '../../content/thumbnails/patreon.png'
+import github from "../../content/thumbnails/github.png";
 
 export default class Index extends Component {
   render() {
-    const { data } = this.props
+    const { data } = this.props;
 
-    const latestPostEdges = data.latest.edges
-    const popularPostEdges = data.popular.edges
+    const latestPostEdges = data.latest.edges;
+    // const popularPostEdges = data.popular.edges
 
     return (
       <Layout>
@@ -25,23 +25,41 @@ export default class Index extends Component {
         <div className="container">
           <div className="lead">
             <div className="elevator">
-              <h1>{`I'm Tania`}</h1>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center"
+                }}
+              >
+                <img
+                  style={{ width: "150px", borderRadius: "50%" }}
+                  src={duncan}
+                  alt="Duncan Leung"
+                />
+                <h1>👋 Hi, I&apos;m Duncan&nbsp;Leung</h1>
+              </div>
               <p>
-                I build open-source projects and write about modern JavaScript, Node.js, design and
-                web development.
+                I&apos;m a front end web engineer and former product manager. I
+                write about JavaScript, React, and web development.
+              </p>
+              <p>
+                I&apos;m a self taught software developer 👨🏻‍💻, and this is a
+                place for me to <a href="/learn"> 📝 learn in public</a> and
+                keep track of code snippets.
               </p>
               <div className="social-buttons">
-                <a
+                {/* <a
                   className="patreon-button"
                   href="https://www.patreon.com/taniarascia"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
                   <img src={patreon} height="50" width="50" alt="Patreon" />
-                </a>
+                </a> */}
                 <a
                   className="github-button"
-                  href="https://github.com/taniarascia"
+                  href="https://github.com/duncanleung"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -49,7 +67,7 @@ export default class Index extends Component {
                 </a>
               </div>
             </div>
-            <div className="newsletter-section">
+            {/* <div className="newsletter-section">
               <img src={tania} className="newsletter-avatar" alt="Tania" />
               <div>
                 <h3>Get updates</h3>
@@ -58,7 +76,7 @@ export default class Index extends Component {
                   Subscribe
                 </a>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
 
@@ -73,7 +91,7 @@ export default class Index extends Component {
             <PostListing simple postEdges={latestPostEdges} />
           </section>
 
-          <section className="section">
+          {/* <section className="section">
             <h2>
               Most Popular
               <Link to="/categories/popular" className="view-all">
@@ -81,16 +99,15 @@ export default class Index extends Component {
               </Link>
             </h2>
             <PostListing simple postEdges={popularPostEdges} />
-          </section>
+          </section> */}
 
           {/* <section className="section">
             <h2>Talks</h2>
             <SimpleListing simple data={speaking} />
           </section> */}
-
         </div>
       </Layout>
-    )
+    );
   }
 }
 
@@ -157,4 +174,4 @@ export const pageQuery = graphql`
       }
     }
   }
-`
+`;

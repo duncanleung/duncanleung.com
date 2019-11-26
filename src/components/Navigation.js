@@ -40,7 +40,7 @@ export default class Navigation extends Component {
           <div className="brand">
             <Link to="/">
               <img src={floppy} className="favicon" alt="Floppy Diskette" />
-              <span className="text">Tania Rascia</span>
+              <span className="text">Duncan Leung</span>
             </Link>
           </div>
           <div className="links">
@@ -58,7 +58,7 @@ export default class Navigation extends Component {
                 )}
               </button>
             </div>
-            <a
+            {/* <a
               className="kofi-button"
               target="_blank"
               rel="noopener noreferrer"
@@ -67,7 +67,7 @@ export default class Navigation extends Component {
               title="Buy me a coffee!"
             >
               <img src={kofi} alt="Kofi" className="kofi" />
-            </a>
+            </a> */}
           </div>
         </div>
       </nav>

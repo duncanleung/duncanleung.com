@@ -1,40 +1,40 @@
 const config = {
-  siteTitle: 'Tania Rascia',
-  siteTitleShort: 'Tania Rascia',
-  siteTitleAlt: 'Tania Rascia',
-  siteLogo: '/logos/logo-1024.png',
-  siteUrl: 'https://www.taniarascia.com',
-  repo: 'https://github.com/taniarascia/taniarascia.com',
-  pathPrefix: '',
-  dateFromFormat: 'YYYY-MM-DD',
-  dateFormat: 'MMMM Do, YYYY',
+  siteTitle: "Duncan Leung",
+  siteTitleShort: "Duncan Leung",
+  siteTitleAlt: "Duncan Leung",
+  siteLogo: "/logos/logo-1024.png",
+  siteUrl: "https://www.duncanleung.com",
+  repo: "https://github.com/duncanleung/duncanleung.com",
+  pathPrefix: "",
+  dateFromFormat: "YYYY-MM-DD",
+  dateFormat: "MMMM Do, YYYY",
   siteDescription:
-    'Tania Rascia is a web developer and writer specializing in modern JavaScript.',
-  siteRss: '/rss.xml',
-  googleAnalyticsID: 'UA-42068444-1',
-  postDefaultCategoryID: 'Tech',
-  newsletter: 'https://taniarascia.substack.com',
-  newsletterEmbed: 'https://taniarascia.substack.com/embed',
-  userName: 'Tania',
-  userEmail: 'tania@taniarascia.com',
-  userTwitter: 'taniarascia',
+    "Duncan Leung is a front end web engineer and writer specializing in JavaScript, React, and web development.",
+  siteRss: "/rss.xml",
+  googleAnalyticsID: "UA-42068444-1",
+  postDefaultCategoryID: "Tech",
+  newsletter: "https://duncanleung.substack.com",
+  newsletterEmbed: "https://duncanleung.substack.com/embed",
+  // userName: 'Duncan',
+  userEmail: "duncan@leung.house",
+  userTwitter: "leungd",
   menuLinks: [
     {
-      name: 'Me',
-      link: '/me/',
+      name: "Me",
+      link: "/me/"
     },
     {
-      name: 'Articles',
-      link: '/blog/',
+      name: "Articles",
+      link: "/blog/"
     },
     {
-      name: 'Contact',
-      link: '/contact/',
-    },
+      name: "Contact",
+      link: "/contact/"
+    }
   ],
-  themeColor: '#3F80FF', // Used for setting manifest and progress theme colors.
-  backgroundColor: '#ffffff',
-}
+  themeColor: "#FFD700", // Used for setting manifest and progress theme colors.
+  backgroundColor: "#ffffff"
+};
 
 // Make sure pathPrefix is empty if not needed
 if (config.pathPrefix === '/') {

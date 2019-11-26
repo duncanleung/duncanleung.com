@@ -1,12 +1,12 @@
 @font-face {
-  font-family: 'PerfectDOS';
-  src: url('../fonts/PerfectDos.ttf') format('truetype');
+  font-family: "PerfectDOS";
+  src: url("../fonts/PerfectDos.ttf") format("truetype");
 }
 
 .not-found {
   background: #000084;
   color: #bbb;
-  font-family: 'PerfectDOS', 'Courier New', monospace;
+  font-family: "PerfectDOS", "Courier New", monospace;
   font-weight: 400;
   font-size: 16px;
   height: 100vh;
@@ -24,7 +24,7 @@
     box-shadow: 10px 10px 0 #000;
     padding: 10px 20px;
     display: inline-block;
-    font-family: 'PerfectDOS', 'Courier New', monospace;
+    font-family: "PerfectDOS", "Courier New", monospace;
     font-weight: 600;
     margin-bottom: 40px;
   }
@@ -37,7 +37,7 @@
   .bullet {
     margin-right: 30px;
   }
-  .tania {
+  .error {
     color: #ffff00;
   }
   .nav {

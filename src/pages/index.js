@@ -26,14 +26,9 @@ export default class Index extends Component {
           <div className="lead">
             <div className="elevator">
               <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center"
-                }}
+                className="lead-container"
               >
                 <img
-                  style={{ width: "150px", borderRadius: "50%" }}
                   src={duncan}
                   alt="Duncan Leung"
                 />
@@ -45,8 +40,7 @@ export default class Index extends Component {
               </p>
               <p>
                 I&apos;m a self taught software developer 👨🏻‍💻, and this is a
-                place for me to <a href="/learn"> 📝 learn in public</a> and
-                keep track of code snippets.
+                place for me to <a href="/learn"> 📝 learn in public</a>.
               </p>
               <div className="social-buttons">
                 {/* <a

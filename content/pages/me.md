@@ -9,8 +9,7 @@ template: page
 I'm a front end web engineer and former product manager. I write about JavaScript, React, and web development.
 
 I'm a self taught software developer 👨🏻‍💻, and this is a
-place for me to <a href="/learn"> 📝 learn in public</a> and keep
-track of code snippets.
+place for me to <a href="/learn"> 📝 learn in public</a>.
 
 I currently work as a Front End Web Engineer at Turn, <a href="https://turncar.com" target="_blank">flexible car subscribscriptions</a>.
 

@@ -7,10 +7,10 @@ export default class NewsletterForm extends Component {
         <iframe
           width="480"
           height="150"
-          src="https://taniarascia.substack.com/embed"
-          frameborder="0"
+          src="https://duncanleung.substack.com/embed"
+          frameBorder="0"
           scrolling="no"
-        ></iframe>
+        />
       </div>
     )
   }

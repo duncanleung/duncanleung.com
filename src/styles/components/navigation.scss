@@ -1,3 +1,5 @@
+$background: #202020;
+
 .nav {
   position: fixed;
   width: 100%;
@@ -5,7 +7,8 @@
   left: 0;
   z-index: 3;
   width: 100%;
-  background: white;
+  // background: white;
+  background: $background;
 
   &.scroll {
     box-shadow: 1px 2px 18px rgba(0, 0, 0, 0.1);
@@ -14,7 +17,7 @@
   .cta {
     display: flex;
     align-items: center;
-    margin-right: .75rem;
+    margin-right: 0.75rem;
   }
 
   .nav-container {
@@ -32,15 +35,10 @@
     a {
       display: flex;
       align-items: center;
-      color: #333;
+      color: $yellow;
       margin-right: 0;
       font-weight: 600;
       font-size: 1.1rem;
-
-      &:hover,
-      &:focus {
-        color: black;
-      }
     }
 
     .text {
@@ -61,15 +59,15 @@
       align-items: center;
       font-size: 1.05rem;
       font-weight: 500;
-      padding: .75rem;
+      padding: 0.75rem;
       margin: 0;
-      color: rgba(0, 0, 0, 0.45);
+      color: $yellow;
       line-height: 1.2;
       text-align: center;
 
       &:hover,
-      &:active {
-        color: #111;
+      &.active {
+        color: darken($yellow, 20%);
       }
 
       &.kofi-button {
@@ -94,11 +92,11 @@
 }
 
 .favicon {
-  height: 23px;
-  width: 23px;
-  min-width: 23px;
-  margin-right: .75rem;
-  margin-bottom: 0;
+  height: 35px;
+  width: 35px;
+  min-width: 35px;
+  margin-right: 0.75rem;
+  margin-bottom: 4px;
 }
 
 button.dark-switcher {
@@ -133,18 +131,6 @@ button.dark-switcher {
       .nav-container {
         height: 60px;
       }
-
-      .links a {
-
-        &:hover,
-        &.active {
-          color: #111;
-        }
-
-        &:active {
-          color: #111;
-        }
-      }
     }
 
     .nav-container {
@@ -174,10 +160,6 @@ button.dark-switcher {
         margin: 0 1rem;
         padding: 1rem 0.5rem;
         border-bottom: 2px solid transparent;
-
-        &.active {
-          color: #111;
-        }
       }
     }
 

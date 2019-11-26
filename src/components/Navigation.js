@@ -1,9 +1,9 @@
 import React, { Component } from 'react'
 import { Link } from 'gatsby'
-import floppy from '../images/floppy.png'
+import coder from '../images/coder.png'
 import sun from '../images/sun.svg'
 import moon from '../images/moon.svg'
-import kofi from '../../content/thumbnails/kofi.png'
+// import kofi from '../../content/thumbnails/kofi.png'
 import ThemeContext from '../context/ThemeContext'
 
 export default class Navigation extends Component {
@@ -35,11 +35,11 @@ export default class Navigation extends Component {
     const theme = this.context
 
     return (
-      <nav className={scrolled ? 'nav scroll' : 'nav'}>
+      <nav className={scrolled ? "nav scroll" : "nav"}>
         <div className="nav-container">
           <div className="brand">
             <Link to="/">
-              <img src={floppy} className="favicon" alt="Floppy Diskette" />
+              <img src={coder} className="favicon" alt="Coder" />
               <span className="text">Duncan Leung</span>
             </Link>
           </div>
@@ -50,7 +50,12 @@ export default class Navigation extends Component {
               </Link>
             ))}
             <div className="cta">
-              <button className="dark-switcher" onClick={theme.toggleDark} aria-label="Toggle Dark Mode." title="Toggle Dark Mode">
+              <button
+                className="dark-switcher"
+                onClick={theme.toggleDark}
+                aria-label="Toggle Dark Mode."
+                title="Toggle Dark Mode"
+              >
                 {theme.dark ? (
                   <img src={sun} className="theme-icon" alt="Light Mode" />
                 ) : (
@@ -71,6 +76,6 @@ export default class Navigation extends Component {
           </div>
         </div>
       </nav>
-    )
+    );
   }
 }

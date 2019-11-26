@@ -99,10 +99,6 @@ $dark-border: darken($background, 3%);
 
       a {
         color: lighten($foreground, 5%);
-
-        &:hover {
-          color: #eee;
-        }
       }
     }
 

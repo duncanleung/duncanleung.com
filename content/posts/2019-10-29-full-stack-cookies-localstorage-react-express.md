@@ -1,8 +1,8 @@
 ---
 date: 2019-10-29
-title: 'Full Stack Authentication: Cookies and Local Storage'
+title: "Full Stack Authentication: Cookies and Local Storage"
 template: post
-thumbnail: '../thumbnails/cookie.png'
+thumbnail: "../thumbnails/cookie.png"
 slug: full-stack-cookies-localstorage-react-express
 categories:
   - Code
@@ -71,10 +71,10 @@ In order to use cookies in Express, you use the [`cookie-parser`](https://www.np
 
 #### Parse cookies
 
-```js
-const cookieParser = require('cookie-parser')
+```jsx{1-2}
+const cookieParser = require("cookie-parser");
 
-app.use(cookieParser())
+app.use(cookieParser());
 ```
 
 #### Set a cookie
@@ -83,12 +83,12 @@ In a route, you can set a cookie on the `response` object, with some important p
 
 ```js
 // Set a cookie
-response.cookie('nameOfCookie', 'cookieValue', {
+response.cookie("nameOfCookie", "cookieValue", {
   maxAge: 60 * 60 * 1000, // 1 hour
   httpOnly: true,
   secure: true,
-  sameSite: true,
-})
+  sameSite: true
+});
 ```
 
 - [**Same Site**](https://en.wikipedia.org/wiki/HTTP_cookie#SameSite_cookie) - prevents the cookie from being sent in cross-site requests
@@ -101,7 +101,7 @@ The cookie can now be read in subsequent responses.
 
 ```js
 // Get a cookie
-response.cookies.nameOfCookie
+response.cookies.nameOfCookie;
 ```
 
 #### Clear a cookie
@@ -110,7 +110,7 @@ On logging out of the authentication, you'll want to clear the cookies.
 
 ```js
 // Clear a cookie
-response.clearCookie('nameOfCookie')
+response.clearCookie("nameOfCookie");
 ```
 
 #### Local values in Express middleware
@@ -120,18 +120,18 @@ Express runs on middlewares. In the case that you want to update a cookie in one
 ```js
 // Create a local
 const refreshMiddleware = (request, response, next) => {
-  const accessToken = getNewAccessToken(refreshToken)
+  const accessToken = getNewAccessToken(refreshToken);
   // Set local
-  response.locals.accessToken = accessToken
-  next()
-}
+  response.locals.accessToken = accessToken;
+  next();
+};
 
 // Use a local
 const handler = (request, response) => {
-  const updatedAccessToken = response.locals.accessToken
-}
+  const updatedAccessToken = response.locals.accessToken;
+};
 
-router.post('/app/user', refreshMiddleware, handler)
+router.post("/app/user", refreshMiddleware, handler);
 ```
 
 ## Serving the front end app
@@ -151,20 +151,20 @@ In which case, your server file will look something like this:
 
 ```js
 // Initialize Express app
-const express = require('express')
-const app = express()
-const router = require('./router')
+const express = require("express");
+const app = express();
+const router = require("./router");
 
 // Serve all static files from the dist folder
-app.use(express.static(path.join(__dirname, '../../dist/')))
+app.use(express.static(path.join(__dirname, "../../dist/")));
 
 // Set up express router to serve all api routes (more on this below)
-app.use('/api', router)
+app.use("/api", router);
 
 // Serve any other file as the distribution index.html
-app.get('*', (request, response) => {
-  response.sendFile(path.join(__dirname, '../../dist/index.html'))
-})
+app.get("*", (request, response) => {
+  response.sendFile(path.join(__dirname, "../../dist/index.html"));
+});
 ```
 
 ## Express routes and handlers
@@ -184,14 +184,14 @@ The routes can all be organized into individual subdirectories.
 <div class="filename">src/server/routes/index.js</div>
 
 ```js
-const router = require('express').Router()
-const bookRoutes = require('./books')
-const authorRoutes = require('./authors')
+const router = require("express").Router();
+const bookRoutes = require("./books");
+const authorRoutes = require("./authors");
 
-router.use('/books', bookRoutes)
-router.use('/authors', authorRoutes)
+router.use("/books", bookRoutes);
+router.use("/authors", authorRoutes);
 
-module.exports = router
+module.exports = router;
 ```
 
 In one set of routes, we can define all the `GET`, `POST`, `DELETE` routes, etc. Since the router is using `/api`, and the authors route is using `/authors`, a GET API call to `/api/authors/jk-rowling` would call the `getAuthor` handler, in this example.
@@ -199,17 +199,17 @@ In one set of routes, we can define all the `GET`, `POST`, `DELETE` routes, etc.
 <div class="filename">src/server/routes/authors.js</div>
 
 ```js
-const router = require('express').Router()
-const authorHandlers = require('../handlers/authors')
+const router = require("express").Router();
+const authorHandlers = require("../handlers/authors");
 
 // Get
-router.get('/', authorHandlers.getAllAuthors)
-router.get('/:author', authorHandlers.getAuthor)
+router.get("/", authorHandlers.getAllAuthors);
+router.get("/:author", authorHandlers.getAuthor);
 
 // Post
-router.post('/', authorHandlers.addAuthor)
+router.post("/", authorHandlers.addAuthor);
 
-module.exports = router
+module.exports = router;
 ```
 
 You can put all your related author handlers in the `handlers` subdirectory.
@@ -236,10 +236,10 @@ This brings us back to the server entrypoint, which is bringing in all the route
 
 ```js
 // Set up all API routes
-const router = require('./router')
+const router = require("./router");
 
 // Use all API routes
-app.use('/api', router)
+app.use("/api", router);
 ```
 
 ## React Single Page Application
@@ -253,36 +253,41 @@ Using the basic example of routes from the aforementioned article, here's how yo
 <div class="filename">App.js</div>
 
 ```jsx
-import React, { Component } from 'react'
-import { BrowserRouter as Router, Switch, Route, Redirect } from 'react-router-dom'
-import axios from 'axios'
+import React, { Component } from "react";
+import {
+  BrowserRouter as Router,
+  Switch,
+  Route,
+  Redirect
+} from "react-router-dom";
+import axios from "axios";
 // ...plus page and context imports
 
 export default class App extends Component {
-  static contextType = AuthContext
+  static contextType = AuthContext;
 
-  state = { loading: true }
+  state = { loading: true };
 
   async componentDidMount() {
-    const Auth = this.context
+    const Auth = this.context;
 
     try {
-      const response = await axios('/api/auth')
+      const response = await axios("/api/auth");
 
-      Auth.authenticate()
+      Auth.authenticate();
     } catch (error) {
-      console.log(error)
+      console.log(error);
     } finally {
-      this.setState({ loading: false })
+      this.setState({ loading: false });
     }
   }
 
   render() {
-    const Auth = this.context
-    const { loading } = this.state
+    const Auth = this.context;
+    const { loading } = this.state;
 
     if (loading) {
-      return <div>Loading...</div>
+      return <div>Loading...</div>;
     }
 
     return (
@@ -294,7 +299,7 @@ export default class App extends Component {
           <Redirect to="/login" />
         </Switch>
       </Router>
-    )
+    );
   }
 }
 ```

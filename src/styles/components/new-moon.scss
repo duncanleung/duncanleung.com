@@ -19,7 +19,7 @@ pre.language-terminal code.language-terminal {
   color: #333;
 
   &::before {
-    content: '\2022 \2022 \2022';
+    content: "\2022 \2022 \2022";
     position: absolute;
     top: 0;
     left: 0;
@@ -36,8 +36,8 @@ pre.language-terminal code.language-terminal {
   }
 }
 
-code[class*='language-'],
-pre[class*='language-'],
+code[class*="language-"],
+pre[class*="language-"],
 pre code {
   font-family: $code-font-family;
   font-size: 13px;
@@ -85,7 +85,7 @@ kbd {
 
 /* Inline code */
 
-:not(pre) > code[class*='language-'] {
+:not(pre) > code[class*="language-"] {
   padding: 3px 5px;
   color: #111111;
 }
@@ -100,10 +100,10 @@ kbd {
   background: rgba(0, 0, 0, 0.06);
 }
 
-code[class*='language-css'],
-code[class*='language-scss'],
-code[class*='language-less'],
-code[class*='language-sass'] {
+code[class*="language-css"],
+code[class*="language-scss"],
+code[class*="language-less"],
+code[class*="language-sass"] {
   color: #cc99cc;
 }
 
@@ -121,8 +121,8 @@ code[class*='language-sass'] {
 @include small-breakpoint {
   code,
   pre.language-terminal code.language-terminal,
-  code[class*='language-'],
-  pre[class*='language-'],
+  code[class*="language-"],
+  pre[class*="language-"],
   pre code {
     font-size: 14px;
   }
@@ -237,6 +237,16 @@ pre[data-line] {
   padding: 1rem 0;
 }
 
+.gatsby-highlight-code-line {
+  background-color: rgba(255, 252, 65, 0.253);
+  display: block;
+  margin-right: -1.5125rem;
+  margin-left: -1.5125rem;
+  padding-right: 1em;
+  padding-left: 1.15em;
+  border-left: 0.25em solid $yellow;
+}
+
 .line-highlight {
   position: absolute;
   left: 0;
@@ -296,19 +306,19 @@ code::selection {
   background: rgba(150, 150, 150, 0.3) !important;
 }
 
-pre[class*='language-']::-moz-selection,
-pre[class*='language-']::-moz-selection,
-code[class*='language-'] ::-moz-selection,
-code[class*='language-'] ::-moz-selection {
+pre[class*="language-"]::-moz-selection,
+pre[class*="language-"]::-moz-selection,
+code[class*="language-"] ::-moz-selection,
+code[class*="language-"] ::-moz-selection {
   text-shadow: none;
   color: inherit;
   background: rgba(150, 150, 150, 0.3) !important;
 }
 
-pre[class*='language-']::selection,
-pre[class*='language-']::selection,
-code[class*='language-'] ::selection,
-code[class*='language-'] ::selection {
+pre[class*="language-"]::selection,
+pre[class*="language-"]::selection,
+code[class*="language-"] ::selection,
+code[class*="language-"] ::selection {
   text-shadow: none;
   color: inherit;
   background: rgba(150, 150, 150, 0.3) !important;

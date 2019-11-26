@@ -45,7 +45,8 @@ $dark-border: darken($background, 3%);
       a.view-all {
         background: rgba(0, 0, 0, 0.2);
         color: darken($foreground, 10%);
-        &:hover, &:focus {
+        &:hover,
+        &:focus {
           background: black;
           color: $foreground;
         }
@@ -91,20 +92,26 @@ $dark-border: darken($background, 3%);
       border-color: darken($background, 5%);
     }
 
-    .brand a {
-      color: lighten($foreground, 5%);
+    .brand {
+      .text {
+        color: $yellow;
+      }
 
-      &:hover {
-        color: #eee;
+      a {
+        color: lighten($foreground, 5%);
+
+        &:hover {
+          color: #eee;
+        }
       }
     }
 
     .links a {
-      color: darken($foreground, 20%);
+      color: $yellow;
 
       &:hover,
       &.active {
-        color: $foreground;
+        color: darken($yellow, 20%);
       }
     }
   }
@@ -357,6 +364,7 @@ $dark-border: darken($background, 3%);
   .new,
   .popular {
     background: rgba(0, 0, 0, 0.2);
+    color: $yellow;
   }
 
   .button.muted-button,

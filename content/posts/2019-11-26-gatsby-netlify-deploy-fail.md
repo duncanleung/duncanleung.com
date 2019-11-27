@@ -5,7 +5,7 @@ template: post
 thumbnail: "../thumbnails/netlify.png"
 slug: fixing-netlify-build-fail
 categories:
-  - Code
+  - Netlify
 tags:
   - netlify
   - gatsby
@@ -17,7 +17,7 @@ I ran into an annoying issue when relaunching this blog.
 
 The strange thing was that `yarn build` would build Gatsby successfully locally (I'm on OSX) but the Netlify build would fail 🤦🏻‍♂️.
 
-```bash{4-7}
+```terminal
 ...
 ...
 8:50:22 PM: info bootstrap finished - 5.699 s
@@ -37,7 +37,7 @@ It turns out the issue was because of a [case difference](https://github.com/gat
 
 The reason it was working locally, is that OSX will automatically resolve the issue, but the Netlify build server is Linux, and will fail.
 
-### Fix: Set git config or Fix Imports
+### The Fix: Set git config or Fix Imports
 
 The fix that resolved the issue was to run the following command.
 

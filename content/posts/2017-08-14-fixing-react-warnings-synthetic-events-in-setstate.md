@@ -1,5 +1,5 @@
 ---
-date: "2017-08-14"
+date: 2017-08-14
 title: "Fixing React Warning: Synthetic Events in setState()"
 thumbnail: "../thumbnails/react.png"
 slug: fixing-react-warning-synthetic-events-in-setstate

@@ -2,10 +2,14 @@ import React, { Component } from 'react'
 import Helmet from 'react-helmet'
 import { graphql } from 'gatsby'
 import Img from 'gatsby-image'
+
 import Layout from '../layout'
+import Share from "../components/Share";
+import PostActions from "../components/PostActions";
 import UserInfo from '../components/UserInfo'
 import PostTags from '../components/PostTags'
 import SEO from '../components/SEO'
+
 import config from '../../data/SiteConfig'
 import { formatDate, editOnGithub } from '../utils/global'
 // import NewsletterForm from '../components/NewsletterForm'
@@ -67,7 +71,7 @@ export default class PostTemplate extends Component {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Share
+                  Share on Twitter
                 </a>
                 /
                 <a
@@ -89,23 +93,9 @@ export default class PostTemplate extends Component {
           />
         </article>
         <div className="single container">
-          <p css={{ textAlign: "right" }}>
-            <a
-              target="_blank"
-              rel="noopener noreferrer"
-              // using mobile.twitter.com because if people haven't upgraded
-              // to the new experience, the regular URL wont work for them
-              href={`https://mobile.twitter.com/search?q=${encodeURIComponent(
-                blogPostUrl
-              )}`}
-            >
-              Discuss on Twitter
-            </a>
-            <span css={{ marginLeft: 10, marginRight: 10 }}>{` • `}</span>
-            <a target="_blank" rel="noopener noreferrer" href={githubLink}>
-              Edit post on GitHub
-            </a>
-          </p>
+          <PostActions blogPostUrl={blogPostUrl} githubLink={githubLink} />
+          
+          <Share twitterHandler={twitterShare} />
         </div>
         {/* <div className="container no-comments">
           <h3>No comments?</h3>
@@ -128,6 +118,7 @@ export default class PostTemplate extends Component {
             Subscribe to Newsletter
           </a>
         </div> */}
+
         <UserInfo config={config} />
       </Layout>
     );

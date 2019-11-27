@@ -1,0 +1,36 @@
+/* Post Share Module
+  =============== */
+
+.share {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+
+  .divider {
+    flex-grow: 1;
+    border-top: 1px solid $accent-color;
+  }
+
+  div {
+    margin-right: 20px;
+
+    // :hover {
+    //   color: ${theme.brand.primary};
+    // }
+  }
+
+  span {
+    margin-right: 20px;
+    font-size: 70%;
+    text-transform: uppercase;
+    line-height: 2.5;
+    opacity: 0.7;
+  }
+
+  img {
+    margin: 0;
+    height: 30px;
+    width: 30px;
+    vertical-align: middle;
+  }
+}

@@ -11,7 +11,7 @@ const config = {
   siteDescription:
     "Duncan Leung is a front end web engineer and writer specializing in JavaScript, React, and web development.",
   siteRss: "/rss.xml",
-  googleAnalyticsID: "UA-42068444-1",
+  googleAnalyticsID: "UA-11663860-1",
   postDefaultCategoryID: "Tech",
   newsletter: "https://duncanleung.substack.com",
   newsletterEmbed: "https://duncanleung.substack.com/embed",

@@ -5,3 +5,11 @@
 /portfolio/              /blog/
 /thoughts/               /blog/
 /search/                 /
+
+#Old posts
+/blog/2018-10-15-testing-formik-form-onsubmit/                                /testing-formik-form-onsubmit/
+/blog/2018-10-15-hacktoberfest-oc-meetup/                                     /hacktoberfest-oc-meetup/
+/blog/2017-08-14-fixing-react-warnings-synthetic-events-in-setstate/          /fixing-react-warnings-synthetic-events-in-setstate/
+/blog/2017-08-02-pure-render-this-binding-patterns-in-react/                  /react-pure-render-this-binding-patterns/
+/blog/2017-07-31-webpack-building-react-for-production-on-windows             /webpack-build-react-production-windows/
+/blog/2017-07-15-avoiding-react-setstate-pitfalls/                            /fixing-netlify-build-fail/

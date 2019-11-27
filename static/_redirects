@@ -7,6 +7,8 @@
 /search/                 /
 
 #Old posts
+/blog/2018-06-22-migrating-to-gatsby/                                         /blog/
+
 /blog/2018-10-15-testing-formik-form-onsubmit/                                /testing-formik-form-onsubmit/
 /blog/2018-10-15-hacktoberfest-oc-meetup/                                     /hacktoberfest-oc-meetup/
 /blog/2017-08-14-fixing-react-warnings-synthetic-events-in-setstate/          /fixing-react-warning-synthetic-events-in-setstate/

@@ -5,7 +5,7 @@ template: post
 thumbnail: "../thumbnails/react.png"
 slug: avoiding-react-setstate-pitfalls
 categories:
-  - Code
+  - React
 tags:
   - javascript
   - react

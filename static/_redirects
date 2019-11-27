@@ -12,4 +12,4 @@
 /blog/2017-08-14-fixing-react-warnings-synthetic-events-in-setstate/          /fixing-react-warnings-synthetic-events-in-setstate/
 /blog/2017-08-02-pure-render-this-binding-patterns-in-react/                  /react-pure-render-this-binding-patterns/
 /blog/2017-07-31-webpack-building-react-for-production-on-windows             /webpack-build-react-production-windows/
-/blog/2017-07-15-avoiding-react-setstate-pitfalls/                            /fixing-netlify-build-fail/
+/blog/2017-07-15-avoiding-react-setstate-pitfalls/                            /avoiding-react-setstate-pitfalls/

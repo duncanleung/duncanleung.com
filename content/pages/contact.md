@@ -6,15 +6,15 @@ template: page
 
 I'm a Front End Web Engineer at <a href="https://turncar.com" target="_blank">Turn</a> and write about things I'm learning in JavaScript, React, and web development.
 
-<!-- <div class="centered-iframe">
+<div class="centered-iframe">
   <iframe
     width="480"
-    height="150"
+    height="120"
     src="https://duncanleung.substack.com/embed"
     frameborder="0"
     scrolling="no"
   ></iframe>
-</div> -->
+</div>
 
 ### Around the web
 

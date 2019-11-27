@@ -8,16 +8,29 @@ export default class UserInfo extends Component {
     return (
       <aside className="note">
         <div className="container note-container">
-          <div className="flex-author">
+          <div className="note__author">
             <div className="flex-avatar">
               <img className="avatar" src={duncan} alt="Duncan Leung" />
             </div>
             <div>
+              <p className='note__greeting'>
+              👋 Hi, I’m Duncan Leung.
+              </p>
               <p>
-                👋 Hi, I’m Duncan Leung.
-                <br /> I&apos;m a self taught software developer 👨🏻‍💻, and this is
+              I&apos;m a self taught software developer 👨🏻‍💻, and this is
                 a place for me to <a href="/learn">📝&nbsp;learn in public</a>.
               </p>
+
+              <div>
+                <a
+                  className="button"
+                  href="https://duncanleung.substack.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Subscribe to the blog
+                </a>
+              </div>
 
               {/* <div className="flex">
                 <a

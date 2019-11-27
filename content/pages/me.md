@@ -13,11 +13,11 @@ place for me to <a href="/learn"> 📝 learn in public</a>.
 
 I currently work as a Front End Web Engineer at Turn, <a href="https://turncar.com" target="_blank">flexible car subscribscriptions</a>.
 
-<!-- ### Newsletter
+### Newsletter
 
 I send out a message whenever I write something new. Sign up for the newsletter to get notified.
 
-<a class="button" href="https://duncanleung.substack.com">Join the newsletter</a> -->
+<a class="button" href="https://duncanleung.substack.com">Subscribe to the blog</a>
 
 <!-- ![Me](../images/taniafull.jpg) -->
 
@@ -35,8 +35,8 @@ I send out a message whenever I write something new. Sign up for the newsletter 
 - **Editor:** <a href="https://code.visualstudio.com/" target="_blank">Visual Studio Code</a>
 - **Static Site Generator:** <a href="https://gatsbyjs.org" target="_blank">Gatsby</a>
 - **Syntax Highlighting:** <a href="http://prismjs.com/" target="_blank">PrismJS</a>
-  <!-- - **Newsletter:** [Substack](https://substack.com) -->
-  <!-- - **Notes:** [SimpleNote](https://simplenote.com/) -->
+- **Newsletter:** [Substack](https://substack.com)
+    <!-- - **Notes:** [SimpleNote](https://simplenote.com/) -->
 
 <!-- ## Miscellaneous
 

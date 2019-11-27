@@ -1,0 +1,15 @@
+.note__greeting {
+  font-weight: 700;
+}
+
+@include small-breakpoint {
+  .note {
+    .note-container {
+      flex-direction: row;
+    }
+
+    .note__author {
+      display: flex;
+    }
+  }
+}

@@ -108,17 +108,6 @@ export default class PostTemplate extends Component {
             .
           </p>
         </div> */}
-        {/* <div className="container">
-          <a
-            className="button"
-            href="https://duncanleung.substack.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Subscribe to Newsletter
-          </a>
-        </div> */}
-
         <UserInfo config={config} />
       </Layout>
     );

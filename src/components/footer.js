@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "gatsby";
 import netlify from "../images/netlify.png";
 import github from "../images/github.png";
 import gatsby from "../images/gatsby.png";
@@ -7,6 +8,7 @@ const Footer = () => {
   return (
     <footer className="footer container">
       <div>
+        <Link to="/newsletter">Newsletter</Link>
         <a
           href="https://www.duncanleung.com/rss.xml"
           rel="noopener noreferrer"

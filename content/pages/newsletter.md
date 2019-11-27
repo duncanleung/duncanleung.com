@@ -4,9 +4,9 @@ slug: newsletter
 template: page
 ---
 
-I build web applications and write about modern JavaScript and web development.
+I'm a Front End Web Engineer and write about things I'm learning in JavaScript, React, and web development.
 
-<!-- <div class="centered-iframe">
+<div class="centered-iframe">
   <iframe
     width="480"
     height="350"
@@ -14,4 +14,4 @@ I build web applications and write about modern JavaScript and web development.
     frameborder="0"
     scrolling="no"
   ></iframe>
-</div> -->
+</div>

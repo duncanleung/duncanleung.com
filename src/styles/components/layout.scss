@@ -142,6 +142,10 @@
   div:first-of-type {
     margin-right: 0.5rem;
   }
+
+  a {
+    margin-bottom: 0;
+  }
 }
 
 .front-page {
@@ -821,17 +825,6 @@ blockquote {
 }
 
 @include small-breakpoint {
-  .note {
-    .note-container {
-      flex-direction: row;
-    }
-
-    .flex-author {
-      display: flex;
-      align-items: center;
-    }
-  }
-
   .avatar {
     max-width: 200px;
     margin-right: 2rem;

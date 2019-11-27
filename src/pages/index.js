@@ -25,13 +25,8 @@ export default class Index extends Component {
         <div className="container">
           <div className="lead">
             <div className="elevator">
-              <div
-                className="lead-container"
-              >
-                <img
-                  src={duncan}
-                  alt="Duncan Leung"
-                />
+              <div className="lead-container">
+                <img src={duncan} alt="Duncan Leung" />
                 <h1>👋 Hi, I&apos;m Duncan&nbsp;Leung</h1>
               </div>
               <p>
@@ -57,21 +52,33 @@ export default class Index extends Component {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <img src={github} height="50" width="50" alt="GitHub" />
+                  <img src={github} alt="GitHub" />
+                </a>
+                <a
+                  className="button"
+                  href="https://duncanleung.substack.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Subscribe to the blog
                 </a>
               </div>
             </div>
-            {/* <div className="newsletter-section">
-              <img src={tania} className="newsletter-avatar" alt="Tania" />
-              <div>
-                <h3>Get updates</h3>
-                <p>Open source projects and development tutorials</p>
-                <a className="button" href="https://taniarascia.substack.com">
-                  Subscribe
-                </a>
-              </div>
-            </div> */}
           </div>
+          {/* <div className="newsletter-section">
+            <img
+              src={duncan}
+              className="newsletter-avatar"
+              alt="Duncan Leung"
+            />
+            <div>
+              <h3>Get updates</h3>
+              <p>Open source projects and development tutorials</p>
+              <a className="button" href="https://duncanleung.substack.com">
+                Subscribe
+              </a>
+            </div>
+          </div> */}
         </div>
 
         <div className="container front-page">

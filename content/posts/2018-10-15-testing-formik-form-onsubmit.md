@@ -6,6 +6,7 @@ thumbnail: "../thumbnails/jest.png"
 slug: testing-formik-form-onsubmit
 categories:
   - Testing
+  - Popular
 tags:
   - formik
   - react-testing-library

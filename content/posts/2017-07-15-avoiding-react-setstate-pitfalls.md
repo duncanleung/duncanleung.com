@@ -1,5 +1,5 @@
 ---
-date: 2017-07-16
+date: 2017-07-15
 title: "Avoiding React setState() Pitfalls"
 template: post
 thumbnail: "../thumbnails/react.png"

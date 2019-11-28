@@ -1,14 +1,13 @@
----
+I ---
 date: 2019-11-27
 title: "Setting Up Python: pyenv, pyenv-virtualenv, poetry"
 template: post
 thumbnail: "../thumbnails/python.png"
 slug: set-up-python-pyenv-virtualenv-poetry
 categories:
-  - Netlify
+  - Python
 tags:
-  - netlify
-  - gatsby
+  - python
 ---
 
 These are steps to install and set up Python on a Mac.

@@ -10,14 +10,64 @@ There's a lot I want to learn, and a lot I've learned and documented. Here's whe
 
 My current focus is **Computer Science** fundamentals and all things **JavaScript**. (They stay here until I write about it.)
 
+### Python
+- [ ] Setting Up PipEnv, PyEnv, pyenv-virtualenv
+- [ ] Language fundamentalsd
+  - [ ] realpython.com
+  - [ ] pythonprogramming.net
+  - [ ] Front End Masters
+- [ ] Creating an API in Flask
+  - [ ] testdriven.io
+
+### Serverless
+
+- [ ] Serverless fundamentals (serverlesshandbook)
+- [ ] Serverless Framework
+- [ ] Creating a REST API in AWS: API Gateway and Lambda
+
+### Databases/APIs
+
+- [ ] MySQL
+- [ ] ponyorm
+
+## Backlog
+
+
+
+### Design Systems
+
+- [ ] Storybook
+- [ ] Atomic Design
+
+### TypeScript
+
+- [ ] Elm
+  - [ ] Pragmatic Studios
+
+### JavaScript
+
+- [ ] Prototype Chain
+- [ ] Bind, Call, Apply and `this`
+- [ ] Closures
+
+### Node
+- [ ] Front end masters
+
+### Databases/APIs
+
+- [ ] GraphQL
+
+### Object Oriented Programming
+
+- [ ] Practical Object Oriented
+- [ ] 99 Bottles
+
 <!-- ### JavaScript
 
 #### Concepts
 
-- [ ] Bind, Call, Apply and `this`
 - [ ] Bitwise Operators
 - [ ] Map, Set, WeakMap, and WeakSet
-- [ ] Closures
 - [ ] Promises, Async/Await, Microtasks,and the Event Loop
 - [ ] Generators
 
@@ -87,9 +137,7 @@ My current focus is **Computer Science** fundamentals and all things **JavaScrip
 - [ ] Heap
 - [ ] Graph
 
-### Serverless
-
-- [ ] Serverless -->
+-->
 
 <!-- ## Learned
 

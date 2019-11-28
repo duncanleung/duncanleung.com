@@ -11,11 +11,14 @@ tags:
 ---
 
 These are steps to install and set up Python on a Mac.
-- [pyenv: Version Manager](#pyenv-python-version-manager)
-- [pyenv-virtualenv: Virtual Environment](#pyenv-virtualenv-virtual-environment)
-- [poetry: Package Manager](#poetry-package-manager)
 
-Additional Reference: [Real Python: An Effective Python Environment](https://realpython.com/effective-python-environment)
+Skip to the sections below:
+
+- [Version Manager: pyenv](#pyenv-python-version-manager)
+- [Virtual Environment: pyenv-virtualenv](#pyenv-virtualenv-virtual-environment)
+- [Package Manager: poetry](#poetry-package-manager)
+
+Additional reference on alternative choices: [Real Python: An Effective Python Environment](https://realpython.com/effective-python-environment)
 
 ## pyenv: Python Version Manager
 Docs: [GitHub - pyenv/pyenv](https://github.com/pyenv/pyenv)

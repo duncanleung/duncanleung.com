@@ -8,11 +8,11 @@ There's a lot I want to learn, and a lot I've learned and documented. Here's whe
 
 ## To Learn
 
-My current focus is **Computer Science** fundamentals and all things **JavaScript**. (They stay here until I write about it.)
+My current focus is **Serverless in Python**. (They stay here until I write about it.)
 
 ### Python
-- [ ] Setting Up PipEnv, PyEnv, pyenv-virtualenv
-- [ ] Language fundamentalsd
+- [x] [Setting Up PyEnv, pyenv-virtualenv, poetry](/set-up-python-pyenv-virtualenv-poetry/)
+- [ ] Language fundamentals
   - [ ] realpython.com
   - [ ] pythonprogramming.net
   - [ ] Front End Masters
@@ -22,17 +22,23 @@ My current focus is **Computer Science** fundamentals and all things **JavaScrip
 ### Serverless
 
 - [ ] Serverless fundamentals (serverlesshandbook)
+  - [ ] acloudguru 
+  - [ ] FEM
 - [ ] Serverless Framework
 - [ ] Creating a REST API in AWS: API Gateway and Lambda
 
 ### Databases/APIs
 
 - [ ] MySQL
+  - [ ] https://mystery.knightlab.com/
 - [ ] ponyorm
 
 ## Backlog
 
+### Bash
 
+- [ ] Load .zshrc in .bash_profile
+- [ ] Load up .zshenv on new terminal instead of having to do `exec $SHELL`
 
 ### Design Systems
 
@@ -52,6 +58,11 @@ My current focus is **Computer Science** fundamentals and all things **JavaScrip
 
 ### Node
 - [ ] Front end masters
+
+### Testing
+- [ ] Testing patterns
+  - [ ] withRedux wrapper
+- [ ] Mocking / Spying / Stubbing
 
 ### Databases/APIs
 

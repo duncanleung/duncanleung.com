@@ -35,6 +35,13 @@ My current focus is **Serverless in Python**. (They stay here until I write abou
 
 ## Backlog
 
+Context pattern
+Kent Dodds
+
+Suspense and concurrent 
+
+https://school.reactpatterns.com/p/build-an-app-with-suspense
+
 ### Bash
 
 - [ ] Load .zshrc in .bash_profile

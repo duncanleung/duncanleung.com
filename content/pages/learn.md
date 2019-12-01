@@ -35,12 +35,12 @@ My current focus is **Serverless in Python**. (They stay here until I write abou
 
 ## Backlog
 
-Context pattern
-Kent Dodds
+### React
 
-Suspense and concurrent 
+- [ ] Context pattern
+  - [ ] [How to use React Context effectively](https://kentcdodds.com/blog/how-to-use-react-context-effectively)
 
-https://school.reactpatterns.com/p/build-an-app-with-suspense
+- [ ] [Suspense and concurrent](reactpatterns.com)
 
 ### Bash
 

@@ -16,8 +16,11 @@ My current focus is **Serverless in Python**. (They stay here until I write abou
   - [ ] realpython.com
   - [ ] pythonprogramming.net
   - [ ] Front End Masters
+  - [ ] name === main (python-if-__name__-equals-__main__.md)
 - [ ] Creating an API in Flask
   - [ ] testdriven.io
+- [ ] Type Checking in Python MyPy
+  - [ ] https://realpython.com/python-type-checking/ (python-mypy-type-checking.md)
 
 ### Serverless
 

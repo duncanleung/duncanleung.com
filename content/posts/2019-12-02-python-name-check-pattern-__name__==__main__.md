@@ -137,7 +137,7 @@ The interpreter will assign the name you import the module by (e.g. `"utils"`) t
 ```python{11-12}
 
 # It's as if the interpreter inserts this at the top
-# of your module when run as the main program.
+# of your module when run as an import.
 __name__ = "utils"
 ...
 ...

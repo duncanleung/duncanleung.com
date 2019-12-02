@@ -11,18 +11,22 @@ There's a lot I want to learn, and a lot I've learned and documented. Here's whe
 My current focus is **Serverless in Python**. (They stay here until I write about it.)
 
 ### Python
+
 - [x] [Setting Up PyEnv, pyenv-virtualenv, poetry](/set-up-python-pyenv-virtualenv-poetry/)
 - [ ] Language fundamentals
   - [ ] realpython.com
   - [ ] pythonprogramming.net
   - [ ] Front End Masters
+  - [x] [What is, if **name** == “**main**”:](python-name-check-pattern-__name__==__main__)
 - [ ] Creating an API in Flask
   - [ ] testdriven.io
+- [ ] Type Checking in Python MyPy
+  - [ ] https://realpython.com/python-type-checking/ (python-mypy-type-checking.md)
 
 ### Serverless
 
 - [ ] Serverless fundamentals (serverlesshandbook)
-  - [ ] acloudguru 
+  - [ ] acloudguru
   - [ ] FEM
 - [ ] Serverless Framework
 - [ ] Creating a REST API in AWS: API Gateway and Lambda
@@ -34,6 +38,14 @@ My current focus is **Serverless in Python**. (They stay here until I write abou
 - [ ] ponyorm
 
 ## Backlog
+
+### React
+
+- [ ] Context pattern
+
+  - [ ] [How to use React Context effectively](https://kentcdodds.com/blog/how-to-use-react-context-effectively)
+
+- [ ] [Suspense and concurrent](reactpatterns.com)
 
 ### Bash
 
@@ -57,9 +69,11 @@ My current focus is **Serverless in Python**. (They stay here until I write abou
 - [ ] Closures
 
 ### Node
+
 - [ ] Front end masters
 
 ### Testing
+
 - [ ] Testing patterns
   - [ ] withRedux wrapper
 - [ ] Mocking / Spying / Stubbing

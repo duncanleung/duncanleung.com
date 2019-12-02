@@ -92,10 +92,10 @@ When a package is installed in a virtual environment, it is kept in isolation fr
 $ brew install pyenv-virtualenv
 ```
 
-Add to profile
+### Update .bash_profile or .zshrc
 
 ```bash
-$ eval "$(pyenv virtualenv-init -)"
+$ echo 'eval "$(pyenv virtualenv-init -)"' >> ~/.zshenv
 ```
 
 ### pyenv-virtualenv Workflow Commands
@@ -156,12 +156,21 @@ $ which Python
   /Users/MACHINE_NAME/.pyenv/shims/python
 ```
 
+If the \$PATH is referencing `/usr/bin/python` then `pyenv-virtualenv` needs to be added to the shell in `~/.zshenv` or `~/.bash_profile`.
+
+```terminal
+$ which Python
+  /usr/bin/python
+```
+
 Check the version of python to see if the correct version is being used.
 
 ```terminal
 $ python --version
   Python 3.7.4
 ```
+
+If
 
 ### Delete an existing virtualenv
 

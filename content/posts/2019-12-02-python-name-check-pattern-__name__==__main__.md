@@ -96,7 +96,7 @@ top-level in utils.py
 utils.py is being run directly
 ```
 
-The interpreter will assign the hard-coded string `__main__` to the `__name__` variable, and the corresponding conditional block will run.
+The interpreter will assign the hard-coded string `"__main__"` to the `__name__` variable, and the corresponding conditional block will run.
 
 <div class="filename">utils.py</div>
 
@@ -130,7 +130,7 @@ func() in utils.py
 main.py is being run directly
 ```
 
-The interpreter will assign the name you import the module by string `__main__` to the `__name__` variable.
+The interpreter will assign the name you import the module by (e.g. `"utils"`) to the `__name__` variable.
 
 <div class="filename">utils.py</div>
 

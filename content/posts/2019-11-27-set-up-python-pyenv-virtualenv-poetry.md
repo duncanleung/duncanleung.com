@@ -147,7 +147,7 @@ $ pyenv local env2
 * env2 (set by /Users/duncanleung/proj2/.python-version)
 ```
 
-#### Check the \$PATH variable
+#### Check the Installation
 
 The correct installation should reference the \$PATH from `.../.pyenv/shims/python`.
 
@@ -160,7 +160,7 @@ If the \$PATH is referencing `/usr/bin/python` then `pyenv-virtualenv` needs to 
 
 ```terminal
 $ which Python
-  /usr/bin/python
+  /usr/bin/python # This is wrong!
 ```
 
 Check the version of python to see if the correct version is being used.
@@ -169,8 +169,6 @@ Check the version of python to see if the correct version is being used.
 $ python --version
   Python 3.7.4
 ```
-
-If
 
 ### Delete an existing virtualenv
 

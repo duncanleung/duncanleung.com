@@ -18,6 +18,7 @@ My current focus is **Serverless in Python**. (They stay here until I write abou
   - [ ] pythonprogramming.net
   - [ ] Front End Masters
   - [x] [What is, if **name** == “**main**”:](python-name-check-pattern-__name__==__main__)
+  - [ ] Naming Conventions (https://www.youtube.com/watch?v=YklKUuDpX5c)
 - [ ] Creating an API in Flask
   - [ ] testdriven.io
 - [ ] Type Checking in Python MyPy

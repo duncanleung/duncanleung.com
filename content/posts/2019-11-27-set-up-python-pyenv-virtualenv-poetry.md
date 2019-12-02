@@ -21,6 +21,7 @@ Skip to the sections below:
 Additional reference on alternative choices: [Real Python: An Effective Python Environment](https://realpython.com/effective-python-environment)
 
 ## pyenv: Python Version Manager
+
 Docs: [GitHub - pyenv/pyenv](https://github.com/pyenv/pyenv)
 
 A Python Version Manager allows usage of different version of python, and manages which Python to use in the current session, globally, or on a per-project basis.
@@ -53,7 +54,6 @@ Add `pyenv init` to your shell to enable shims and autocompletion.
 
 Make sure `eval “$(pyenv init -)”` is placed toward the end of the shell configuration file since it manipulates `PATH` during the initialization.
 
-
 ```bash
 $ echo -e ‘if command -v pyenv 1>/dev/null 2>&1; then\n  eval “$(pyenv init -)”\nfi’ >> ~/.zshenv
 ```
@@ -65,6 +65,7 @@ $ exec "$SHELL"
 ```
 
 ### pyenv Workflow Commands
+
 Dosc: [Command Reference](https://github.com/pyenv/pyenv#command-reference)
 
 Make `3.7.4` globally available so there is no messing with our system python:
@@ -79,30 +80,33 @@ $ pyenv global 3.7.4
 ```
 
 ## pyenv-virtualenv: Virtual Environment
+
 Docs: [GitHub - pyenv/pyenv-virtualenv](https://github.com/pyenv/pyenv-virtualenv)
 
 A Python Virtual Environment Manager allows setting different projects with its own set of version dependencies.
 When a package is installed in a virtual environment, it is kept in isolation from other Python environments you may have.
 
-### Install
+### Install pyenv-virtualenv
 
 ```bash
 $ brew install pyenv-virtualenv
 ```
 
 Add to profile
+
 ```bash
 $ eval "$(pyenv virtualenv-init -)"
 ```
 
 ### pyenv-virtualenv Workflow Commands
+
 Docs: [Command Reference](https://github.com/pyenv/pyenv-virtualenv#usage)
 
 #### Set up a new virtual environment and activate it
 
 ```bash
 # Create virtual environment
-$ pyenv virtualenv 3.7.3 my-env
+$ pyenv virtualenv 3.7.4 my-env
 
 # Activate virtual environment
 $ pyenv activate my-env
@@ -119,8 +123,8 @@ When entering into the directory, `pyenv` will also activate the new-project vir
 
 ```bash{8,14,23}
 # Set up two new virtual environments, env1 and env2
-$ pyenv virtualenv 3.7.3 env1
-$ pyenv virtualenv 3.7.3 env2
+$ pyenv virtualenv 3.7.4 env1
+$ pyenv virtualenv 3.7.4 env2
 
 # Set up the env1 virtual environment in a new directory
 $ mkdir proj1
@@ -136,11 +140,27 @@ $ pyenv local env2
 # Check that the proj2 directory has the env2 virtual environment activated
 (env2)$ pyenv versions
   system
-  3.7.3
-  3.7.3/envs/env2
-  3.7.3/envs/env2
+  3.7.4
+  3.7.4/envs/env2
+  3.7.4/envs/env2
   env1
 * env2 (set by /Users/duncanleung/proj2/.python-version)
+```
+
+#### Check the \$PATH variable
+
+The correct installation should reference the \$PATH from `.../.pyenv/shims/python`.
+
+```terminal
+$ which Python
+  /Users/MACHINE_NAME/.pyenv/shims/python
+```
+
+Check the version of python to see if the correct version is being used.
+
+```terminal
+$ python --version
+  Python 3.7.4
 ```
 
 ### Delete an existing virtualenv
@@ -151,6 +171,7 @@ $ pyenv uninstall env1
 ```
 
 ## Poetry: Package Manager
+
 Docs: [GitHub - poetry](https://github.com/sdispater/poetry)
 
 Package managers work in tandem with virtual environments, isolating the packages you install in one Python environment from another.
@@ -161,9 +182,7 @@ poetry also creates a `pyproject.toml` file which contains metadata about the pr
 
 poetry has a benefit over pipenv because it keeps track of which packages are subdependencies, allowing cleaner uninstalls to also remove dependencies of a package
 
-
 ### Install
-
 
 Install poetry
 
@@ -187,6 +206,7 @@ poetry self:update
 ```
 
 ### poetry Workflow Commands
+
 Docs: [Command Reference](https://github.com/sdispater/poetry#commands)
 
 Install packages with `poetry add`.

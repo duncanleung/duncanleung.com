@@ -6,6 +6,8 @@ thumbnail: "../thumbnails/react.png"
 slug: avoiding-react-setstate-pitfalls
 categories:
   - React
+  - Popular
+
 tags:
   - javascript
   - react

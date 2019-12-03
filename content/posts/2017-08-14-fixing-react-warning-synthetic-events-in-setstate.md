@@ -6,6 +6,7 @@ slug: fixing-react-warning-synthetic-events-in-setstate
 template: post
 categories:
   - React
+  - Popular
 
 tags:
   - javscript

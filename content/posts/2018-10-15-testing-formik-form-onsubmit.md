@@ -31,51 +31,54 @@ For some reason the mock, `const submitLogin = jest.fn();` was not being called 
 
 Interestingly, putting the `submitLogin` handler directly on the button `onClick`, would actually call `submitLogin`.
 
-<div class="filename">LoginFormComponent.test.js</div>
+<div class="filename">LoginFormComponent.test.tsx</div>
 
-```js{30-31,49-50,54-55,66}
-import React from 'react';
-import 'jest-dom/extend-expect';
+```tsx{30-31,49-50,54-55,66}
+import React from "react";
+import "jest-dom/extend-expect";
 import {
   cleanup,
   fireEvent,
   render,
-  RenderResult,
-} from 'react-testing-library';
+  RenderResult
+} from "react-testing-library";
 
 //Generate fake user data
-import { generate } from '../../../../test-utils/test-utils';
+import { generate } from "../../../../test-utils/test-utils";
 
-import LoginFormComponent from '../LoginFormComponent';
+import LoginFormComponent from "../LoginFormComponent";
 
 afterEach(cleanup);
 
-describe('LoginFormComponent', () => {
-
-describe('Submitting form', () => {
-//Arrange--------------
-// Set up variables accessible in tests
-let wrapper: RenderResult;
-let fakeUser: { email: string; password: string };
-let emailNode: HTMLInputElement;
-let passwordNode: HTMLInputElement;
-let loginButtonNode: HTMLInputElement;
-let submitLogin: () => void;
+describe("LoginFormComponent", () => {
+  describe("Submitting form", () => {
+    //Arrange--------------
+    // Set up variables accessible in tests
+    let wrapper: RenderResult;
+    let fakeUser: { email: string; password: string };
+    let emailNode: HTMLInputElement;
+    let passwordNode: HTMLInputElement;
+    let loginButtonNode: HTMLInputElement;
+    let submitLogin: () => void;
 
     beforeEach(() => {
       // Here's my submitHandler mock that isn't getting called
       submitLogin = jest.fn();
 
       const props = {
-        submitLogin,
+        submitLogin
       };
 
       wrapper = render(<LoginFormComponent {...props} />);
 
       fakeUser = generate.loginForm();
-      emailNode = wrapper.getByPlaceholderText('E-mail address') as HTMLInputElement;
-      passwordNode = wrapper.getByPlaceholderText('Password') as HTMLInputElement;
-      loginButtonNode = wrapper.getByText('Login') as HTMLInputElement;
+      emailNode = wrapper.getByPlaceholderText(
+        "E-mail address"
+      ) as HTMLInputElement;
+      passwordNode = wrapper.getByPlaceholderText(
+        "Password"
+      ) as HTMLInputElement;
+      loginButtonNode = wrapper.getByText("Login") as HTMLInputElement;
 
       //Act--------------
       // Change the input values
@@ -86,26 +89,24 @@ let submitLogin: () => void;
       fireEvent.click(loginButtonNode);
     });
 
-    test('Shows loading spinner', () => {
+    test("Shows loading spinner", () => {
       // This test passes
       // so fireEvent.click(loginButtonNode) does work
 
       //Assert--------------
       expect(loginButtonNode).toHaveAttribute(
-        'class',
-        'ui facebook large fluid loading button', // Ugly, I know. I want to assert 'loading'
+        "class",
+        "ui facebook large fluid loading button" // Ugly, I know. I want to assert 'loading'
       );
     });
 
-    test('Submits Login with email and password', () => {
+    test("Submits Login with email and password", () => {
       //Assert--------------
       expect(submitLogin).toHaveBeenCalledTimes(1); // <- Error. Doesn't get called
       expect(submitLogin).toHaveBeenCalledWith(fakeUser);
     });
-
+  });
 });
-});
-
 ```
 
 <div class="filename">LoginFormComponent.tsx</div>

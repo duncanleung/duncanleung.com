@@ -16,11 +16,11 @@ My current focus is **Serverless in Python**. (They stay here until I write abou
 - [ ] Language fundamentals
   - [ ] realpython.com
   - [ ] pythonprogramming.net
-  - [ ] Front End Masters
   - [x] [What is, if **name** == “**main**”:](python-name-check-pattern-__name__==__main__)
   - [ ] Naming Conventions (https://www.youtube.com/watch?v=YklKUuDpX5c)
 - [ ] Creating an API in Flask
   - [ ] testdriven.io
+  - [ ] https://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-i-hello-world
 - [ ] Type Checking in Python MyPy
   - [ ] https://realpython.com/python-type-checking/ (python-mypy-type-checking.md)
 
@@ -31,6 +31,10 @@ My current focus is **Serverless in Python**. (They stay here until I write abou
   - [ ] FEM
 - [ ] Serverless Framework
 - [ ] Creating a REST API in AWS: API Gateway and Lambda
+  - [ ] udemy.com/course/aws-lambda-serverless/
+  - [ ] https://aws.amazon.com/getting-started/projects/build-serverless-web-app-lambda-apigateway-s3-dynamodb-cognito/
+  - [ ] https://stackify.com/aws-lambda-with-python-a-complete-getting-started-guide/
+  - [ ] https://www.fullstackpython.com/aws-lambda.html
 
 ### Databases/APIs
 

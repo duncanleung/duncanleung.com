@@ -33,7 +33,7 @@ Interestingly, putting the `submitLogin` handler directly on the button `onClick
 
 <div class="filename">LoginFormComponent.test.tsx</div>
 
-```tsx{30-31,49-50,54-55,66}
+```tsx{30,53,57-58,69}
 import React from "react";
 import "jest-dom/extend-expect";
 import {

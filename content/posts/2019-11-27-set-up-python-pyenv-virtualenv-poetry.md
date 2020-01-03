@@ -238,6 +238,9 @@ Install dev dependency packages with `poetry add --dev`
 # Install the requests package and its dependencies
 $ poetry add requests
 
+# List all of the available packages
+$ poetry show
+
 # Uninstall the requests package and its dependencies
 $ poetry remove requests
 ```

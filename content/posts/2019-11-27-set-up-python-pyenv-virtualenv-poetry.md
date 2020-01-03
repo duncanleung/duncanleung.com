@@ -54,8 +54,10 @@ Add `pyenv init` to your shell to enable shims and autocompletion.
 
 Make sure `eval “$(pyenv init -)”` is placed toward the end of the shell configuration file since it manipulates `PATH` during the initialization.
 
+<div class="filename">.zshrc</div>
+
 ```bash
-$ echo -e ‘if command -v pyenv 1>/dev/null 2>&1; then\n  eval “$(pyenv init -)”\nfi’ >> ~/.zshenv
+eval "$(pyenv init -)"
 ```
 
 Restart your shell so the path changes take effect and begin using pyenv.
@@ -94,8 +96,10 @@ $ brew install pyenv-virtualenv
 
 ### Update .bash_profile or .zshrc
 
+<div class="filename">.zshrc</div>
+
 ```bash
-$ echo 'eval "$(pyenv virtualenv-init -)"' >> ~/.zshenv
+eval "$(pyenv virtualenv-init -)"
 ```
 
 ### pyenv-virtualenv Workflow Commands
@@ -156,7 +160,7 @@ $ which Python
   /Users/MACHINE_NAME/.pyenv/shims/python
 ```
 
-If the \$PATH is referencing `/usr/bin/python` then `pyenv-virtualenv` needs to be added to the shell in `~/.zshenv` or `~/.bash_profile`.
+If the \$PATH is referencing `/usr/bin/python` then `pyenv-virtualenv` needs to be added to the shell in `~/.zshrc` or `~/.bash_profile`.
 
 ```terminal
 $ which Python

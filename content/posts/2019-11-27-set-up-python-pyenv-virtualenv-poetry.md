@@ -194,7 +194,7 @@ poetry has a benefit over pipenv because it keeps track of which packages are su
 Install poetry
 
 ```bash
-$ curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
+$ curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
 
 $ source $HOME/.poetry/env
 ```
@@ -202,14 +202,14 @@ $ source $HOME/.poetry/env
 Install tab completions for poetry
 
 ```bash
-# Bash (macOS/Homebrew)
-poetry completions bash > $(brew --prefix)/etc/bash_completion.d/poetry.bash-completion
+# Zsh (macOS/Homebrew)
+poetry completions zsh > $(brew --prefix)/share/zsh/site-functions/_poetry
 ```
 
 ### Update poetry
 
 ```bash
-poetry self:update
+poetry self update
 ```
 
 ### poetry Workflow Commands

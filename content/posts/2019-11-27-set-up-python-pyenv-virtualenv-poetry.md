@@ -206,8 +206,18 @@ $ source $HOME/.poetry/env
 Install tab completions for poetry
 
 ```bash
-# Zsh (macOS/Homebrew)
-poetry completions zsh > $(brew --prefix)/share/zsh/site-functions/_poetry
+$ mkdir $ZSH/plugins/poetry
+
+$ poetry completions zsh > $ZSH/plugins/poetry/_poetry
+```
+
+<div class="filename">.zshrc</div>
+
+```bash
+plugins(
+    poetry
+    ...
+    )
 ```
 
 ### Update poetry

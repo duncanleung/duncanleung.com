@@ -1,6 +1,6 @@
 # duncanleung.com
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT) [![Netlify Status](https://api.netlify.com/api/v1/badges/13ce9f41-3ee8-4eca-8b5f-e467bfddba79/deploy-status)](https://app.netlify.com/sites/duncanleung/deploys)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT) [![Netlify Status](https://api.netlify.com/api/v1/badges/13ce9f41-3ee8-4eca-8b5f-e467bfddba79/deploy-status)](https://app.netlify.com/sites/duncanleung/deploys) ![Dependabot](https://flat.badgen.net/dependabot/duncanleung/duncanleung.com?icon=dependabot)
 
 Duncan's personal website running on Gatsby, React, and Node.js.
 

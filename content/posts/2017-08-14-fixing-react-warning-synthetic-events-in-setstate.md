@@ -15,8 +15,8 @@ tags:
 
 ## TLDR;
 
-- [`setState()`](https://facebook.github.io/react/docs/react-component.html#setstate) is asynchronous.
-- [`SyntheticEvent`](https://facebook.github.io/react/docs/events.html) cannot be accessed asynchronously.
+- <a href='https://facebook.github.io/react/docs/react-component.html#setstate' target='_blank'>`setState()`</a> is asynchronous.
+- <a href='https://facebook.github.io/react/docs/events.html' target='_blank'>`SyntheticEvent`</a> cannot be accessed asynchronously.
 
 ## Problems Using `event.target` Within `setState()`
 
@@ -37,7 +37,7 @@ _(Open up the console and try to run the demo in **preview view** to see the err
 
 ## React Event System: `SyntheticEvent`
 
-It turns out React has it's own event system for event handling, using [`SyntheticEvent`](https://facebook.github.io/react/docs/events.html).
+It turns out React has it's own event system for event handling, using <a href='https://facebook.github.io/react/docs/events.html' target='_blank'>`SyntheticEvent`</a>.
 
 React's `SyntheticEvent` wraps around the browser's native event to provide cross-browser compatibility support. Instead of passing in the native event to React event handlers, an instance of this `SyntheticEvent` is passed in.
 
@@ -45,7 +45,7 @@ The console warning I encountered occurs because React re-uses the `SyntheticEve
 
 Essentially, **`SyntheticEvent` cannot be used asynchronously**, because the event will no longer exist after the event callback has been invoked.
 
-This is a problem, knowing that [React's `setState()` behavior is asynchronous](http://www.duncanleung.com/avoiding-react-setstate-pitfalls/).
+This is a problem, knowing that <a href='http://www.duncanleung.com/avoiding-react-setstate-pitfalls/' target='_blank'>React's `setState()` behavior is asynchronous</a>.
 
 However, what if I want to use `event.target` within `setState()`?
 
@@ -73,7 +73,7 @@ However, what if I want to use `event.target` within `setState()`?
 
 ## Solution 1: Use React `event.persist()`
 
-Using `event.target` to construct a new state is a common pattern, and React has provided a solution with [`event.persist()`](https://facebook.github.io/react/docs/events.html#event-pooling).
+Using `event.target` to construct a new state is a common pattern, and React has provided a solution with <a href='https://facebook.github.io/react/docs/events.html#event-pooling' target='_blank'>`event.persist()`</a>.
 
 Calling `event.persist()` on the event removes the synthetic event from the pool and allows references to the event to be retained asynchronously.
 js

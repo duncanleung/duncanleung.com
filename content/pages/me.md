@@ -31,11 +31,11 @@ I send out a message whenever I write something new. Sign up for the newsletter 
 
 - **Computer:** MacBook Pro 2017
 - **Keyboard:** <a href="https://ergodox-ez.com/" target="_blank">ErgoDox EZ</a>
-- **Hosting:** [Netlify](https://netlify.com) (blog)<!-- , [Heroku](https://heroku.com) (API) -->
+- **Hosting:** <a href="https://netlify.com" target="_blank">Netlify</a> (blog)<!-- , [Heroku](https://heroku.com) (API) -->
 - **Editor:** <a href="https://code.visualstudio.com/" target="_blank">Visual Studio Code</a>
 - **Static Site Generator:** <a href="https://gatsbyjs.org" target="_blank">Gatsby</a>
 - **Syntax Highlighting:** <a href="http://prismjs.com/" target="_blank">PrismJS</a>
-- **Newsletter:** [Substack](https://substack.com)
+- **Newsletter:** <a href='https://substack.com' target='_blank'>Substack</a>
     <!-- - **Notes:** [SimpleNote](https://simplenote.com/) -->
 
 <!-- ## Miscellaneous

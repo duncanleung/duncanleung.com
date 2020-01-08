@@ -127,7 +127,7 @@ My current focus is **Serverless in Python**. (They stay here until I write abou
 
 ### Tools/Frameworks/Concepts
 
-- [ ] Webpack
+- [ ] webpack
 - [ ] Vuex
 - [ ] Git
   - [ ] Merge, Rebase, Branch, Stash, Pull Request

@@ -207,7 +207,7 @@ export default LoginForm;
 
 Jest was completing the test without waiting for the Formik component to call its own onSubmit.
 
-react-testing-library has a [wait API](https://github.com/kentcdodds/react-testing-library#wait)
+react-testing-library has a <a href='https://github.com/kentcdodds/react-testing-library#wait' target='_blank'>wait API</a>
 
 ```js
 test("Submits Login with email and password", async () => {

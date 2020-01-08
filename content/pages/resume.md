@@ -9,13 +9,13 @@ template: page
 Front End Engineer who is passionate about creating beautiful experiences, writing clean, efficient code and maintaining modern standards.
 
 - [duncanleung.com](https://duncanleung.com)
-- [duncan@leung.house](mailto:duncan[AT]leung[DOT]house)
+- <a href="mailto:duncan[AT]leung[DOT]house" target="_blank">duncan@leung.house</a>
 - Irvine, CA
 
 ## Technical Skills
 
 - **Languages** - JavaScript, TypeScript, Python, HTML, CSS, Sass
-- **Tools/Environment** - Node.js, Git, Webpack, Jenkins, Rancher, Chrome DevTools, Jira
+- **Tools/Environment** - Node.js, Git, webpack, Jenkins, Rancher, Chrome DevTools, Jira
 - **Frameworks/Libraries** - React, Redux, Next.js, GatsbyJS, jQuery, styled-system, EmotionJS, Jest
 - **Testing** - Unit, and integration testing
   <!-- - **Concepts** - RESTful API Design/Integration, MVC Architecture, CI/CD, Agile, ADA Compliance -->

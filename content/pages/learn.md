@@ -16,7 +16,7 @@ My current focus is **Serverless in Python**. (They stay here until I write abou
 - [ ] Language fundamentals
   - [ ] realpython.com
   - [ ] pythonprogramming.net
-  - [x] [What is, if **name** == “**main**”:](python-name-check-pattern-__name__==__main__)
+  - [x] [What is, if **name** == “**main**”:](/python-name-check-pattern-__name__==__main__)
   - [ ] Naming Conventions (https://www.youtube.com/watch?v=YklKUuDpX5c)
 - [ ] Creating an API in Flask
   - [ ] testdriven.io
@@ -50,7 +50,7 @@ My current focus is **Serverless in Python**. (They stay here until I write abou
 
   - [ ] [How to use React Context effectively](https://kentcdodds.com/blog/how-to-use-react-context-effectively)
 
-- [ ] [Suspense and concurrent](reactpatterns.com)
+- [ ] [Suspense and concurrent](https://reactpatterns.com/)
 
 ### Bash
 

@@ -50,7 +50,7 @@ The script needs to be run slightly differently on Windows machines:
 
 ### 1. `package.json`: Optimizing webpack for Production
 
-The <a href='https://webpack.github.io/docs/cli.html#production-shortcut-p' target='_blank'>webpack production flag</a> `webpack -p` is shorthand for `--optimize-minimize --optimize-occurrence-order`.
+The <a href='https://webpack.js.org/guides/production/#cli-alternatives' target='_blank'>webpack production flag</a> `webpack -p` is shorthand for `--optimize-minimize --optimize-occurrence-order`.
 
 `--optimize-minimize`: Minimize scripts and CSS (if using css-loader).
 

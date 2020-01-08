@@ -56,6 +56,8 @@ However, Storybook needs its own webpack configuration to load the `@emotion/bab
 
 ## Setting Up .storybook/webpack.config.js
 
+A <a href='https://storybook.js.org/docs/configurations/custom-webpack-config/#full-control-mode' target="_blank">custom webpack config for Storybook</a> needs to be set up to specify `@emotion/babel-preset-css-prop` as a babel preset.
+
 > Order is important when setting up babel presets, and `@emotion/babel-preset-css-prop` must run **before** `@babel/preset-react` preset to convert css-prop.
 >
 > Note: Babel preset-ordering runs reversed. So `@emotion/babel-preset-css-prop` should be listed after `@babel/preset-react`.
@@ -99,4 +101,4 @@ module.exports = ({ config }) => {
 
 If you want to see the full config in a project, I created a Gatsby Starter that uses **Gatsby** + **TypeScript** + **Emotion** + **Storybook** + **React Intl** + **SVGR** + **Jest**.
 
-Check it out at: <a href='https://github.com/duncanleung/gatsby-typescript-emotion-storybook' target='_blank'>Gatsby Starter: TypeScript + Emotion + Storybook</a>
+Check it out at: <a href='https://github.com/duncanleung/gatsby-typescript-emotion-storybook/blob/master/.storybook/webpack.config.js' target='_blank'>Gatsby Starter: TypeScript + Emotion + Storybook</a>

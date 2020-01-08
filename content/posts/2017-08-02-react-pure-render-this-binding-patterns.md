@@ -18,7 +18,7 @@ Let's take a look, specifically relating to patterns on binding the `this` conte
 
 ## I. Quick Overview on Pure `render()`
 
-The motivation behind keeping the `render()` method pure is to avoid issues when using <a href='https://facebook.github.io/react/docs/react-component.html#shouldcomponentupdate' target='_blank'>`shouldComponentUpdate()`</a>, and <a href='https://facebook.github.io/react/docs/react-api.html#react.purecomponent' target='_blank'>`React.PureComponent`</a>, which work by performing shallow comparison checks.
+The motivation behind keeping the `render()` method pure is to <a href='https://facebook.github.io/react/docs/react-component.html#shouldcomponentupdate' target='_blank'>avoid issues when using `shouldComponentUpdate()`</a>, and `React.PureComponent`, which work by <a href='https://facebook.github.io/react/docs/react-api.html#react.purecomponent' target='_blank'>performing shallow comparison checks</a>.
 
 The guidelines of a pure `render()` is:
 
@@ -125,7 +125,7 @@ The following two non-pure patterns, using `.bind` and arrow functions, **return
 
 ### 1. Calling `bind()` in `render()` - Non Pure `render()` Pattern
 
-A common solution to resolve `this` binding context is to use <a href='https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind' target='_blank'>`bind()`</a>. This Javascript native method _creates a new function_ that has its `this` keyword set to the provided context.
+A common solution to resolve `this` binding context is <a href='https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind' target='_blank'>to use `bind()`</a>. This Javascript native method _creates a new function_ that has its `this` keyword set to the provided context.
 
 ```js{12,18}
 class Form extends React.Component {

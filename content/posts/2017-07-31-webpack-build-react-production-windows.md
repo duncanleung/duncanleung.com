@@ -50,7 +50,7 @@ The script needs to be run slightly differently on Windows machines:
 
 ### 1. `package.json`: Optimizing webpack for Production
 
-The webpack production flag, <a href='https://webpack.github.io/docs/cli.html#production-shortcut-p' target='_blank'>`webpack -p`</a>, is shorthand for `--optimize-minimize --optimize-occurrence-order`.
+The <a href='https://webpack.github.io/docs/cli.html#production-shortcut-p' target='_blank'>webpack production flag</a> `webpack -p` is shorthand for `--optimize-minimize --optimize-occurrence-order`.
 
 `--optimize-minimize`: Minimize scripts and CSS (if using css-loader).
 
@@ -68,11 +68,11 @@ The webpack production flag, <a href='https://webpack.github.io/docs/cli.html#pr
 
 ### 2. `webpack.config.js`: Build React for Production and Minify JS
 
-In webpack, <a href='https://webpack.js.org/plugins/define-plugin/' target='_blank'>`DefinePlugin`</a> allows creating global constants that can be configured at compile time. This provides flexibility for different behaviors between development builds and release builds.
+In webpack, `DefinePlugin`,<a href='https://webpack.js.org/plugins/define-plugin/' target='_blank'>allows creating global constants</a> that can be configured at compile time. This provides flexibility for different behaviors between development builds and release builds.
 
 ### Tell React to use the <a href='https://facebook.github.io/react/docs/optimizing-performance.html' target='_blank'>production version of React</a>
 
-This instance of <a href='https://webpack.js.org/guides/production/#node-environment-variable' target='_blank'>`DefinePlugin`</a> performs a search-and-replace on the original source code, and instances of `process.env.NODE_ENV` in the imported code is replaced by `"production"`.
+This instance of `DefinePlugin` <a href='https://webpack.js.org/guides/production/#node-environment-variable' target='_blank'>performs a search-and-replace on the original source code</a>, and instances of `process.env.NODE_ENV` in the imported code is replaced by `"production"`.
 
 React's internals has references to `process.env.NODE_ENV`. When set to, `"production"`, React removes warning messages to reduce file-size and increase performance.
 

@@ -87,13 +87,13 @@ When `setState()` is called it does two main things:
   - Determines what changed, based on the updater passed to `setState()`.
   - Updates the DOM.
 
-- **Note:** Use React's [lifecycle methods](https://facebook.github.io/react/docs/react-component.html#updating) to run code at different stages in reconciliation
-- **[`shouldComponentUpdate`](https://facebook.github.io/react/docs/react-component.html#shouldcomponentupdate)**: Allows determining if the component should update itself by inspecting the previous and new state.
+- **Note:** Use React's <a href='https://facebook.github.io/react/docs/react-component.html#updating' target='_blank'>lifecycle methods</a> to run code at different stages in reconciliation
+- **<a href='https://facebook.github.io/react/docs/react-component.html#shouldcomponentupdate' target='_blank'>shouldComponentUpdate</a>**: Allows determining if the component should update itself by inspecting the previous and new state.
   - If `return false`, then `componentWillUpdate` and `componentDidUpdate` are **not executed**. The component UI won't re-render.
   - **`this.state` will still be updated** within the component.
-- **[`componentWillUpdate`](https://facebook.github.io/react/docs/react-component.html#componentwillupdate)**: Run any code _before_ the new state is set and rendering happens
-- [`render`](https://facebook.github.io/react/docs/react-component.html#render): Render the updates visually to the DOM
-- **[`componentDidUpdate`](https://facebook.github.io/react/docs/react-component.html#componentdidupdate)**: Run any code _after_ the new state is set and the component has re-rendered
+- **<a href='https://facebook.github.io/react/docs/react-component.html#componentwillupdate' target='_blank'>componentWillUpdate</a>**: Run any code _before_ the new state is set and rendering happens
+- <a href='https://facebook.github.io/react/docs/react-component.html#render' target='_blank'>render</a>: Render the updates visually to the DOM
+- **<a href='https://facebook.github.io/react/docs/react-component.html#componentdidupdate' target='_blank'>componentDidUpdate</a>**: Run any code _after_ the new state is set and the component has re-rendered
 
 ---
 

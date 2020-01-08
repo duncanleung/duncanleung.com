@@ -1,6 +1,6 @@
 # duncanleung.com
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT) [![Netlify Status](https://api.netlify.com/api/v1/badges/13ce9f41-3ee8-4eca-8b5f-e467bfddba79/deploy-status)](https://app.netlify.com/sites/duncanleung/deploys) ![Dependabot](https://flat.badgen.net/dependabot/duncanleung/duncanleung.com?icon=dependabot)
+<a href='https://opensource.org/licenses/MIT' target='_blank'>![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)</a> <a href='https://app.netlify.com/sites/duncanleung/deploys' target='_blank'>![Netlify Status](https://api.netlify.com/api/v1/badges/13ce9f41-3ee8-4eca-8b5f-e467bfddba79/deploy-status)</a> ![Dependabot](https://flat.badgen.net/dependabot/duncanleung/duncanleung.com?icon=dependabot)
 
 Duncan's personal website running on Gatsby, React, and Node.js.
 
@@ -9,10 +9,10 @@ Duncan's personal website running on Gatsby, React, and Node.js.
 - Posts and pages in Markdown
 - Tags and categories
 - Dark mode
-- Code theme ([New Moon](https://taniarascia.github.io/new-moon))
+- Code theme (<a href='https://taniarascia.github.io/new-moon' target='_blank'>New Moon</a>)
 - Code line highlighting
 - DOS mode (404)
-- Sass ([Primitive](https://taniarascia.github.io/primitive))
+- Sass (<a href='https://taniarascia.github.io/primitive' target='_blank'>Primitive</a>)
 
 ## Contributing
 
@@ -20,11 +20,7 @@ If you see any typos or formatting errors in a post, or any other issue that nee
 
 ## Acknowledgements
 
-Based off [Tania Rascia](https://github.com/taniarascia/taniarascia.com)'s blog
-
-- Ruben Harutyunyan - [Gatsby Advanced Starter](https://github.com/vagr9k/gatsby-advanced-starter/)
-- Muhammad Muhsin - [Using React Context API with Gatsby](https://www.gatsbyjs.org/blog/2019-01-31-using-react-context-api-with-gatsby/)
-- Thomas Frössman - [ExitWP](https://github.com/thomasf/exitwp) - WordPress XML to Markdown
+Based off <a href='https://github.com/taniarascia/taniarascia.com' target='_blank'>Tania Rascia</a>'s blog
 
 ## Author
 

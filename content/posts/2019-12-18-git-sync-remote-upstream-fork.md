@@ -17,7 +17,7 @@ Before opening pull requests, it's important to get the latest version from the 
 
 Here are some notes on syncing a fork with the upstream repository.
 
-See: [GitHub Docs: Syncing a fork](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/syncing-a-fork)
+See: <a href='https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/syncing-a-fork' target='_blank'>GitHub Docs: Syncing a fork</a>
 
 ## Set Up an Upstream Remote for a Local Git Repository
 

@@ -16,9 +16,9 @@ tags:
 
 We hosted our first Hacktoberfest meetup at AutoGravity! A celebration of open source with food, drinks, and great company!
 
-[Hacktoberfest](https://hacktoberfest.digitalocean.com/) is here again and a colleague and I decided to gather together the Orange County tech community by hosting a meetup event at our new AutoGravity office!
+<a href='https://hacktoberfest.digitalocean.com/' target='_blank'>Hacktoberfest</a> is here again and a colleague and I decided to gather together the Orange County tech community by hosting a meetup event at our new AutoGravity office!
 
-We had a great turnout with the open source maintainers for [SendGrid](https://github.com/sendgrid/) ([Elmer Thomas](https://twitter.com/thinkingserious)), [Operation Code](https://github.com/OperationCode) ([Kyle Holmberg](https://twitter.com/kylemh_)), and [hummusRecipe](https://github.com/chunyenHuang/hummusRecipe) ([John Huang](https://www.linkedin.com/in/johnhuangguo/)) with us to chat with the community.
+We had a great turnout with the open source maintainers for <a href='https://github.com/sendgrid/' target='_blank'>SendGrid</a> <a href='https://twitter.com/thinkingserious' target='_blank'>Elmer Thomas</a>), <a href='https://github.com/OperationCode' target='_blank'>Operation Code</a> (<a href='https://twitter.com/kylemh_' target='_blank'>Kyle Holmberg</a>), and <a href='https://github.com/chunyenHuang/hummusRecipe' target='_blank'>hummusRecipe</a> (<a href='https://www.linkedin.com/in/johnhuangguo/' target='_blank'>John Huang</a>) with us to chat with the community.
 
 In the theme of supporting new developers, Kyle also ran a short workshop helping new developers submit their first pull request.
 

@@ -18,7 +18,7 @@ Let's take a look, specifically relating to patterns on binding the `this` conte
 
 ## I. Quick Overview on Pure `render()`
 
-The motivation behind keeping the `render()` method pure is to avoid issues when using [`shouldComponentUpdate()`](https://facebook.github.io/react/docs/react-component.html#shouldcomponentupdate), and [`React.PureComponent`](https://facebook.github.io/react/docs/react-api.html#react.purecomponent), which work by performing shallow comparison checks.
+The motivation behind keeping the `render()` method pure is to <a href='https://facebook.github.io/react/docs/react-component.html#shouldcomponentupdate' target='_blank'>avoid issues when using `shouldComponentUpdate()`</a>, and `React.PureComponent`, which work by <a href='https://facebook.github.io/react/docs/react-api.html#react.purecomponent' target='_blank'>performing shallow comparison checks</a>.
 
 The guidelines of a pure `render()` is:
 
@@ -90,7 +90,7 @@ Uncaught TypeError: Cannot read property 'state' of null
 
 I noticed there were code samples on various blog articles that differ in passing and omitting `props` into the `super()` method.
 
-As a standard, the React team [recommends](https://facebook.github.io/react/docs/state-and-lifecycle.html#adding-local-state-to-a-class):
+As a standard, the React team <a href='https://facebook.github.io/react/docs/state-and-lifecycle.html#adding-local-state-to-a-class' target='_blank'>recommends</a>:
 
 **_"Class components should always call the base constructor with props"_**.
 
@@ -125,7 +125,7 @@ The following two non-pure patterns, using `.bind` and arrow functions, **return
 
 ### 1. Calling `bind()` in `render()` - Non Pure `render()` Pattern
 
-A common solution to resolve `this` binding context is to use [`bind()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind). This Javascript native method _creates a new function_ that has its `this` keyword set to the provided context.
+A common solution to resolve `this` binding context is <a href='https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind' target='_blank'>to use `bind()`</a>. This Javascript native method _creates a new function_ that has its `this` keyword set to the provided context.
 
 ```js{12,18}
 class Form extends React.Component {
@@ -242,9 +242,9 @@ class Form extends React.Component {
 
 ### 2. Arrow Function Class Method- Pure `render()` Pattern
 
-This solution takes advantage of a stage-2 experimental feature, [Arrow Function Class Methods](https://babeljs.io/docs/plugins/transform-class-properties/), allowing arrow functions to be used as class methods to preserve the `this` context of your method.
+This solution takes advantage of a stage-2 experimental feature, <a href='https://babeljs.io/docs/plugins/transform-class-properties/' target='_blank'>Arrow Function Class Methods</a>, allowing arrow functions to be used as class methods to preserve the `this` context of your method.
 
-**Note:** Class properties are currently [stage-2](https://babeljs.io/docs/plugins/preset-stage-2/) and require an additional Babel plugin. I've included my `.babelrc`, `webpack.config.js`, and `package.json` at the end of the article for reference.
+**Note:** Class properties are currently <a href='https://babeljs.io/docs/plugins/preset-stage-2/' target='_blank'>stage-2</a> and require an additional Babel plugin. I've included my `.babelrc`, `webpack.config.js`, and `package.json` at the end of the article for reference.
 
 ```js{13}
 class Form extends React.Component {
@@ -380,7 +380,7 @@ class Form extends React.Component {
 }
 ```
 
-The above example is pretty simple. Here's another example in [React CodeSandbox](https://codesandbox.io/s/oY825BRxK) that further illustrates this pattern.
+The above example is pretty simple. Here's another example in <a href='https://codesandbox.io/s/oY825BRxK' target='_blank'>React CodeSandbox</a> that further illustrates this pattern.
 
 <iframe src="https://codesandbox.io/embed/oY825BRxK?view=editor" style="width:100%; height:1600px; border:0; border-radius: 4px; overflow:hidden;" sandbox="allow-modals allow-forms allow-popups allow-scripts allow-same-origin"></iframe>
 

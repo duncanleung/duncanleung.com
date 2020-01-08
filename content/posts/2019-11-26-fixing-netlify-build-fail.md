@@ -33,7 +33,7 @@ The strange thing was that `yarn build` would build Gatsby successfully locally 
 
 ### The Cause: Linux Case Sensitivity
 
-It turns out the issue was because of a [case difference](https://github.com/gatsbyjs/gatsby/issues/8205#issuecomment-421795109) in what some files were requiring and the name of the file.
+It turns out the issue was because of a <a href='https://github.com/gatsbyjs/gatsby/issues/8205#issuecomment-421795109' target='_blank'>case difference</a> in what some files were requiring and the name of the file.
 
 The reason it was working locally, is that OSX will automatically resolve the issue, but the Netlify build server is Linux, and will fail.
 
@@ -45,4 +45,4 @@ The fix that resolved the issue was to run the following command.
 $ git config core.ignorecase false
 ```
 
-_Credit to user: [pedrouid](https://github.com/gatsbyjs/gatsby/issues/8205#issuecomment-444876531) on GitHub_
+_Credit to user: <a href='https://github.com/gatsbyjs/gatsby/issues/8205#issuecomment-444876531' target='_blank'>pedrouid</a> on GitHub_

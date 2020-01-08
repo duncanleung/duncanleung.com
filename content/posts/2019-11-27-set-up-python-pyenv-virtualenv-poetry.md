@@ -18,11 +18,11 @@ Skip to the sections below:
 - [Virtual Environment: pyenv-virtualenv](#pyenv-virtualenv-virtual-environment)
 - [Package Manager: poetry](#poetry-package-manager)
 
-Additional reference on alternative choices: [Real Python: An Effective Python Environment](https://realpython.com/effective-python-environment)
+Additional reference on alternative choices: <a href='https://realpython.com/effective-python-environment' target='_blank'>Real Python: An Effective Python Environment</a>
 
 ## pyenv: Python Version Manager
 
-Docs: [GitHub - pyenv/pyenv](https://github.com/pyenv/pyenv)
+Docs: <a href='https://github.com/pyenv/pyenv' target='_blank'>GitHub - pyenv/pyenv</a>
 
 A Python Version Manager allows usage of different version of python, and manages which Python to use in the current session, globally, or on a per-project basis.
 
@@ -34,7 +34,7 @@ $ sudo rm -rf /Library/Developer/CommandLineTools
 $ xcode-select --install
 ```
 
-When running Mojave or higher (10.14+) you will also need to install the [additional SDK headers](https://developer.apple.com/documentation/xcode_release_notes/xcode_10_release_notes#3035624):
+When running Mojave or higher (10.14+) you will also need to install the <a href='https://developer.apple.com/documentation/xcode_release_notes/xcode_10_release_notes#3035624' target='_blank'>additional SDK headers</a>:
 
 ```bash
 $ sudo installer -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg -target /
@@ -68,7 +68,7 @@ $ exec "$SHELL"
 
 ### pyenv Workflow Commands
 
-Dosc: [Command Reference](https://github.com/pyenv/pyenv#command-reference)
+Docs: <a href='https://github.com/pyenv/pyenv#command-reference' target='_blank'>Command Reference</a>
 
 Make `3.7.4` globally available so there is no messing with our system python:
 
@@ -83,7 +83,7 @@ $ pyenv global 3.7.4
 
 ## pyenv-virtualenv: Virtual Environment
 
-Docs: [GitHub - pyenv/pyenv-virtualenv](https://github.com/pyenv/pyenv-virtualenv)
+Docs: <a href='https://github.com/pyenv/pyenv-virtualenv' target='_blank'>GitHub - pyenv/pyenv-virtualenv</a>
 
 A Python Virtual Environment Manager allows setting different projects with its own set of version dependencies.
 When a package is installed in a virtual environment, it is kept in isolation from other Python environments you may have.
@@ -104,7 +104,7 @@ eval "$(pyenv virtualenv-init -)"
 
 ### pyenv-virtualenv Workflow Commands
 
-Docs: [Command Reference](https://github.com/pyenv/pyenv-virtualenv#usage)
+Docs: <a href='https://github.com/pyenv/pyenv-virtualenv#usage' target='_blank'>Command Reference</a>
 
 #### Set up a new virtual environment and activate it
 
@@ -183,7 +183,7 @@ $ pyenv uninstall env1
 
 ## Poetry: Package Manager
 
-Docs: [GitHub - poetry](https://github.com/sdispater/poetry)
+Docs: <a href='https://github.com/sdispater/poetry' target='_blank'>GitHub - poetry</a>
 
 Package managers work in tandem with virtual environments, isolating the packages you install in one Python environment from another.
 
@@ -228,7 +228,7 @@ poetry self update
 
 ### poetry Workflow Commands
 
-Docs: [Command Reference](https://github.com/sdispater/poetry#commands)
+Docs: <a href='https://github.com/sdispater/poetry#commands' target='_blank'>Command Reference</a>
 
 Install packages with `poetry add`.
 

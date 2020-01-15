@@ -25,6 +25,7 @@ import React from "react";
 import Amplify from "aws-amplify";
 
 import config from "../../aws-exports";
+                   ^^^^^^^^^^^^^^^^^
 
 // Call configuration API at the global Layout level
 Amplify.configure(config);
@@ -56,8 +57,8 @@ Also, since `aws-exports.js` is a `.js` file extension, `tsconfig.json` needs to
 ```json{3}
 {
   "compilerOptions": {
-    "allowJs": true,
-    ...
-  },
+    "allowJs": true
+    // Other configs ...
+  }
 }
 ```

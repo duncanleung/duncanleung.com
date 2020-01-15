@@ -1,5 +1,5 @@
 ---
-date: 2020-01-14
+date: 2020-01-13
 title: AWS Amplify TypeScript aws-exports.js
 template: post
 thumbnail: "../thumbnails/aws-amplify.png"

@@ -20,7 +20,7 @@ When I was importing the `aws-exports.js` configuration file to initialize Ampli
 
 <div class="filename">./src/components/Layout.tsx</div>
 
-```tsx
+```tsx{4}
 import React from "react";
 import Amplify from "aws-amplify";
 

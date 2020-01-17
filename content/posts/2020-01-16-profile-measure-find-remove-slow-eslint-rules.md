@@ -20,7 +20,7 @@ Here was my process to identify and eliminate slow and unnecessary rules.
 
 Prefixing the `eslint` command with <a href="https://eslint.org/docs/developer-guide/working-with-rules#performance-testing" target="_blank">`TIMING=1` profiles the time spent running</a> each individual ESLint rule.
 
-```sh
+```bash
 $ TIMING=1 eslint ./
 ```
 

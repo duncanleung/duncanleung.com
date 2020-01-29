@@ -42,7 +42,7 @@ ESLint functions by parsing your code into an Abstract Syntax Tree (AST) data fo
 
 ## The Main .eslintrc Properties
 
-### ESLint rules Property
+### Rules
 
 The `rules` property in `.eslintrc` allows:
 
@@ -65,7 +65,7 @@ module.exports = {
 };
 ```
 
-### ESLint extends Property
+### Extends
 
 Instead of manually configuring each rule individually, you can apply a bulk rule configuration from a shared config.
 
@@ -93,7 +93,7 @@ module.exports = {
 >
 > There is no need to re-declare these properties in your own `.eslintrc` if you're extending off a **recommended** base configuration that already has these declared.
 
-### ESLint plugins Property
+### Plugins
 
 The `plugins` property in `.eslintrc` allows using third-party plugins to apply specific linting rules for different code bases.
 

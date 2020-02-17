@@ -3,7 +3,7 @@ date: 2020-02-17
 title: Conditional Types to Infer Props from Emotion `as` Prop
 template: post
 thumbnail: "../thumbnails/typescript.png"
-slug: typescript-generics-emotion-styled-component-as-prop
+slug: typescript-generics-conditional-types-emotion-as-prop
 categories:
   - TypeScript
 tags:

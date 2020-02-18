@@ -11,9 +11,11 @@ tags:
   - emotion
 ---
 
+_Credit 👏: My teammate,_ <a href='https://github.com/riley-rangel' target='_blank'>Riley Rangel</a>_, worked out this solution and improved the DX for our team._
+
 ## Problem: How to Infer the Rendered Component's Props when Using Emotion's `as` Prop
 
-I was working with my teammate, <a href='https://github.com/riley-rangel' target='_blank'>Riley Rangel</a>, to provide a better developer experience on a `<Button />` React component in our component library.
+I was working with my teammate, <a href='https://github.com/riley-rangel' target='_blank'>Riley</a>, to provide a better developer experience on a `<Button />` React component in our component library.
 
 The `<Button />` uses the <a href="https://emotion.sh/docs/styled#as-prop" target="_blank">Emotion `as` prop / polymorphic prop</a> to allow rendering the `<Button />` as either a Gatsby `<Link />`, or a native HTML anchor element `<a>`.
 

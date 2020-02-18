@@ -19,13 +19,12 @@ I was working with my teammate, <a href='https://github.com/riley-rangel' target
 
 The `<Button />` uses the <a href="https://emotion.sh/docs/styled#as-prop" target="_blank">Emotion `as` prop / polymorphic prop</a> to allow rendering the `<Button />` as either a Gatsby `<Link />`, or a native HTML anchor element `<a>`.
 
-Here's a stripped down version without <a href="https://styled-system.com/" target="_blank">styled-system</a> and any accessibility props:
+Here's a stripped down version of the component:
 
 <div class="filename">Button.tsx</div>
 
-```typescript{13-14}
+```typescript{12-13}
 import React from "react";
-import css from "@styled-system/css";
 import styled from "@emotion/styled";
 import { Link } from "gatsby";
 
@@ -171,9 +170,8 @@ type Props<E extends RenderComponent> = {
 <div class="filename">Button.tsx</div>
 
 <!-- prettier-ignore-start -->
-```typescript{11,13-15,17,22}
+```typescript{10,12-14,16,21}
 import React from "react";
-import css from "@styled-system/css";
 import styled from "@emotion/styled";
 import { Link } from "gatsby";
 

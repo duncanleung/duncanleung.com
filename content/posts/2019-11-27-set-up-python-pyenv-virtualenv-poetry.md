@@ -26,20 +26,6 @@ Docs: <a href='https://github.com/pyenv/pyenv' target='_blank'>GitHub - pyenv/py
 
 A Python Version Manager allows usage of different version of python, and manages which Python to use in the current session, globally, or on a per-project basis.
 
-#### [Prep: Mac OS X]: Install Xcode Command Line Tools
-
-```bash
-$ sudo rm -rf /Library/Developer/CommandLineTools
-
-$ xcode-select --install
-```
-
-When running Mojave or higher (10.14+) you will also need to install the <a href='https://developer.apple.com/documentation/xcode_release_notes/xcode_10_release_notes#3035624' target='_blank'>additional SDK headers</a>:
-
-```bash
-$ sudo installer -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg -target /
-```
-
 #### Install pyenv
 
 ```bash
@@ -64,6 +50,26 @@ Restart your shell so the path changes take effect and begin using pyenv.
 
 ```bash
 $ exec "$SHELL"
+```
+
+#### [Troubleshooting: Failed Install on Mac OS X 10.14]: Error: "zlib not available":
+
+If you run into installation issues, consider looking into these possible solutions:
+
+#### Reinstall Xcode Command Line Tools
+
+```bash
+$ sudo rm -rf /Library/Developer/CommandLineTools
+
+$ xcode-select --install
+```
+
+When running Mojave or higher (10.14+) you will also need to install the <a href='https://developer.apple.com/documentation/xcode_release_notes/xcode_10_release_notes#3035624' target='_blank'>additional SDK headers</a>:
+
+Source: <a href='https://github.com/pyenv/pyenv/issues/1219#issuecomment-428305417' target='_blank'>https://github.com/pyenv/pyenv/issues/1219#issuecomment-428305417</a>
+
+```bash
+$ sudo installer -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg -target /
 ```
 
 ### pyenv Workflow Commands

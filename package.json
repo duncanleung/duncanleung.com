@@ -57,6 +57,9 @@
     "stylelint-config-standard": "^20.0.0",
     "write-good": "^1.0.2"
   },
+  "resolutions": {
+    "sharp": "^0.24.1"
+  },
   "keywords": [
     "duncan leung",
     "front end",

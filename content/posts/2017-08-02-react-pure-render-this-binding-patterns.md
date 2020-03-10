@@ -8,7 +8,7 @@ categories:
   - React
 
 tags:
-  - javscript
+  - javascript
   - react
 ---
 

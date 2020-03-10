@@ -6,6 +6,7 @@ thumbnail: "../thumbnails/typescript.png"
 slug: typescript-module-declearation-svg-img-assets
 categories:
   - TypeScript
+  - Popular
 tags:
   - typescript
 ---

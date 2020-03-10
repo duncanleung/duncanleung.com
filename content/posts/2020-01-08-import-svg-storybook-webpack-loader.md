@@ -6,6 +6,7 @@ thumbnail: "../thumbnails/storybook.png"
 slug: import-svg-storybook-webpack-loader
 categories:
   - Storybook
+  - Popular
 tags:
   - storybook
   - emotion

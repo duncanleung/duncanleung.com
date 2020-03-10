@@ -9,7 +9,7 @@ categories:
   - Popular
 
 tags:
-  - javscript
+  - javascript
   - react
 ---
 

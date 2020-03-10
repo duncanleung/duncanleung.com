@@ -6,6 +6,7 @@ thumbnail: "../thumbnails/python.png"
 slug: set-up-python-pyenv-virtualenv-poetry
 categories:
   - Python
+  - Popular
 tags:
   - python
 ---

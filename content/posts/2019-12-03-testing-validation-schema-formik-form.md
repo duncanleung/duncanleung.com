@@ -6,6 +6,7 @@ thumbnail: "../thumbnails/jest.png"
 slug: testing-validation-schema-formik-form
 categories:
   - Testing
+  - Popular
 tags:
   - formik
   - react-testing-library

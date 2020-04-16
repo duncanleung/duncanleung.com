@@ -1,5 +1,5 @@
 ---
-date: 2020-04-10
+date: 2020-01-10
 title: Set Up Storybook Decorators - Emotion Theme Provider
 template: post
 thumbnail: "../thumbnails/storybook.png"
@@ -13,7 +13,7 @@ tags:
   - theme
 ---
 
-https://storybook.js.org/docs/basics/writing-stories/#decorators
+Related Post: [Set Up Storybook Decorators - React Intl Provider](/storybook-decorators-react-intl-provider/)
 
 ## Problem: Storybook Not Recognizing Emotion Theme Provider
 
@@ -80,6 +80,13 @@ The fix is to extract Emotion's `<ThemeProvider />` into its own decorator.
 <div class="filename">.storybook/preview.js</div>
 
 ```js{10}
+import React from "react";
+
+import { addDecorator } from "@storybook/react";
+
+import { EmotionThemeProvider } from "./decorators";
+import GlobalStyles from "../src/components/Layout/GlobalStyles";
+
 // Global Styles ==============================
 addDecorator((story) => (
   <>
@@ -90,6 +97,8 @@ addDecorator((story) => (
 
 // Emotion Theme Provider =====================
 addDecorator(EmotionThemeProvider);
+
+// ... other decorators
 ```
 
 <div class="filename">.storybook/decorators/EmotionThemeProvider.js</div>

@@ -421,6 +421,6 @@ Learning to ride a bike isn't fun; they fall a lot and it hurts. But they are mo
 
 **Seeing the tangible progression of acquiring a skill is motivation. Realizing that we're learning is intrinsic motivation itself.**
 
-> **Show children that they are learning, that that will bring the motivation. Not the other way around.**
+> **Show children that they are learning, that will bring the motivation. Not the other way around.**
 >
 > **A more wholistic approach to making programming accessible to children is to guide them to build interesting things with the programming skills they're learning.**

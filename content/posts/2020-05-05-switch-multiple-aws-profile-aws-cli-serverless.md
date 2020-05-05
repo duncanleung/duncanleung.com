@@ -57,7 +57,7 @@ $ aws configure --profile devProfile
 
 Example:
 
-```
+```terminal
 AWS Access Key ID [None]: YOUR_ACCESS_KEY_ID
 AWS Secret Access Key [None]: YOUR_SECRET_ACCESS_KEY
 Default region name [None]: us-west-2
@@ -68,7 +68,6 @@ Successfully running `aws configure` will set up the `.aws/` folder in your root
 
 ```
 (root)
-|
 └── .aws/
      ├── config      // Your AWS Profiles
      └── credentials // Your access key pairs
@@ -105,7 +104,9 @@ There are several different ways to choose which AWS profile you want to use wit
 
 Add `profile` setting to `provider` configuration in `serverless.yml`.
 
-```yml
+<div class="filename">serverless.yml</div>
+
+```yml{6}
 service: new-service
 provider:
   name: aws

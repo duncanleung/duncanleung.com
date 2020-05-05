@@ -91,3 +91,33 @@ person.hello("world");
 // desugars to:
 person.hello.call(person, "world"); // "[object Window] says hello world"
 ```
+
+============================================================
+
+### Implement `Function.prototype.bind()`
+
+```javascript
+// Given
+const foo = function() {
+  console.log(this.bar);
+};
+
+// Implement `Function.Prototype.bind()`
+let baz = foo.bind({ bar: "hi" });
+
+baz();
+// "hi"
+```
+
+```javascript
+Function.prototype.bind = function(context) {
+  // Store a reference to the function that is calling `.bind()`
+  // foo.bind(...), the function `foo` is the object invoking `.bind()`
+  // `this` is `foo`
+  const _fn = this;
+
+  return function() {
+    _fn.call(context);
+  };
+};
+```

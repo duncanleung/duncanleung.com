@@ -1,6 +1,6 @@
 ---
 date: 2020-05-05
-title: Switch the AWS Profile for Serverless CLI
+title: Switching AWS Profiles for Serverless CLI
 template: post
 thumbnail: "../thumbnails/serverless.png"
 slug: switch-multiple-aws-profile-aws-cli-serverless

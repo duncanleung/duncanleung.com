@@ -134,3 +134,11 @@ $ serverless deploy --aws-profile devProfile
 ```
 
 Read more at the <a href='https://serverless.com/framework/docs/providers/aws/guide/credentials#using-the-aws-profile-option' target='_blank'>Serverless Docs</a>.
+
+### D. Switching the AWS profile using Lumigo CLI
+
+https://github.com/lumigo-io/lumigo-cli#lumigo-cli-switch-profile
+
+```terminal
+$ lumigo-cli switch-profile
+```

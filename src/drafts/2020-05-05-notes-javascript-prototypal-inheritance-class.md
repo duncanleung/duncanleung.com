@@ -190,10 +190,10 @@ Animal(name)                        Animal.prototype
 │                  | ------------► |  run: function        |
 └──────────────────┘               |  stop: function       |
                                    └───────────────────────┘
-                                         ▲
-                                         | [[Prototype]]
-                                         | (extends Animal)
-                                         |
+       ▲                                 ▲
+       | [[Prototype]]                   | [[Prototype]]
+       | (extends Animal)                | (extends Animal)
+       |                                 |
 Dog(name)                           Dog.prototype
 (Constructor)                       (Object)
 ┌───────────────────┐              ┌───────────────────────┐
@@ -226,6 +226,8 @@ class Animal {
     this.speed = 0;
     this.name = name;
   }
+
+  static type = "Mammal";
 
   run(speed) {
     this.speed = speed;
@@ -295,7 +297,12 @@ function Dog(name) {
   Animal.call(this, name);
 }
 
+// Inherits static properties
+Dog.__proto__ = Animal;
+
+// Inherits prototype
 Dog.prototype = Object.create(Animal.prototype);
+
 Dog.prototype.constructor = Dog;
 Dog.prototype.bark = function() {
   Animal.prototype.stop.call(this);

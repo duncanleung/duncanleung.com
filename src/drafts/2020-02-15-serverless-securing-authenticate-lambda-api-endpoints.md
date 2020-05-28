@@ -1,9 +1,9 @@
 ---
 date: 2020-02-15
-title: Securing AWS Lambda API Endpoints in Serverless
+title: Authenticating AWS Lambda API Endpoints
 template: post
 thumbnail: "../thumbnails/serverless.png"
-slug: serverless-securing-lambda-api-endpoints
+slug: serverless-securing-authenticate-lambda-api-endpoints
 categories:
   - Serverless
 tags:
@@ -18,10 +18,14 @@ tags:
 ## API Accessibility Concepts
 
 - APIs in a system will have different levels of accessibility
-- you have the authenticated APIs that require the user to be authenticated first
-- APIs that typically update the system state on a user's behalf
-  - User Profile
-  - Place orders
+  - Public APIs
+  - authenticated APIs that require the user to be authenticated first
+    - APIs that typically update the system state on a user's behalf
+      - User Profile
+      - Place orders
+  - Internal API
+    - Used by microservices
+    - Not to be consumed by client app
 
 ## secure APIs in API Gateway with API Keys
 

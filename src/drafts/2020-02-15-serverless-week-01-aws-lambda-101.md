@@ -85,6 +85,7 @@ tags:
 - Function is allocated CPU and network bandwidth proportional to the memory configured
 - 128mb - 3gb
 - More than 1.8gb of memory will unlock a second CPU core
+  - Node can't make use of a second core
 
 ## Cost Optimization
 
@@ -117,6 +118,9 @@ tags:
 
 ### reserved concurrency
 
+- There is a pool of available concurrency (1000 for most regions)
+  - able to reserve an amount of concurrency to a specific lambda
+  - Also acts as the max concurrency - only that # of instances of that function running at a single time
 - You can use `reserved concurrency` to limit the number of function invocations
 - for instance setting it to 1 will ensure that at any given moment the function can be executed only one time
 
@@ -128,6 +132,16 @@ tags:
 - The containers will be warm all the time
 - Paying a certain amount for having the provisioned concurrency + 100ms of execution (cost of 100ms of execution time is cheaper)
 - If you can make about 60% utilization of your provisioned concurrency, you will break even with the regular on-demand per/100ms pricing
+
+- When use alias and doing a deployment
+- Change the version that the alias points at
+- Provisioned concurrency is always pointed to a particular version
+  - For a few minutes
+    - On a new version
+      - switch traffic to the new version
+      - provisioned concurrency will remain on the old version
+      - will take time to move the provisioned concurrency
+
 
 ## Async Invocation
 

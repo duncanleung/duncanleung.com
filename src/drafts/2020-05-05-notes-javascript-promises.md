@@ -106,6 +106,46 @@ promise
   });
 ```
 
+## resolve vs reject
+
+passing a value into `reject` does not simply mean the promise has "failed"
+passing a value into `resolve` does not simply mean the promise is "successful"
+
+rejection callback will be called if you pass something into `resolve` that is either:
+
+- not defined (error is thrown). This is caught by the promise and turned into a rejection
+- a promise that rejects
+
+```javascript
+new Promise(function(resolve, reject) {
+  resolve(Promise.reject());
+}).then(
+  function() {
+    console.log("Success callback");
+  },
+  function() {
+    console.log("Failure callback");
+  }
+);
+
+// Output:
+// Failure callback
+```
+
+All these promises are rejected
+
+```javascript
+var promise1 = Promise.resolve(Promise.reject());
+
+var promise2 = Promise.resolve().then(function() {
+  return Promise.reject();
+});
+
+var promise3 = Promise.reject().catch(function() {
+  return Promise.reject();
+});
+```
+
 ## .catch
 
 ```javascript
@@ -441,4 +481,176 @@ function delay(time) {
 Promise.race([delay(500), delay(100)]).then(function(data) {
   console.log(data);
 });
+```
+
+## Checking if an object is a promise
+
+```
+obj instanceof Promise
+```
+
+## async / await
+
+`async` function will always return a promise
+
+`return` auto-resolved promise
+
+```javascript
+function job() {
+  return new Promise(function(resolve, reject) {
+    setTimeout(resolve, 500, "Hello world 1");
+  });
+}
+
+async function test() {
+  let message = await job();
+  console.log(message);
+
+  return "Hello world 2";
+}
+
+test().then(function(message) {
+  console.log(message);
+});
+```
+
+Is the equivalent of:
+
+```javascript
+function test() {
+  return job().then(function(message) {
+    console.log(message);
+
+    return "Hello world 2";
+  });
+}
+```
+
+## Catching rejected promises in async / await
+
+return a rejected promise in an async function, you just have to throw an error
+
+deal with a rejected promise when using async and await
+with try / catch
+
+```javascript
+async function job() {
+  throw new Error("Reject");
+}
+
+async function test() {
+  try {
+    let message = await job();
+    console.log(message);
+
+    return "Hello world";
+  } catch (error) {
+    console.error(error);
+
+    return "Error happened during test";
+  }
+}
+
+test().then(function(message) {
+  console.log(message);
+});
+```
+
+```javascript
+function job() {
+  return Promise.reject(new Error("Reject"));
+}
+
+job()
+  .then(function(message) {
+    console.log(message);
+    return "Hello world";
+  })
+  .catch(function(error) {
+    console.log(error);
+    return "Error happened during test";
+  })
+  .then(function(message) {
+    console.log(message);
+  });
+```
+
+## Call await in parallel
+
+```javascript
+const start = Date.now();
+function timeLog(text) {
+  console.log(`${Date.now() - start}ms - ${text}`);
+}
+
+function job(number) {
+  return new Promise(function(resolve, reject) {
+    timeLog(`Job start ${number}`);
+    setTimeout(function() {
+      timeLog(`Job done ${number}`);
+      resolve(`Data ${number}`);
+    }, 500);
+  });
+}
+
+async function main() {
+  let message1 = await job(1),
+    message2 = await job(2),
+    message3 = await job(3);
+
+  timeLog(message1);
+  timeLog(message2);
+  timeLog(message3);
+}
+
+main();
+
+// Output:
+// 9ms - Job start 1
+// 514ms - Job done 1
+// 514ms - Job start 2
+// 1015ms - Job done 2
+// 1015ms - Job start 3
+// 1517ms - Job done 3
+// 1519ms - Data 1
+// 1519ms - Data 2
+// 1519ms - Data 3
+```
+
+```javascript
+const start = Date.now();
+function timeLog(text) {
+  console.log(`${Date.now() - start}ms - ${text}`);
+}
+
+function job(number) {
+  return new Promise(function(resolve, reject) {
+    timeLog(`Job start ${number}`);
+    setTimeout(function() {
+      timeLog(`Job done ${number}`);
+      resolve(`Data ${number}`);
+    }, 500);
+  });
+}
+
+async function main() {
+  let messages = await Promise.all([job(1), job(2), job(3)]);
+
+  messages.forEach(function(message) {
+    timeLog(message);
+  });
+}
+
+main();
+
+// Output:
+// 7ms - Job start 1
+// 11ms - Job start 2
+// 11ms - Job start 3
+// 520ms - Job done 1
+// 521ms - Job done 2
+// 521ms - Job done 3
+// 528ms - Data 1
+// 529ms - Data 2
+// 529ms - Data 3
 ```

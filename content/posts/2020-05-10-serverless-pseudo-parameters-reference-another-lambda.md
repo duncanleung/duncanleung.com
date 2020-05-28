@@ -11,7 +11,7 @@ tags:
   - aws-lambda
 ---
 
-## Generating an API Gateway Lambda endpoint
+## Generating an AWS Lambda API endpoint
 
 A handy trick to reference an AWS Lambda API endpoint is to use <a href='https://www.serverless.com/plugins/serverless-pseudo-parameters/' target='_blank'>serverless-pseudo-parameters</a> and <a href='https://www.serverless.com/framework/docs/providers/aws/guide/variables/' target="_blank">Serverless variables</a> to create the endpoint URI that can be passed to lambda function through an environment variable.
 

@@ -15,40 +15,13 @@ tags:
   - aws-cognito
 ---
 
-<!-- ------------------------------------------------------------------------------------------------------- -->
+## API Accessibility Concepts
 
-## Create Serverless
-
-```terminal
-sls create -t aws-nodejs
-```
-
-<!-- ------------------------------------------------------------------------------------------------------- -->
-
-# Managing Permissions for Serverless Framework
-
-AWS profile was configured with an IAM user with full admin access
-
-principle of least privilege and start with the bare minimum of permissions, such as S3 create bucket, and gradually add more permissions as the developers bump against the wall when they try to deploy
-
-- Add additional deploy or when you remove an existing deployment
-- creating and deleting S3 buckets and creating CloudFormation stacks, etc
-
-starting with a dedicated deployed user with admin access in your development account
-
-- Developers can freely develop and experiment
-- only copy over the permissions they have actually used to the deployer role in the production account
-- less friction in the process, but it's predicated on the assumption that you have account-level separation between environments, so that those admin assets are never handed out for the production account
-- see what services were accessed by, and I'll stress this, the dedicated deployer user
-  (screenshot in Production Ready Serverless: 1. Intro > Managing persmissions)
-
----
-
-<!-- ------------------------------------------------------------------------------------------------------- -->
-
-- APIs with different levels of accessibility
+- APIs in a system will have different levels of accessibility
 - you have the authenticated APIs that require the user to be authenticated first
 - APIs that typically update the system state on a user's behalf
+  - User Profile
+  - Place orders
 
 ## secure APIs in API Gateway with API Keys
 
@@ -115,8 +88,8 @@ async function getRestaurants() {
 
   const res = await axios.get(restaurantsApiRoot, {
     headers: {
-      "x-api-key": process.env.LAMBDA_API_KEY
-    }
+      "x-api-key": process.env.LAMBDA_API_KEY,
+    },
   });
   return res.data;
 }
@@ -130,8 +103,8 @@ module.exports.handler = async function(event, context) {
     statusCode: 200,
     body: html,
     headers: {
-      "Content-Type": "text/html; charset=UTF-8"
-    }
+      "Content-Type": "text/html; charset=UTF-8",
+    },
   };
 
   return response;
@@ -141,6 +114,12 @@ module.exports.handler = async function(event, context) {
 <!-- ------------------------------------------------------------------------------------------------------- -->
 
 ## Securing the endpoint with IAM authorization
+
+- You generally want to have different levels of access for different APIs in your system (obviously not everything should be public)
+- One way to address that is to use usage plans + API keys. They are designed for rate limiting, not auth and they allow the client to access the selected API at agreed upon request rates and quotas (like Google Maps API). Request rate and quote apply to all APIs and stages covered by the usage plan.
+- Another thing is to allow certain APIs to be accessed by your infrastructure only - by using IAM authorization
+- API Gateway also supports an custom authorizer that you can build yourself
+- A VPC Endpoint allows you to securely connect your VPC to another service
 
 - restrict access to endpoints using a role-based permission model
 - use AWS_IAM authorization - allow internal APIs to be accessible only by your own services
@@ -193,7 +172,7 @@ async function getRestaurants() {
   const url = URL.parse(restaurantsApiRoot);
   const opts = {
     host: url.hostname,
-    path: url.pathname
+    path: url.pathname,
   };
 
   aws4.sign(opts);
@@ -203,8 +182,8 @@ async function getRestaurants() {
       Host: opts.headers["Host"],
       "X-Amz-Date": opts.headers["X-Amz-Date"],
       Authorization: opts.headers["Authorization"],
-      "X-Amz-Security-Token": opts.headers["X-Amz-Security-Token"]
-    }
+      "X-Amz-Security-Token": opts.headers["X-Amz-Security-Token"],
+    },
   });
   return res.data;
 }
@@ -218,8 +197,8 @@ module.exports.handler = async function(event, context) {
     statusCode: 200,
     body: html,
     headers: {
-      "Content-Type": "text/html; charset=UTF-8"
-    }
+      "Content-Type": "text/html; charset=UTF-8",
+    },
   };
 
   return response;
@@ -264,13 +243,13 @@ functions:
 const AWS = require("aws-sdk");
 
 const lambda = new AWS.Lambda({
-  region: "us-east-1"
+  region: "us-east-1",
 });
 
 async function getRestaurants() {
   const params = {
     FunctionName: "manning-serverless-dev-get-restaurants",
-    InvocationType: "RequestResponse"
+    InvocationType: "RequestResponse",
   };
   const data = await lambda.invoke(params).promise();
 
@@ -287,8 +266,8 @@ module.exports.handler = async (event, context) => {
     statusCode: 200,
     body: html,
     headers: {
-      "Content-Type": "text/html; charset=UTF-8"
-    }
+      "Content-Type": "text/html; charset=UTF-8",
+    },
   };
 
   return response;
@@ -298,6 +277,13 @@ module.exports.handler = async (event, context) => {
 <!-- ------------------------------------------------------------------------------------------------------- -->
 
 ## Cognito User Pool
+
+- We can think of Cognito as a collection of 3 different services: Cognito User Pools, Cognito Federated Identities and Cognito Sync
+- Cognito User Pools is a managed identity service (registration/verify email/password policy etc. etc.). After signign in user can access - APIs on API Gateway that require sign in
+- Cognito Federated Identities - allows you to take auth token issues by auth providers and exchange it for a set of temporary AWS credentials
+- Cognito Sync - nobody uses it lmao, it syncs user data across multiple devices
+
+- In short - when user registers, confirms their email etc. the client talks with Cognito User Pools, and after a successful sign-in, Cognito User Pools returns a JWT token. This token is later used for authorization in API Gateway.
 
 - endpoints called by the client directly doesn't have any IAM roles they can use to authenticate themselves with. you should use Cognito user pools
 

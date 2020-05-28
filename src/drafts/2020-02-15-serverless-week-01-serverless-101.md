@@ -48,6 +48,26 @@ starting with a dedicated deployed user with admin access in your development ac
 
 ## Serverless 101:
 
+- Event driven computing
+  - File upload
+  - DB update
+  - In app activity
+  - API calls
+  - website clicks
+  - IoT events
+- Using small stateless functions
+- Invoked in response to different events
+
+- Serverless functions run in docker like containers
+
+  - Several of these functions can be run concurrently, and are therefore highly scalable
+  - (Isolated, pre-configured environments)
+
+- Events trigger the initialization of a container
+- Loads the function and executes the function
+- The function can optionally return a response
+- The container will then spin down
+
 ### Timeout
 
 - API Gateway has a hard limit timeout of 29 seconds
@@ -58,68 +78,6 @@ starting with a dedicated deployed user with admin access in your development ac
 ```terminal
 $ sls package
 ```
-
-### Running locally
-
-```javascript
-"use strict";
-
-module.exports.hello = async (event) => {
-  return {
-    statusCode: 200,
-    body: JSON.stringify(
-      {
-        message: `FOO: ${process.env.FOO}`,
-        input: event,
-      },
-      null,
-      2
-    ),
-  };
-};
-```
-
-```terminal
-$ sls invoke local -f hello -d '{"bar": "foo"}'
-
-{
-    "statusCode": 200,
-    "body": "{\n  \"message\": \"FOO: BAR\",\n  \"input\": {\n    \"bar\": \"foo\"\n  }\n}"
-}
-```
-
-### Attach debugger
-
-Install serverless as a local dependency to project
-
-```terminal
-$ yarn add -D serverless
-```
-
-<div class="filename">launch.json</div>
-
-```json
-{
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "type": "node",
-      "request": "launch",
-      "name": "Launch Program",
-      "program": "${workspaceFolder}/node_modules/.bin/sls",
-      "args": ["invoke", "local", "-f", "hello", "-p", "package.json"]
-    }
-  ]
-}
-```
-
-- Debugger
-- Set breakpoint in VSCode
-- Run
-
-Useful when you have a set up to write the event payload into your log
-
-- Can run the function locally with the debugger attached
 
 ### Invoke remotely
 
@@ -212,3 +170,140 @@ $ serverless deploy -s staging -r eu-west-1
 ```terminal
 $ serverless remove -s staging -r eu-west-1
 ```
+
+## Python vs Node and Cold Starts
+
+python
+
+How to keep binaries small
+
+serverless-python-requiresments
+
+- doesn't do tree shaking and getting binaries down
+- cold start performance?
+- Often not used for web facing APIs because can't get the binaries small
+
+### 2 Types of Cold Starts
+
+Normal Cold Start
+
+- Filesize of package only affects the duration of the coldstart for the first coldstart after you make code changes
+
+First cold start after a cold deployment
+
+- init time for the module
+
+* Keeping binary size down will not affect much
+* Number and size of dependencies impacts cold start more
+
+* Putting deps in layers - layers loads the deps faster than compared to
+  - Loading from package in node_modules folder
+  - Loading from AWS execusion environment
+    (Something to do with the order of loading)
+  - Layers still bound to 250mb unzipped size limit
+* But still choose webpack to treeshake - only load only code used
+
+## When use provisioned concurrency
+
+- Have to manage Pay for uptime
+- Use if
+
+  - Can't optimize cold start duration any longer and is still a problem
+  - Microserive env - services have sync API calls to each other
+    - If SLA is 90% of requests complete within 1 sec
+    - Can usually optimize to get cold starts of 1 lambda down to 1/2 second
+    - But if you have 1, 2, 3 function calling another through direct API call - the 1/2 second will stack up
+
+- Spikey Traffic
+- Food delivery / etc
+
+- 10 - 1 mill in 30 seconds
+- Scaling limit
+  - No limit on total concurrency
+  - But limit on speed of reaching total concurrency needed
+  - 3000 burst capacity
+  - 500 / min
+  - 10,000: 15min.
+  - 3000 first, then 500 every /min
+- Provisioned Concurrency
+  - Acts as Auto scaling - prepare ahead of time
+  - If you have Predictable traffic pattern when spikes will come
+
+## Serverless Plugins
+
+- Prefer https://serverlessrepo.aws.amazon.com/applications/arn:aws:serverlessrepo:us-east-1:374852340823:applications~lambda-janitor over Prune (use a platform level concern)
+- webpack
+- Offline (only when needing to render HTML from lambda)
+- Pseudo parameters
+- step functions
+- split stacks (for larger stacks - help with 200 recources limit)
+- dotenv
+- IAM Roles per Func
+
+### No longer necessary
+
+- Tracing
+- warmup: if you have coldstart issues - optimize it until the cold start is within latency range that is acceptable - or if frequency of coldstart is a problem, and the latency can't be optimized more because we have to use some 3rd party dependency - look at provisioned concurrency
+
+## NPM Modules
+
+- https://github.com/agutoli/serverless-layers
+  - attaches automatically layers for each function
+  - Auto detect when deps have changes
+  - Auto publish a layer
+
+## VSCode Extensions
+
+- AWS Toolkit
+  - Event bridge
+  - schema registry: use aws toolkit to browse contracts that the schema registry has detected or published yourself
+- GraphQL for VSCode
+- Serverless IDE
+- cfn-lint: https://formulae.brew.sh/formula/cfn-lint
+
+- Commitizen: https://github.com/commitizen/cz-cli
+- SEmantic RElease
+
+## How to structure functions in bigger products ?
+
+- App consist of many services
+- Micro repo approach - each microservice belongs in its own repo
+- That repo has one serverless.yml
+- Can still share code within that service
+- Different endpoint for same API - shared logic
+- Put into shared mo9dule in same project
+- reference by relative path
+- Shared utils, libs, across projects
+  - Extract to util repo
+  - Publish to NPM
+
+* Small startups / full stack teams
+  - mono repo
+    - folder for components / services
+      - each has its own serverless.yml
+    - Sharing code is easier
+    - Build time use webpack to bundle
+
+## Local Stack is hard to configure - and easy to break
+
+- Don't optimize for local dev experience
+- Tooling right now is not good enough
+
+- Slight difference in behavior with prod
+- Talk to real AWS services
+- Deploy / provision
+
+## drawbacks of lambdas calling lambdas?
+
+- handle all the retries manually
+- first function has a timeout
+- within that timeout - have to finish and call another function - have to wait for the other function to complete
+- have to know what the other function needs in payload, context
+- Okay within one micro-service that one team manages
+- however, calling another microservice owned by another team - needs to know that team's function name, and contract of that function
+- needs to know more about the implementation than needed
+- better to know that the contract is just the API contract of API Gateway
+
+* If there are two separate discrete logic in two lambdas
+* better to put into one lambda - easier to manage and trace that way
+* otherwise - better to have async calls via a queue

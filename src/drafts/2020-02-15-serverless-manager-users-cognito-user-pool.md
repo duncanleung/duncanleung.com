@@ -26,4 +26,14 @@ manage users when using cognito user pools?
     - `cognitoIdentityPoolId`
     - `accountId`
     - `user`
-*
+
+- Can use this information from API gateway in function
+- Can then fetch user orders in another function
+
+Cognito has hooks
+
+- before a user is created
+- call another lambda
+- Take infor about user
+- put into db
+-

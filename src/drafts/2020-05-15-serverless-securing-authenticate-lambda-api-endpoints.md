@@ -1,5 +1,5 @@
 ---
-date: 2020-02-15
+date: 2020-05-15
 title: Authenticating AWS Lambda API Endpoints
 template: post
 thumbnail: "../thumbnails/serverless.png"
@@ -27,7 +27,7 @@ tags:
     - Used by microservices
     - Not to be consumed by client app
 
-## secure APIs in API Gateway with API Keys
+## Secure APIs in API Gateway with API Keys
 
 - API keys and usage patterns are designed for rate limiting individual clients rather than authentication and authorization
 - give clients access to APIs included in the usage plan, but only at an agreed-upon request rate and quota
@@ -37,8 +37,10 @@ tags:
 
   - `private:true`
 
-- An important detail:
-  - the request rate and quota apply to all the APIs AND the **stages** covered by the current usage plan.
+- An important detail per API Keys:
+  - the request rate and quota assigned to an API Key apply to all the APIs AND the **stages** covered by the current usage plan.
+
+<div class="filename">serverless.yml</div>
 
 ```yml
 provider:
@@ -75,6 +77,7 @@ functions:
           method: get
     environment:
       restaurants_api: https://cx6jygh1y4.execute-api.us-east-1.amazonaws.com/dev/restaurants
+
   get-restaurants:
     handler: functions/get-restaurants.handler
     events:
@@ -85,6 +88,8 @@ functions:
 ```
 
 - Set up the header with `x-api-key`
+
+<div class="filename">/functions/get-index.js</div>
 
 ```js{12}
 async function getRestaurants() {
@@ -119,6 +124,9 @@ module.exports.handler = async function(event, context) {
 
 ## Securing the endpoint with IAM authorization
 
+- Restrict access to endpoints by role based permission model
+- AKA for own services
+
 - You generally want to have different levels of access for different APIs in your system (obviously not everything should be public)
 - One way to address that is to use usage plans + API keys. They are designed for rate limiting, not auth and they allow the client to access the selected API at agreed upon request rates and quotas (like Google Maps API). Request rate and quote apply to all APIs and stages covered by the usage plan.
 - Another thing is to allow certain APIs to be accessed by your infrastructure only - by using IAM authorization
@@ -143,14 +151,21 @@ module.exports.handler = async function(event, context) {
 - sign the HTTP request with the AWS version 4 signature
   https://docs.aws.amazon.com/general/latest/gr/sigv4_signing.html
 
-```yml
+```
+$ yarn add aws4
+```
+
+<div class="filename">serverless.yml</div>
+
+```yml{7-8,26}
 provider:
   name: aws
   runtime: nodejs12.x
+
   iamRoleStatements:
     - Effect: Allow
       Action: execute-api:Invoke
-      Resource: arn:aws:execute-api:#{AWS::Region}:#{AWS::AccountId}:*/*/GET/restaurants
+      Resource: arn:aws:execute-api:#{AWS::Region}:#{AWS::AccountId}:#{ApiGatewayRestApi}/${self:provider.stage}/GET/restaurants
 
 functions:
   get-index:
@@ -160,20 +175,32 @@ functions:
           path: /
           method: get
     environment:
-      restaurants_api: YOUR_DEPLOYED_API_URL
+      restaurants_api: https://#{ApiGatewayRestApi}.execute-api.#{AWS::Region}.amazonaws.com/${self:provider.stage}/restaurants
+
   get-restaurants:
     handler: functions/get-restaurants.handler
     events:
       - http:
-          path: /restaurants/
+          path: /restaurants
           method: get
-          private: true
           authorizer: aws_iam
+
+plugins:
+  - serverless-pseudo-parameters
 ```
 
-```js
-async function getRestaurants() {
+<div class="filename">/functions/get-index.js</div>
+
+```js{5,15}
+const http = require("axios");
+const aws4 = require("aws4");
+const URL = require("url");
+
+const restaurantsApiRoot = process.env.restaurants_api;
+
+const getRestaurants = async () => {
   const url = URL.parse(restaurantsApiRoot);
+
   const opts = {
     host: url.hostname,
     path: url.pathname,
@@ -181,32 +208,33 @@ async function getRestaurants() {
 
   aws4.sign(opts);
 
-  const res = await axios.get(restaurantsApiRoot, {
-    headers: {
-      Host: opts.headers["Host"],
-      "X-Amz-Date": opts.headers["X-Amz-Date"],
-      Authorization: opts.headers["Authorization"],
-      "X-Amz-Security-Token": opts.headers["X-Amz-Security-Token"],
-    },
+  const httpReq = http.get(restaurantsApiRoot, {
+    headers: opts.headers,
   });
-  return res.data;
-}
 
-module.exports.handler = async function(event, context) {
-  let restaurants = await getRestaurants();
+  return (await httpReq).data;
+};
 
-  // ...
-
+module.exports.handler = async (event, context) => {
+  const restaurants = await getRestaurants();
   const response = {
     statusCode: 200,
-    body: html,
     headers: {
       "Content-Type": "text/html; charset=UTF-8",
     },
+    body: html,
   };
 
   return response;
 };
+```
+
+Trying to hit the `/restaurants` API endpoint directly will result in the error:
+
+```
+{
+  message: "Missing Authentication Token"
+}
 ```
 
 ### Using Javascript SDK

@@ -35,7 +35,7 @@ functions:
           path: /
           method: get
     environment:
-      restaurants_api: https://#{ApiGatewayRestApi}.execute-api.#{AWS::Region}.amazonaws.com/${self:provider.stage}/restaurants
+      stores_api: https://#{ApiGatewayRestApi}.execute-api.#{AWS::Region}.amazonaws.com/${self:provider.stage}/stores
 
   get-stores:
     handler: functions/get-stores.handler
@@ -55,7 +55,7 @@ The `get-index` function needs to make a call to the `get-stores` function to do
 > **Store this URI as an environment variable for the `get-index` function:**
 
 ```
-https://#{ApiGatewayRestApi}.execute-api.#{AWS::Region}.amazonaws.com/${self:provider.stage}/restaurants
+https://#{ApiGatewayRestApi}.execute-api.#{AWS::Region}.amazonaws.com/${self:provider.stage}/stores
 ```
 
 ## CloudFormation Pseudo Parameters and Serverless Variables

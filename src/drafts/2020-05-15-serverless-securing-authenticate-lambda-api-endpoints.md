@@ -272,9 +272,10 @@ functions:
 ```
 
 ```js
-const AWS = require("aws-sdk");
+// const AWS = require("aws-sdk");
+const Lambda = require("aws-sdk/clients/lambda");
 
-const lambda = new AWS.Lambda({
+const lambda = new Lambda({
   region: "us-east-1",
 });
 
@@ -308,11 +309,62 @@ module.exports.handler = async (event, context) => {
 
 <!-- ------------------------------------------------------------------------------------------------------- -->
 
-## Cognito User Pool
+## Cognito
 
-- We can think of Cognito as a collection of 3 different services: Cognito User Pools, Cognito Federated Identities and Cognito Sync
-- Cognito User Pools is a managed identity service (registration/verify email/password policy etc. etc.). After signign in user can access - APIs on API Gateway that require sign in
-- Cognito Federated Identities - allows you to take auth token issues by auth providers and exchange it for a set of temporary AWS credentials
+- We can think of Cognito as a collection of 3 different services:
+  - Cognito User Pools
+  - Cognito Federated Identities
+  - Cognito Sync
+
+## Cognito User Pools
+
+- Cognito User Pools is a managed identity service (registration/verify email/password policy etc. etc.).
+- After sign in in user can access any APIs on API Gateway that are configured with a Cognito authorizer
+- Can also use federation to use other social sign in methods
+
+## Cognito Federated Identities
+
+- Cognito Federated Identities
+- allows you to take auth token issues by auth providers and exchange it for a set of temporary AWS credentials
+- Authenticate with one of supported identity providers (Google, Facebook, Twitter, etc)
+- When authenticated, will return an auth token
+  - Send the auth token to Cognito federated identities
+  - Cognito federated identities will validate with the identity provider
+  - When valid - Cognito will issue a temporary IAM credential
+  - The client can use that temporary IAM credential to access other AWS services
+
+```
+
+    Identity Providers
+┌────────────────────────────────────────────────────────┐
+|                                                        |
+| Google     Cognito User Pools     Facebook     Twitter |
+|                                                        |
+└────────────────────────────────────────────────────────┘
+             ▲   |                           ▲
+Authenticate |   | Token                     | Validate
+             |   |                           |
+             |   ▼                           |
+┌─────────────────┐      Token        ┌────────────────┐
+|                 | ----------------► |   Cognito      |
+|   App / Client  |                   |   Federated    |
+|                 | ◄---------------- |   Identities   |
+└─────────────────┘   IAM Credential  └────────────────┘
+      |
+      |
+      | IAM Credential
+      |
+      ▼                                     AWS Services
+┌────────────────────────────────────────────────────────┐
+|                                                        |
+| API Gateway    S3    DynamoDB    SNS    Kinesis    ... |
+|                                                        |
+└────────────────────────────────────────────────────────┘
+
+```
+
+## Cognito Sync
+
 - Cognito Sync - nobody uses it lmao, it syncs user data across multiple devices
 
 - In short - when user registers, confirms their email etc. the client talks with Cognito User Pools, and after a successful sign-in, Cognito User Pools returns a JWT token. This token is later used for authorization in API Gateway.
@@ -332,37 +384,41 @@ module.exports.handler = async (event, context) => {
   - Client: include JWT in header of HTTP request to API Gateway secured with a Cognito authorizer
 
 ```
-Client         Cognito User Pools     API Gateway
-  |                      |                |
-  | Register             |                |
-  | -------------------> |                |
-  | <------------------- |                |
-  |   Verification Token |                |
-  |        (Email / SMS) |                |
-  |                      |                |
-  | Confirm Token        |                |
-  | -------------------> |                |
-  | <------------------- |                |
-  |         Registration |                |
-  |             Complete |                |
-  |                      |                |
+Client         Cognito User Pools       API Gateway      AWS Lambda
+  |                      |                    |               |
+  | Register             |                    |               |
+  | -------------------► |                    |               |
+  | ◄------------------- |                    |               |
+  |   Verification Token |                    |               |
+  |        (Email / SMS) |                    |               |
+  |                      |                    |               |
+  |                      |                    |               |
+  | Confirm Token        |                    |               |
+  | -------------------► |                    |               |
+  | ◄------------------- |                    |               |
+  |                      |                    |               |
+  |         Registration |                    |               |
+  |             Complete |                    |               |
+  |                      |                    |               |
 ```
 
 ```
-Client         Cognito User Pools     API Gateway
-  |                      |                 |
-  | Sign In              |                 |
-  | -------------------> |                 |
-  | <------------------- |                 |
-  |             ID Token |                 |
-  |                (JWT) |                 |
-  |                      |                 |
-  |                      |                 |
-  |                      |                 |
-  | HTTP POST { authorization: ...}        |
-  | -------------------------------------> |
-  | <------------------------------------- |
-  |                      |    200 {......} |
+Client           Cognito User Pools      API Gateway     AWS Lambda
+  |                      |                    |               |
+  | Sign In              |                    |               |
+  | -------------------► |                    |               |
+  | ◄------------------- |                    |               |
+  |             ID Token |                    |               |
+  |                (JWT) |                    |               |
+  |                      |                    |               |
+  |                      |                    |               |
+  |                      |                    |               |
+  | HTTP POST { authorization: ... }          |               |
+  | ----------------------------------------► |               |
+  |                      |                    | ------------► |
+  |                      |                    | ◄------------ |
+  | ◄---------------------------------------- |               |
+  |                      |          200 {...} |               |
 
 ```
 

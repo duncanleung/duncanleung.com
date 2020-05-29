@@ -79,12 +79,12 @@ Serverless generates a `cloudformation-template-update-stack.json` CloudFormatio
 
 <div class="filename">cloudformation-template-update-stack.json</div>
 
-```json
+```json{2,3}
 "Resources": {
   "ApiGatewayRestApi": {
       "Type": "AWS::ApiGateway::RestApi",
       "Properties": {
-        "Name": "dev-workshop-Duncan-Leung",
+        "Name": "dev-api-service",
         "EndpointConfiguration": {
           "Types": [
             "EDGE"

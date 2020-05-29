@@ -58,11 +58,12 @@ resources:
 
 ```
 unknown tag <!Ref>
+unknown tag <!GetAtt>
 ```
 
 ```json
 {
   // ... other settings
-  "yaml.customTags": ["!Ref"]
+  "yaml.customTags": ["!Ref", "!GetAtt"]
 }
 ```

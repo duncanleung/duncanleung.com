@@ -19,7 +19,7 @@ tags:
 
 Considering that not all Lambda functions should be public, different APIs in a system will require different levels of authentication and access.
 
-We'll take a look at securing Lambda functions at AWS API Gateway using IAM and Cognito authorizers, and setting up usage quotas with API keys.
+We'll take a look at securing Lambda functions at API Gateway using IAM and Cognito authorizers, and setting up usage quotas with API keys.
 
 ### Public APIs
 
@@ -720,10 +720,10 @@ Now that the `get-stores` Lambda has the `private` boolean, API calls to `get-st
 ```js{8}
 const http = require("axios");
 
-const restaurantsApiRoot = process.env.restaurants_api;
+const storesApi = process.env.stores_api;
 
-const getRestaurants = async () => {
-  const httpReq = http.get(restaurantsApiRoot, {
+const getStores = async () => {
+  const httpReq = http.get(storesApi, {
     headers: {
       "x-api-key": "xxxxxxxxx",
     },

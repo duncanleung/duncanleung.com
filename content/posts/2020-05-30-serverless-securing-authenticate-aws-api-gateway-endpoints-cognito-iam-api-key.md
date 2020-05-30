@@ -1,23 +1,25 @@
 ---
 date: 2020-05-30
-title: Securing AWS API Gateway Endpoints (API Keys, IAM, Cognito)
+title: Securing AWS API Gateway Endpoints (Cognito, IAM, API Keys)
 template: post
 thumbnail: "../thumbnails/serverless.png"
-slug: serverless-securing-authenticate-aws-api-gateway-endpoints-api-key-iam-cognito
+slug: serverless-securing-authenticate-aws-api-gateway-endpoints-cognito-iam-api-key
 categories:
   - Serverless
 tags:
   - serverless
   - aws-lambda
   - aws-api-gateway
-  - aws-api-key
-  - aws-iam
   - aws-cognito
+  - aws-iam
+  - aws-api-key
 ---
 
 ## API Security and Authentication Overview
 
 Considering that not all Lambda functions should be public, different APIs in a system will require different levels of authentication and access.
+
+We'll take a look at securing Lambda functions at AWS API Gateway using IAM and Cognito authorizers, and setting up usage quotas with API keys.
 
 ### Public APIs
 

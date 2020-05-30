@@ -13,7 +13,7 @@ tags:
 
 ## Generating an AWS Lambda API endpoint
 
-A handy trick to reference an AWS Lambda API endpoint is to use <a href='https://www.serverless.com/plugins/serverless-pseudo-parameters/' target='_blank'>serverless-pseudo-parameters</a> and <a href='https://www.serverless.com/framework/docs/providers/aws/guide/variables/' target="_blank">Serverless variables</a> to create the endpoint URI that can be passed to lambda function through an environment variable.
+A handy trick to reference an AWS Lambda API endpoint is to use <a href='https://www.serverless.com/plugins/serverless-pseudo-parameters/' target='_blank'>serverless-pseudo-parameters</a> and <a href='https://www.serverless.com/framework/docs/providers/aws/guide/variables/' target="_blank">Serverless variables</a> to create the endpoint URL that can be passed to lambda function through an environment variable.
 
 Consider the two lambda functions defined in this `serverless.yml`:
 
@@ -50,9 +50,9 @@ plugins:
 
 The `get-index` function needs to make a call to the `get-stores` function to do some logic, like querying a database.
 
-> **Use pseudo-parameters and Serverless variables to generate the API endpoint URI of the `get-stores` API endpoint.**
+> **Use pseudo-parameters and Serverless variables to generate the API endpoint URL of the `get-stores` API endpoint.**
 >
-> **Store this URI as an environment variable for the `get-index` function:**
+> **Store this URL as an environment variable for the `get-index` function:**
 
 ```
 https://#{ApiGatewayRestApi}.execute-api.#{AWS::Region}.amazonaws.com/${self:provider.stage}/stores

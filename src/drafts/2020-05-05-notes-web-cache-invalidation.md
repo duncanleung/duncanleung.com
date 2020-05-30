@@ -11,6 +11,8 @@ tags:
   - aws-cli
 ---
 
+https://jakearchibald.com/2016/caching-best-practices/
+
 Pattern 2: Mutable content, always server-revalidated
 
 ```
@@ -35,5 +37,3 @@ there is no need to retransmit the requested resources
 `no-store`: tells the browser not to cache the resource at all.
 
 `must-revalidate`: If the browser has a cached version of the resource that is less than `max-age` period of time old, then use the cache without consulting the server. otherwise it must revalidate. doesn't mean "always must revalidate"
-
-

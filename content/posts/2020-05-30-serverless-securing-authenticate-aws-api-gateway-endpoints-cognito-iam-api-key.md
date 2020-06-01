@@ -598,11 +598,10 @@ module.exports.handler = async (event, context) => {
 
 We can also use API keys and Usage Plans to restrict a client's access on selected APIs to an agreed-upon request rate and quota.
 
-**It should be noted that API keys are designed for rate-limiting individual clients rather than for authentication and authorization.**
+> **It should be noted that API keys are designed for rate-limiting individual clients rather than for authentication and authorization.**
 
-> API key quotas apply to all APIs and Stages
->
-> The request rate and quota assigned to an API key apply to all the APIs AND the **stages** covered by the current usage plan.
+**Note: API key quotas apply to all APIs and Stages.**
+**The request rate and quota assigned to an API key apply to all the APIs AND the **stages** covered by the current usage plan.**
 
 In this example, we're going to have the `get-index` function call the `get-stores` function through API Gateway:
 

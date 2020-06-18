@@ -110,6 +110,8 @@ The browser jumps to compositing.
 
 This is the cheapest and most desirable for tasks like animations or scrolling.
 
+# ==================== Optimizing
+
 ## Optimizing Computed Style Calculation
 
 Computed Style Calculations can be optimized by:

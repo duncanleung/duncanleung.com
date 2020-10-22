@@ -6142,15 +6142,15 @@ gatsby-plugin-manifest@^2.4.35:
     semver "^7.3.2"
     sharp "^0.25.4"
 
-gatsby-plugin-netlify@^2.1.32:
-  version "2.1.32"
-  resolved "https://registry.yarnpkg.com/gatsby-plugin-netlify/-/gatsby-plugin-netlify-2.1.32.tgz#9b5d2c4da08d160d6f9037a09217c2b4df98143f"
-  integrity sha512-m1TGX1JGJa4f37/Wkhh3GOjBqMnGaagAIQB6eP3gCTwI21aWWuCI3sSq3MLBsy9OGuk529G6bvC/LqI74zDygQ==
+gatsby-plugin-netlify@^2.3.24:
+  version "2.3.24"
+  resolved "https://registry.yarnpkg.com/gatsby-plugin-netlify/-/gatsby-plugin-netlify-2.3.24.tgz#468bda55b28234b99dadd007e2b2b7285db90d44"
+  integrity sha512-OJgV1XNbffLt7C9zzOviC9oS3Yvfv5pV908H54p0PB37yP4ohfKF66NEyO0svWBYBZdf2QpeUUXJdn0ji4/AAQ==
   dependencies:
-    "@babel/runtime" "^7.7.6"
+    "@babel/runtime" "^7.11.2"
     fs-extra "^8.1.0"
     kebab-hash "^0.1.2"
-    lodash "^4.17.15"
+    lodash "^4.17.20"
     webpack-assets-manifest "^3.1.1"
 
 gatsby-plugin-nprogress@^2.1.19:

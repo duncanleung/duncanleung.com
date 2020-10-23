@@ -104,6 +104,7 @@ My current focus is **Serverless in Python**. (They stay here until I write abou
   - [ ] https://instagram-engineering.com/making-instagram-com-faster-part-1-62cc0c327538
   - [ ] https://www.robertcooper.me/premature-optimize-the-heck-out-of-your-react-apps-using-memoization
 
+- [ ] https://www.robinwieruch.de/complete-firebase-authentication-react-tutorial
 
 ### Bash
 
@@ -143,6 +144,13 @@ My current focus is **Serverless in Python**. (They stay here until I write abou
 ### Node
 
 - [ ] Front end masters
+- [ ] https://learnnode.com/
+
+
+### GraphQL
+- [ ] https://www.howtographql.com/
+- [ ] https://advancedreact.com/
+- [ ] https://www.roadtographql.com/
 
 ### Git
 
@@ -168,7 +176,7 @@ My current focus is **Serverless in Python**. (They stay here until I write abou
 
 ### Databases/APIs
 
-- [ ] GraphQL
+- [ ] DynamoDB
 
 ### Object Oriented Programming
 
@@ -198,7 +206,6 @@ My current focus is **Serverless in Python**. (They stay here until I write abou
 
 ### Databases/APIs
 
-- [ ] GraphQL
 - [ ] NoSQL (MongoDB, Firebase)
 - [ ] Swagger - UI, Codegen, Docs
 - [ ] JWT token generation and client side handling

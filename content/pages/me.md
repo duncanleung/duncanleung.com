@@ -6,7 +6,7 @@ template: page
 
 👋 Hi! I’m Duncan Leung.
 
-I'm a front end web engineer and former product manager. I write about JavaScript, React, and web development.
+I'm a senior frontend engineer and former product manager. I write about JavaScript, React, and web development.
 
 I'm a self taught software developer 👨🏻‍💻, and this is a
 place for me to <a href="/learn"> 📝 learn in public</a>.

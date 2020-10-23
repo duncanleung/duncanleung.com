@@ -5,9 +5,9 @@ template: post
 thumbnail: "../thumbnails/python.png"
 slug: styled-system-emotion-object-styles-css-grid
 categories:
-  - Python
+  - EmotionJS
 tags:
-  - python
+  - emotion-js
 ---
 
 Pseudo Selector

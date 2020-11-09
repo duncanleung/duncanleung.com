@@ -95,7 +95,7 @@ There is also a whole article on <a href="https://github.com/microsoft/TypeScrip
 - Set up `tsconfig.json` with the `include` property to specify only input folders in a project with TypeScript files that should be compiled.
 - Avoid adding too many `exclude` and `include` folders, since TypeScript files must be discovered by walking through included directories, so running through many folders can actually slow down compilation.
 
-<div class="filename">.eslintrc.js</div>
+<div class="filename">tsconfig.json</div>
 
 ```js
 module.exports = {

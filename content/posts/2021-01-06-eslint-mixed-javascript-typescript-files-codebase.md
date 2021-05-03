@@ -1,6 +1,6 @@
 ---
 date: 2021-01-06
-title: ESLint TS and JS Files
+title: ESLint on TypeScript and JavaScript Files
 template: post
 thumbnail: "../thumbnails/eslint.png"
 slug: eslint-mixed-javascript-typescript-files-codebase

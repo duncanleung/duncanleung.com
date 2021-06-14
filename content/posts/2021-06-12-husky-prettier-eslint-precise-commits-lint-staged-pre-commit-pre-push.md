@@ -14,7 +14,7 @@ tags:
 
 # Automatically Format and Lint Code with Git Hooks
 
-I wanted to set up automatic code formatting and linting before a `git commit` (pre-commit) or before a `git push` (pre-push) that was independt from each of my team-member's IDE specific setup.
+I wanted to set up automatic code formatting and linting before a `git commit` (pre-commit) or before a `git push` (pre-push) that was independent from each of my team-member's IDE specific setup.
 
 Having a gated `git push` also prevents lint-failing code from being pushed up to out team's remote branches.
 
@@ -22,7 +22,7 @@ Having a gated `git push` also prevents lint-failing code from being pushed up t
 
 I've previously written about how to set up ESLint for a mixed TypeScript and JavaScript codebase, and you can see an example of an ESLint config set up to parse both [TypeScript and JavaScript Files](https://duncanleung.com/eslint-mixed-javascript-typescript-files-codebase/)
 
-Setting up a Prettier config is relatively straightforward, but ideally should be discuseed with your own team's opinions.
+Setting up a Prettier config is relatively straightforward, but ideally should be discussed with your own team's opinions.
 
 <div class="filename">.prettierrc</div>
 
@@ -47,7 +47,7 @@ Setting up a Prettier config is relatively straightforward, but ideally should b
 
 ## Set Up Husky Git Hooks
 
-Husky simplifies the set up to use run scrtips on specific git hooks.
+Husky simplifies the set up to use run scripts on specific git hooks.
 
 Here are example scripts that will be run on the `pre-commit` and `pre-push` git hooks with Husky.
 

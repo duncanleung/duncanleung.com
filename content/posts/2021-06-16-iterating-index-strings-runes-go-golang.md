@@ -132,6 +132,8 @@ This allows us to safely compare the runes:
 - The lengths of the rune slices
 - Iterate over one of them, and compare each rune with the corresponding rune in the other.
 
+<div class="filename">Rune Comparison Solution</div>
+
 ```go
 // Package hamming implements utilities to find the Hamming Distance
 // between two strands of DNA

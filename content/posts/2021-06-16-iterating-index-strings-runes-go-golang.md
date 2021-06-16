@@ -1,6 +1,6 @@
 ---
 date: 2021-06-16
-title: Iterating Through Strings and Runes in Go
+title: Indexing Strings and Runes in Go
 template: post
 thumbnail: "../thumbnails/go.png"
 slug: iterating-index-strings-runes-go-golang

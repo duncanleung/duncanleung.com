@@ -8,7 +8,7 @@ categories:
   - macOS
 tags:
   - macos
-	- process
+  - process
 ---
 
 I was running into an issue running my React app locally where the default port was previously used and unreleased.

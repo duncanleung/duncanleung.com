@@ -21,6 +21,12 @@ yarn run v1.22.10
 Port 3000 is already in use.
 ```
 
+You may also see a similar `EADDRINUSE` error if a node processes is trying to use an occupied port:
+
+```bash
+Error: listen EADDRINUSE: address already in use :::3000
+```
+
 ## Solution
 
 We can find and kill the process running on port `tcp:3000` with the command:

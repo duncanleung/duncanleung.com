@@ -13,7 +13,7 @@ tags:
 
 I was running into an issue running my React app locally where the default port was previously used and unreleased.
 
-```terminal{5}
+```terminal
 ❯ yarn dev
 yarn run v1.22.10
 
@@ -23,7 +23,7 @@ Port 3000 is already in use.
 
 You may also see a similar `EADDRINUSE` error if a node processes is trying to use an occupied port:
 
-```terminal{1}
+```terminal
 Error: listen EADDRINUSE: address already in use :::3000
 ```
 

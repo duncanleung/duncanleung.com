@@ -1,6 +1,6 @@
 ---
 date: 2021-06-30
-title: Indexing Strings and Runes in Go
+title: Find and Kill Process on Port 3000
 template: post
 thumbnail: "../thumbnails/bash.png"
 slug: find-kill-process-port-3000-mac

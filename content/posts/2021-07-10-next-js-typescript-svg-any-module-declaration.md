@@ -10,7 +10,7 @@ tags:
   - typescript
 ---
 
-## Problem: SVG TypeScript ESLint errors for `any` value
+## Problem: SVG TypeScript ESLint errors on `any` value
 
 After updating to Next.js 11 (from v10.2.3 to v11.0.1) I noticed that TypeScript was having ESLint issues specifically related to SVGs.
 

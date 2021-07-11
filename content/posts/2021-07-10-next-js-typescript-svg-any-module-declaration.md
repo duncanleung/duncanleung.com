@@ -159,7 +159,7 @@ Now we can create a `@types/images.d.ts` file and take the content of the origin
 
 <div class="filename">@types/images.d.ts</div>
 
-```typescript{23,26}
+```typescript{23-26}
   type StaticImageData = {
     src: string;
     height: number;

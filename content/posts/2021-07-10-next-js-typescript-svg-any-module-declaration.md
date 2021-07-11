@@ -77,7 +77,7 @@ Next.js 11 <a href="https://github.com/vercel/next.js/pull/26485" target="_blank
 
 Unfortunately, these image import module declarations are included in the non-modifiable (and regenerated at every build) `next-env.d.ts` file:
 
-```diff{3}
+```typescript{3}
   /// <reference types="next" />
   /// <reference types="next/types/global" />
 + /// <reference types="next/image-types/global" />
@@ -110,7 +110,7 @@ Although Next.js owns the `next-env.d.ts` file we can customize `tsconfig.json` 
 
 <div class="filename">custom-next-env.d.ts</div>
 
-```diff{3}
+```typescript{3}
   /// <reference types="next" />
   /// <reference types="next/types/global" />
 - /// <reference types="next/image-types/global" />
@@ -122,7 +122,7 @@ We can then configure `tsconfig.json` to exclude the original `next-env.d.ts` to
 
 <div class="filename">tsconfig.json</div>
 
-```diff{26,27}
+```json{26,27}
 {
   "compilerOptions": {
     "target": "es5",
@@ -159,7 +159,7 @@ Now we can create a `@types/images.d.ts` file and take the content of the origin
 
 <div class="filename">@types/images.d.ts</div>
 
-```diff{23,26}
+```typescript{23,26}
   type StaticImageData = {
     src: string;
     height: number;

@@ -26,7 +26,7 @@ The TypeScript ESLint errors were occurring on all previously working SVG compon
 
 <div class="filename">SomeComponent.tsx</div>
 
-```typescript
+```typescript{5,9}
 import { default as Logo } from '~/public/logo.svg';
 
 <Logo
@@ -45,7 +45,7 @@ import { default as Logo } from '~/public/logo.svg';
 
 <div class="filename">SomeComponent.tsx</div>
 
-```typescript
+```typescript{7}
 import { default as XIcon } from '~/public/icons/x.svg';
 
 <IconButton
@@ -77,7 +77,7 @@ Next.js 11 <a href="https://github.com/vercel/next.js/pull/26485" target="_blank
 
 Unfortunately, these image import module declarations are included in the non-modifiable (and regenerated at every build) `next-env.d.ts` file:
 
-```diff
+```diff{3}
   /// <reference types="next" />
   /// <reference types="next/types/global" />
 + /// <reference types="next/image-types/global" />
@@ -87,7 +87,7 @@ The newly included <a href="https://github.com/vercel/next.js/blob/canary/packag
 
 <div class="filename">next.js/packages/next/image-types/global.d.ts</div>
 
-```typescript
+```typescript{7}
 declare module "*.svg" {
   /**
    * Use `any` to avoid conflicts with
@@ -110,7 +110,7 @@ Although Next.js owns the `next-env.d.ts` file we can customize `tsconfig.json` 
 
 <div class="filename">custom-next-env.d.ts</div>
 
-```diff
+```diff{3}
   /// <reference types="next" />
   /// <reference types="next/types/global" />
 - /// <reference types="next/image-types/global" />
@@ -122,7 +122,7 @@ We can then configure `tsconfig.json` to exclude the original `next-env.d.ts` to
 
 <div class="filename">tsconfig.json</div>
 
-```diff
+```diff{26,27}
 {
   "compilerOptions": {
     "target": "es5",
@@ -159,7 +159,7 @@ Now we can create a `@types/images.d.ts` file and take the content of the origin
 
 <div class="filename">@types/images.d.ts</div>
 
-```diff
+```diff{23,26}
   type StaticImageData = {
     src: string;
     height: number;

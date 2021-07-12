@@ -106,7 +106,7 @@ declare module "*.svg" {
 
 ### Create a custom next-env.dts to exclude image-types/global
 
-Although Next.js owns the `next-env.d.ts` file we can customize `tsconfig.json` to add our own `custom-next-env.d.ts` declaration file that doesn't include the `next/image-types/global` module declarations.
+Although Next.js owns the `next-env.d.ts` file, the <a href="https://github.com/vercel/next.js/pull/26485#issuecomment-867091407" target="_blank">original PR implementing this change into Next.js 11</a> states that we can customize `tsconfig.json` to add our own `custom-next-env.d.ts` declaration file that doesn't include the `next/image-types/global` module declarations.
 
 <div class="filename">custom-next-env.d.ts</div>
 

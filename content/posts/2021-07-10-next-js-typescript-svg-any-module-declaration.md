@@ -116,6 +116,34 @@ Although Next.js owns the `next-env.d.ts` file, the <a href="https://github.com/
 - /// <reference types="next/image-types/global" />
 ```
 
+We'll also need to add `next-env.d.ts` to `.eslintignore` to avoid ESLint getting confused with how to handle `next-env.d.ts`.
+
+Otherwise you'll see the following error:
+
+```terminal
+/home/runner/work/parent-portal/parent-portal/next-env.d.ts
+  0:0  error  Parsing error: "parserOptions.project" has been set for @typescript-eslint/parser.
+
+The file does not match your project config: next-env.d.ts.
+                                           ^^^^^^^^^^^^^
+The file must be included in at least one of the projects provided
+```
+
+Here's an example of my `.eslintignore`
+
+<div class="filename">.eslintignore</div>
+
+```bash{8}
+  # Dependency directories
+  /node_modules
+
+  # NextJS Files
+  /build
+  /public/*
+  /.next
++ next-env.d.ts
+```
+
 ### Configure tsconfig.json
 
 We can then configure `tsconfig.json` to exclude the original `next-env.d.ts` to exclude: `next-env.d.ts`, and include: `custom-next-env.d.ts`.

@@ -23,7 +23,7 @@ It's still possible to use the Browser API `document.getElementsByTagName("meta"
 ```tsx{7-17,26-30,37}
 import React from "react";
 import { render } from "test-utils";
-import { wait } from "@testing-library/react";
+import { waitFor } from "@testing-library/react";
 
 import SEO from "../SEO";
 
@@ -57,7 +57,7 @@ describe("<SEO />", () => {
       </>
     );
 
-    await wait(() => expect(getMeta("robots")).toEqual("noindex, nofollow"));
+    await waitFor(() => expect(getMeta("robots")).toEqual("noindex, nofollow"));
   });
 });
 ```

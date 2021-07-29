@@ -58,6 +58,10 @@ When we store a character value in a string, we store its byte-at-a-time represe
 
 So, when indexing a string, the index accesses the individual bytes in the string, not its characters, since a string is actually a slice of bytes.
 
+With this in mind, when we iterate over a string, the index doesn't move by each single UTF-8 encoded character increments, but instead by every byte.
+
+If we wish to increment the index by character, we must either cas the slice to a string or rune.
+
 For example, consider the characters `"u"`, and `"ü"`:
 
 ```go

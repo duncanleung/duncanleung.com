@@ -29,7 +29,7 @@
     "gatsby-transformer-sharp": "2.5.19",
     "gatsby-transformer-remark": "2.8.46",
     "lodash.kebabcase": "^4.1.1",
-    "moment": "^2.24.0",
+    "moment": "^2.29.3",
     "node-sass": "^4.13.1",
     "prismjs": "^1.21.0",
     "react": "^16.14.0",

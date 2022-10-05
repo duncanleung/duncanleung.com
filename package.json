@@ -37,7 +37,7 @@
     "react-helmet": "^5.2.1",
     "react-typography": "^0.16.19",
     "sharp": "^0.24.1",
-    "typography": "^0.16.19",
+    "typography": "^0.16.21",
     "url-join": "^4.0.1"
   },
   "devDependencies": {

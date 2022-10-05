@@ -27,7 +27,7 @@
     "gatsby-source-filesystem": "^2.1.48",
     "lodash": "^4.17.20",
     "gatsby-transformer-sharp": "2.5.19",
-    "gatsby-transformer-remark": "2.8.46",
+    "gatsby-transformer-remark": "2.16.1",
     "lodash.kebabcase": "^4.1.1",
     "moment": "^2.24.0",
     "node-sass": "^4.13.1",

@@ -32,12 +32,12 @@ $ brew update && brew upgrade && brew cleanup
 ## Install a Version of NodeJS
 
 ```
-$ nvm install <node_version>      // Install a specific NodeJS version
-$ nvm install --lts               // Install latest LTS release of Node
+$ nvm install <node_version>      // Install a specific version
+$ nvm install --lts               // Install the latest LTS release
 $ nvm install-latest-npm          // Install latest NPM release only
 ```
 
-## List Available NodeJS Releases for Download
+## List Available Releases
 
 ```
 $ nvm ls-remote
@@ -45,17 +45,17 @@ $ nvm ls-remote | grep -i "latest"
 $ nvm ls-remote | grep -i "<node_version>"
 ```
 
-## List Installed NodeJS Versions
+## List Installed Versions
 
 ```
-$ nvm ls                          // Lists installed NodeJS versions with additional release info
+$ nvm ls
 ```
 
-## Switch a NodeJS Version
+## Switch to a Version
 
 ```
 $ nvm use <node_version_or_alias>  // Switch to a specific version
-$ nvm use --lts                    // Switch to the latest LTS NodeJS version
+$ nvm use --lts                    // Switch to the latest LTS version
 ```
 
 ## Verifying NodeJS Version
@@ -69,8 +69,8 @@ $ nvm -v
 ## Default to a NodeJS Version (Aliasing)
 
 ```
-$ nvm alias default <node_version>        // Set default NodeJS version on a shell
-$ nvm alias <alias_name> <node_version>   // Set user-defined alias to NodeJS versions 
+$ nvm alias default <node_version>        // Sets the default version on a shell
+$ nvm alias <alias_name> <node_version>   // Sets a user-defined alias to a versions 
 
 $ nvm unalias <alias_name>                // Deletes the alias named <alias_name>
 ```
@@ -78,12 +78,12 @@ $ nvm unalias <alias_name>                // Deletes the alias named <alias_name
 ## Check the Path to the NodeJS Executable
 
 ```
-$ nvm which <installed_node_version>      // path to a specific NodeJS executable
+$ nvm which <installed_node_version>      // Path to a specific executable
 ```
 
 ## Uninstall a Version of NodeJS
 
 ```
-$ nvm uninstall <node_version>    // Uninstall a specific NodeJS version
-$ nvm uninstall --lts             // Uninstall the latest LTS release of Node
+$ nvm uninstall <node_version>    // Uninstall a specific version
+$ nvm uninstall --lts             // Uninstall the latest LTS release
 ```

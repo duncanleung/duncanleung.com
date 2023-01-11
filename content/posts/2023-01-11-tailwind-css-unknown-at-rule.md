@@ -42,6 +42,8 @@ Unknown at rule @tailwind css(unknownAtRules)
 
 The solution was to [load a custom CSS dataset](https://code.visualstudio.com/blogs/2020/02/24/custom-data-format) for Tailwind directives in a workspace settings file `settings.json`.
 
+A list of the different Tailwind Directives in the docs: [Functions & Directives](https://v2.tailwindcss.com/docs/functions-and-directives)
+
 > Note: It's usually necessary to reload the VS Code window for the change to be recognized.
 
 

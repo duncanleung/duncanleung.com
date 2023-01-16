@@ -103,7 +103,7 @@ precise-commits and lint-staged are two helpful packages to minimize the scope t
 
 precise-commits
 
-- Only reformats the exact code that ahs been modified
+- Only reformats the exact code that has been modified
 - Only deals with code formatting with Prettier
 - Does not deal with ESLint
 

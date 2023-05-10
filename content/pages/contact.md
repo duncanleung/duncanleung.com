@@ -18,7 +18,7 @@ I lead the Frontend Web team at <a href="https://www.airvet.com/" target="_blank
 
 ### Around the web
 
-- **Email**: <a href="mailto:duncan[AT]leung[DOT]house" target="_blank">duncan@leung.house</a>
+- **Email**: <a href="mailto:duncan[AT]leungs[DOT]email" target="_blank">duncan[AT]leungs[DOT]email</a>
 - **GitHub**: <a href="https://github.com/duncanleung" target="_blank">duncanleung</a>
 - **Twitter**: <a href="https://twitter.com/leungd" target="_blank">leungd</a>
 - **Feed**: <a href="https://duncanleung.com/rss.xml" target="_blank">RSS</a>

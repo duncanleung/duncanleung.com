@@ -9,7 +9,7 @@ template: page
 Front End Engineer who is passionate about creating beautiful experiences, writing clean, efficient code and maintaining modern standards.
 
 - [duncanleung.com](https://duncanleung.com)
-- <a href="mailto:duncan[AT]leung[DOT]house" target="_blank">duncan@leung.house</a>
+- <a href="mailto:duncan[AT]leungs[DOT]email" target="_blank">duncan[AT]leungs[DOT]email</a>
 - Irvine, CA
 
 ## Technical Skills

@@ -2,7 +2,7 @@
   "name": "duncanleung.com",
   "description": "Personal website running on Gatsby, React, and Node.js.",
   "version": "1.0.1",
-  "author": "Duncan Leung <duncan@leung.house>",
+  "author": "Duncan Leung <duncan@leungs.email>",
   "repository": "git@github.com:duncanleung/duncanleung.com",
   "dependencies": {
     "eslint-utils": "^3.0.0",

@@ -1,6 +1,6 @@
 ---
 date: 2023-06-08
-title: Go Function Arguments are Pass by Value
+title: Go Function Argument Passing Behavior
 template: post
 thumbnail: "../thumbnails/go.png"
 slug: go-function-arguments-passed-by-value
@@ -24,7 +24,7 @@ Integers are passed by value into a function.
 
 To illustrate this, in the example below, `modifyInt()` can't change the original value of `num` to 5 because only a copy of the value of `num` is passed to it.
 
-```
+```go
 func modifyInt(i int) {
     i = 5
 }
@@ -59,7 +59,7 @@ The the "copy of the pointer" points to the same memory location as the original
 
 Inside the function, to modify the value that this "copy of the pointer" is pointing to, it first needs to be dereferenced `*i`. After dereferencing it, a new value can be assigned to the memory location that `i` points to with `*i = 5`.
 
-```
+```go
 func modifyIntPointer(i *int) {
     *i = 5
 }
@@ -108,7 +108,7 @@ Practically, this means that changes can be made to the original slice --by inde
 
 Here, `modifySlice` can change an element the original slice. Although a copy of the slice header is passed in, it still points to the same underlying array.
 
-```
+```go
 func modifySlice(s []int) {
     s[0] = 5
 }
@@ -127,7 +127,7 @@ This is because the function is working with a copy of the slice header, and the
 
 For example, using `append()` in Go creates a new underlying array.
 
-```
+```go
 func appendSlice(s []int) {
     s = append(s, 4)
 }
@@ -146,7 +146,7 @@ By passing a "pointer to a slice" to a function, the modifications to the slice 
 
 This works because a reference to the original slice header is passed, so when you append to the slice in `appendSlicePointer`, you're modifying the original slice header, and the change is reflected in the original.
 
-```
+```go
 func appendSlicePointer(s *[]int) {
     *s = append(*s, 4)
 }
@@ -161,7 +161,7 @@ func main() {
 
 It should be noted, that it is more idiomatic in Go to return the updated slice from the function rather than modifying it in place through a pointer:
 
-```
+```go
 func modifySlice(s []int) []int {
     return append(s, 4)
 }
@@ -180,7 +180,7 @@ Note: Strings are immutable in Go, so a string can't be modified within the func
 
 For example, this will not work:
 
-```
+```go
 str[0] = 'i' // compile-time error
 ```
 
@@ -195,7 +195,7 @@ This makes passing strings efficient, as the actual sequence of bytes that make 
 
 In this example, a copy of the string descriptor for `s` is passed to `printStr`, but the array of bytes that contains the characters "hello" is not copied.
 
-```
+```go
 func printStr(str string) {
     fmt.Println(str)
 }
@@ -212,7 +212,7 @@ Although the string that a pointer points to is immutable, the pointer itself is
 
 By passing a "pointer to a string" to a function, you can "change" the string that the pointer variable points to.
 
-```
+```go
 func changeStringPointer(s *string) {
     newString := "new value"
     *s = newString
@@ -234,7 +234,7 @@ Structs are passed by value into a function.
 
 To illustrate this, in the example below, `modifyPerson()` can't change the original value of `p.age` to 30 because only a copy of the value of `p` is passed to it.
 
-```
+```go
 type person struct {
 	name string
 	age  int
@@ -262,7 +262,7 @@ Note: `modifyPersonPointer()` does not need to dereference the pointer to the st
 
 For example:
 
-```
+```go
 func modifyPersonPointer(p *person) {
     (*p).age = 30 // Don't do this
 }
@@ -270,13 +270,13 @@ func modifyPersonPointer(p *person) {
 
 Go allows you to write `p.age`, and Go does the dereference automatically when you access a field of the struct.
 
-```
+```go
 func modifyPersonPointer(p *person) {
     p.age = 30
 }
 ```
 
-```
+```go
 type person struct {
     name string
     age  int

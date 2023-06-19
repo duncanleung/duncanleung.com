@@ -1,5 +1,5 @@
 ---
-date: 2023-06-08
+date: 2023-06-19
 title: JSON Encoding and Decoding in Go
 template: post
 thumbnail: "../thumbnails/go.png"

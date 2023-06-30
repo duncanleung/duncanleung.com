@@ -270,7 +270,7 @@ func (m Microwave) Draw(power int) {
 - The structs `Blender` and `Microwave` types implement the `Appliance` interface.
 - The receiver function `func (s *PowerSocket) PlugIn(appliance Appliance)` can now be used on any type that implements the `Appliance` interface.
 
-```go{2,7,11}
+```go{2,22,26}
 // Plug in any Appliance device to the power socket
 func (s *PowerSocket) PlugIn(appliance Appliance) error {
                                        ^^^^^^^^^

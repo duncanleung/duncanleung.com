@@ -83,7 +83,7 @@ module.exports = {
     return [
       {
         source: "/__/auth/:path*",
-        destination: `https://myapp.com/__/auth/:path*`,
+        destination: `https://<projectId>.firebaseapp.com/__/auth/:path*`,
       },
     ];
   },

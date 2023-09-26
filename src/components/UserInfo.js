@@ -1,5 +1,5 @@
-import React, { Component } from 'react'
-import duncan from '../../content/images/duncan-thumbnail.jpg'
+import React, { Component } from "react";
+import duncan from "../../content/images/duncan-thumbnail.jpg";
 // import patreon from '../../content/thumbnails/patreon.png'
 // import kofi from '../../content/thumbnails/kofi.png'
 
@@ -13,12 +13,10 @@ export default class UserInfo extends Component {
               <img className="avatar" src={duncan} alt="Duncan Leung" />
             </div>
             <div>
-              <p className='note__greeting'>
-              👋 Hi, I’m Duncan Leung.
-              </p>
+              <p className="note__greeting">👋 Hi, I’m Duncan Leung.</p>
               <p>
-              I&apos;m a self taught software developer 👨🏻‍💻, and this is
-                a place for me to <a href="/learn">📝&nbsp;learn in public</a>.
+                I&apos;m a Lead Frontend Web Engineer 👨🏻‍💻, and this is a place
+                for me to 📝 jot down some notes.
               </p>
 
               <div>

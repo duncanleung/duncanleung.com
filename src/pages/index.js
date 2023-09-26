@@ -16,7 +16,7 @@ export default class Index extends Component {
     const { data } = this.props;
 
     const latestPostEdges = data.latest.edges;
-    const popularPostEdges = data.popular.edges
+    const popularPostEdges = data.popular.edges;
 
     return (
       <Layout>
@@ -30,12 +30,13 @@ export default class Index extends Component {
                 <h1>👋 Hi, I&apos;m Duncan&nbsp;Leung</h1>
               </div>
               <p>
-                I&apos;m a front end web engineer and former product manager. I
-                write about JavaScript, React, and web development.
+                I&apos;m a Lead Front End Web Engineer and former product
+                manager. I write about JavaScript, React, (a little bit of Go)
+                and web development.
               </p>
               <p>
                 I&apos;m a self taught software developer 👨🏻‍💻, and this is a
-                place for me to <a href="/learn"> 📝 learn in public</a>.
+                place for me to 📝 jot down some notes.
               </p>
               <div className="social-buttons">
                 {/* <a

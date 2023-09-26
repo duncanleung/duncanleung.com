@@ -6,12 +6,12 @@ template: page
 
 👋 Hi! I’m Duncan Leung.
 
-I'm a senior frontend engineer and former product manager. I write about JavaScript, React, and web development.
+I'm a Lead Front End Web Engineer and former product manager. I write about JavaScript, React, (a little bit of Go) and web development.
 
 I'm a self taught software developer 👨🏻‍💻, and this is a
-place for me to <a href="/learn"> 📝 learn in public</a>.
+place for me to 📝 jot down some notes.
 
-I currently lead the Frontend Web team at Airvet, which provides <a href="https://www.airvet.com/" target="_blank">veterinary telemedicine access to pet owners</a>.
+I currently lead the Frontend Web Team and QA Team at Airvet, and we provide <a href="https://www.airvet.com/" target="_blank">veterinary telemedicine access to pet owners</a>.
 
 ### Newsletter
 

@@ -16,7 +16,7 @@ After working on <a href='https://exercism.io/my/solutions/fa4669b49e1946969e0d9
 
 Here's my original implementation:
 
-<div class="filename">String Comparison Solution</div>
+<div class="filename">Original Solution: String Comparison</div>
 
 ```go
 // Package hamming implements utilities to find the Hamming Distance
@@ -67,13 +67,7 @@ For example, consider the characters `"u"`, and `"ü"`:
 ```go
 const str = `ü`
 
-fmt.Printf("plain string: ")
-fmt.Printf("%s", str)
-fmt.Printf("\n")
 
-fmt.Printf("quoted string: ")
-fmt.Printf("%+q", str)
-fmt.Printf("\n")
 
 fmt.Printf("hex bytes: ")
 for i := 0; i < len(str); i++ {
@@ -82,7 +76,7 @@ for i := 0; i < len(str); i++ {
 fmt.Printf("\n")
 ```
 
-```bash
+```terminal
 plain string: ü
 ASCII-only quoted string: "\u00fc"
 individual bytes (in hexadecimal): c3 bc
@@ -98,13 +92,9 @@ And likewise the character `"u"` is represented by:
 ```go
 const str = `u`
 
-fmt.Printf("plain string: ")
-fmt.Printf("%s", str)
-fmt.Printf("\n")
+fmt.Printf("plain string: %s\n", str)
 
-fmt.Printf("quoted string: ")
-fmt.Printf("%+q", str)
-fmt.Printf("\n")
+fmt.Printf("quoted string: %+q\n", str)
 
 fmt.Printf("hex bytes: ")
 for i := 0; i < len(str); i++ {
@@ -113,7 +103,7 @@ for i := 0; i < len(str); i++ {
 fmt.Printf("\n")
 ```
 
-```bash
+```terminal
 plain string: u
 ASCII-only quoted string: "u"
 individual bytes (in hexadecimal): 75

@@ -13,23 +13,24 @@ export default function Home({ posts }) {
       <div className="my-6 flex flex-col gap-x-12 lg:mb-12 lg:flex-row">
         <div className="flex flex-col items-start justify-start space-y-6 md:mt-24 md:flex-row md:items-center md:justify-center md:space-x-6 md:divide-y-0">
           <div className="space-y-4 md:border-r-2 md:border-gray-200 dark:md:border-gray-700">
-            <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl dark:text-gray-100">
-              Timothy Lin
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 sm:text-4xl">
+              Duncan Leung
             </h1>
             <p className="text-primary-500 mr-2 w-96 text-sm tracking-wider uppercase">
               {siteMetadata.description}
             </p>
           </div>
           <div className="max-w-xl space-y-4 text-gray-600 dark:text-gray-400">
+            <p>Hi! I'm Duncan Leung and I currently lead Frontend Engineering at Airvet.</p>
             <p>
-              My main areas of interest includes quantitative research, socio-technological change,
-              open-source software and web technology. I try to combine them in my work in various
-              unique ways.
+              In a previous career I worked overseas in Beijing as a Product Manager at a skunkworks
+              studio building digital experience projects for Ford Motor (China) and consulted on UX
+              projects for Starwood Hotels. During this time I also mentored startups at
+              Chinaccelerator and ran startup events and hackathons in Shanghai.
             </p>
             <p>
-              I am currently a product manager at Resaro and maintainer of a couple of popular
-              open-source projects including Contentlayer, Pliny, and this Tailwind Next.js blog
-              template.
+              👨🏻‍💻 I'm a self taught software developer, and this is a place for me to jot down some
+              notes. I mostly cover Javascript, Typescript, React, and software development.
             </p>
           </div>
         </div>

@@ -66,16 +66,27 @@ module.exports = () => {
       dirs: ['app', 'components', 'layouts', 'scripts'],
     },
     images: {
-      remotePatterns: [{
-        protocol: 'https',
-        hostname: 'picsum.photos',
-      }],
+      remotePatterns: [
+        {
+          protocol: 'https',
+          hostname: 'picsum.photos',
+        },
+      ],
     },
     async headers() {
       return [
         {
           source: '/(.*)',
           headers: securityHeaders,
+        },
+      ]
+    },
+    async redirects() {
+      return [
+        {
+          source: '/python-name-check-pattern-__name__==__main__/',
+          destination: '/python-name-main-pattern/',
+          permanent: true,
         },
       ]
     },

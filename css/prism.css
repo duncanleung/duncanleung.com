@@ -16,6 +16,55 @@
   @apply mt-0 rounded-t-none;
 }
 
+.filename {
+  margin-bottom: -1.8rem;
+  @apply rounded-t-md bg-gray-900 px-5 py-3 font-mono text-sm font-bold text-gray-200 dark:bg-slate-800;
+}
+
+/* Terminal styles - Terminal Window */
+pre:has(code.language-terminal) {
+  position: relative;
+  padding: 1rem;
+  border: 1px solid #d8d9da;
+  box-shadow: 3px 5px 20px rgba(0, 0, 0, 0.16);
+  border-radius: 6px;
+  padding-top: 45px;
+  margin: 2rem 0;
+  font-size: 13px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Terminal styles - Top Bar */
+pre:has(code.language-terminal)::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 30px;
+  width: 100%;
+  @apply bg-gray-900;
+  border-radius: 6px 6px 0 0;
+}
+
+/* Terminal styles - Top Bar Buttons - Close, Minimize, Maximize */
+pre:has(code.language-terminal)::after {
+  content: "";
+  position: absolute;
+  top: 10px;
+  left: 15px;
+  width: 12px;
+  height: 12px;
+  background-color: #ff5f56; /* Red */
+  border-radius: 50%;
+  box-shadow: 25px 0 0 #ffbd2e, /* Yellow */
+              50px 0 0 #27c93f; /* Green */
+}
+
+pre:has(code.language-terminal) .line-number::before {
+  content: none;
+}
+
 /* Code block styles */
 .code-highlight {
   @apply float-left min-w-full;

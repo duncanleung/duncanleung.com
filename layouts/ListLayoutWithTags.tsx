@@ -7,6 +7,7 @@ import { CoreContent } from 'pliny/utils/contentlayer'
 import type { Blog } from 'contentlayer/generated'
 import Link from '@/components/Link'
 import Tag from '@/components/Tag'
+import Image from '@/components/Image'
 import siteMetadata from '@/data/siteMetadata'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import tagData from 'app/tag-data.json'
@@ -139,11 +140,34 @@ export default function ListLayoutWithTags({
 
                 {displayPosts.map((post) => {
                   const { path, date, title, summary, tags } = post
+                  // Get the tag to determine which thumbnail to show
+                  const tag = tags && tags.length > 0 ? tags[0].toLowerCase() : null
+                  // Use first tag to determine thumbnail if available
+                  const thumbnailPath = tag ? `/data/thumbnails/${tag}.png` : null
+
                   return (
                     <li key={path} className="py-12 first:pt-0">
                       <article>
-                        <div className="space-y-8">
-                          <div className="space-y-4">
+                        <div className="flex gap-6">
+                          {/* Thumbnail */}
+                          {tag && (
+                            <div className="hidden flex-shrink-0 sm:block">
+                              <Link href={`/${path}`} aria-label={`Link to ${title}`}>
+                                <div className="h-24 w-24 overflow-hidden rounded-md">
+                                  <Image
+                                    src={`/data/thumbnails/${tag}.png`}
+                                    alt={title}
+                                    width={96}
+                                    height={96}
+                                    className="h-full w-full object-cover object-center"
+                                  />
+                                </div>
+                              </Link>
+                            </div>
+                          )}
+
+                          {/* Post content */}
+                          <div className="flex-grow space-y-4">
                             <div className="flex flex-col gap-4 text-sm text-gray-500 dark:text-gray-300">
                               <time dateTime={date}>{formatDate(date, siteMetadata.locale)}</time>
                               <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
@@ -154,14 +178,14 @@ export default function ListLayoutWithTags({
                               </div>
                             </div>
                             <p className="text-gray-600 dark:text-gray-300">{summary}</p>
+                            <Link
+                              href={`/${path}`}
+                              className="group inline-flex items-center text-sm text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100"
+                            >
+                              Read article
+                              <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                            </Link>
                           </div>
-                          <Link
-                            href={`/${path}`}
-                            className="group inline-flex items-center text-sm text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100"
-                          >
-                            Read article
-                            <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                          </Link>
                         </div>
                       </article>
                     </li>

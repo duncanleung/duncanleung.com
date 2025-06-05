@@ -40,9 +40,7 @@ export default function AuthorLayout({ children, content }: Props) {
                   <p className="font-mono text-sm text-gray-600 uppercase dark:text-gray-400">
                     {occupation}
                   </p>
-                  <p className="font-mono text-sm text-gray-600 uppercase dark:text-gray-400">
-                    {company}
-                  </p>
+                  <p className="font-mono text-sm text-gray-600 dark:text-gray-400">at {company}</p>
                 </div>
               </div>
 

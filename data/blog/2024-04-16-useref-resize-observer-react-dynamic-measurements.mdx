@@ -1,0 +1,221 @@
+---
+title: 'Why useRef Doesn't Work for Dynamic Element Measurements in React'
+date: '2024-04-16'
+tags: ['react', 'javascript', 'useRef', 'ResizeObserver', 'DOM']
+summary: 'Learn why useRef alone is insufficient for dynamic element measurements in React, and how to effectively combine it with ResizeObserver and useState for responsive UI components.'
+authors: ['Duncan Leung']
+draft: false
+---
+
+# Why useRef Doesn't Work for Dynamic Element Measurements in React
+
+When building React applications, we often need to measure DOM elements and respond to changes in their dimensions. A common misconception is that `useRef` alone is sufficient for this purpose. In this post, I'll explain why `useRef` falls short for dynamic measurements and how `ResizeObserver` offers a robust solution.
+
+## The Problem: useRef Doesn't Trigger Re-renders
+
+In React, `useRef` is perfect for maintaining references to DOM elements without causing re-renders. However, this non-reactive property is precisely why it fails for dynamic measurements.
+
+Consider a chat application where we need to adjust scroll behavior based on the height of a message input that can expand as users type multi-line messages:
+
+```tsx
+// Non-working approach using just useRef
+import React, { useRef, useEffect } from 'react'
+
+const ChatLayout = () => {
+  const controlsRef = useRef<HTMLDivElement>(null)
+
+  // This will only run once after the component mounts
+  useEffect(() => {
+    console.log('Controls height:', controlsRef.current?.clientHeight)
+  }, [])
+
+  return (
+    <div className="chat-container">
+      <div className="messages-area">
+        <MessagesThreadUI controlsHeight={controlsRef.current?.clientHeight} messages={messages} />
+      </div>
+
+      <div ref={controlsRef} className="input-area">
+        <textarea
+          placeholder="Type your message..."
+          // As the user types more text, this area can expand
+          // but the MessagesThreadUI won't update!
+        />
+        <button>Send</button>
+      </div>
+    </div>
+  )
+}
+```
+
+### Why This Doesn't Work:
+
+1. **No Re-render Trigger**: When the height of the input area changes (e.g., when typing a multi-line message), this change doesn't trigger a re-render.
+
+2. **Stale Values**: Even if you could access `controlsRef.current.clientHeight`, React components using this value won't re-render when the height changes.
+
+3. **Timing Issues**: When `MessagesThreadUI` renders, the value of `controlsRef.current?.clientHeight` might be `undefined` (initial render) or reflect an outdated measurement.
+
+4. **No Change Detection**: There's no built-in mechanism to detect when the element's dimensions change.
+
+## The Solution: ResizeObserver with useState
+
+A better approach combines `useState` to manage the reactive state, a callback ref to set initial values, and `ResizeObserver` to detect dimension changes:
+
+```tsx
+import React, { useState, useCallback } from 'react'
+
+const ChatLayout = () => {
+  // State to store the height - changes will trigger re-renders
+  const [controlsElementHeight, setControlsElementHeight] = useState<number>(0)
+
+  // Callback ref that sets up the ResizeObserver
+  const controlsRef = useCallback((node: HTMLDivElement) => {
+    if (node !== null) {
+      // Initial measurement
+      setControlsElementHeight(node.getBoundingClientRect().height)
+
+      // Set up observer for future changes
+      const resizeObserver = new ResizeObserver(() => {
+        setControlsElementHeight(node.getBoundingClientRect().height)
+      })
+
+      // Start observing
+      resizeObserver.observe(node)
+
+      // Clean up observer when element unmounts
+      return () => resizeObserver.disconnect()
+    }
+  }, [])
+
+  return (
+    <div className="chat-container">
+      <div className="messages-area">
+        <MessagesThreadUI controlsHeight={controlsElementHeight} messages={messages} />
+      </div>
+
+      <div ref={controlsRef} className="input-area">
+        <textarea placeholder="Type your message..." />
+        <button>Send</button>
+      </div>
+    </div>
+  )
+}
+```
+
+### Why This Works:
+
+1. **Reactive State**: Using `useState` ensures that changes to height trigger re-renders in components that depend on that value.
+
+2. **Initial Measurement**: The callback ref runs when the component mounts and provides an immediate measurement.
+
+3. **Change Detection**: `ResizeObserver` is specifically designed to detect element resize events, firing only when dimensions actually change.
+
+4. **Cleanup**: The solution properly disposes of the `ResizeObserver` by returning a cleanup function, preventing memory leaks.
+
+5. **Modern API**: Unlike deprecated approaches like window resize listeners with throttling, `ResizeObserver` is the modern, efficient, and purpose-built API for element size monitoring.
+
+## When to Use This Pattern
+
+This approach is valuable whenever you need to:
+
+- Adjust layouts based on dynamic element dimensions
+- Maintain scroll positions during element resizing
+- Create responsive UI elements that adapt to their container size
+- Create complex animations based on element dimensions
+
+## Technical Details: What Makes ResizeObserver Special
+
+The `ResizeObserver` API was specifically designed to solve the problems of watching elements for size changes:
+
+1. **Performance**: Unlike polling or manual measurements, it's optimized by browsers and only fires when needed.
+
+2. **Box Model Awareness**: It understands the CSS box model and can observe changes to content, padding, borders, and margins.
+
+3. **Element-Specific**: Unlike window resize events, it targets specific elements, so you get notified only about relevant changes.
+
+4. **Handles Edge Cases**: Works correctly with CSS transitions, animations, and dynamic content changes.
+
+## Conclusion
+
+While `useRef` is perfect for maintaining non-reactive references to DOM elements, it falls short when we need to respond to changes in element dimensions. The combination of `useState` for reactivity, callback refs for setup, and `ResizeObserver` for change detection creates a robust pattern for dynamic element measurements in React applications.
+
+This pattern not only solves the immediate problem but does so in a way that's efficient, modern, and respects React's principles of explicit state management and unidirectional data flow.
+
+## Conclusion
+
+While `useRef` is perfect for maintaining non-reactive references to DOM elements, it falls short when we need to respond to changes in element dimensions. The combination of `useState` for reactivity, callback refs for setup, and `ResizeObserver` for change detection creates a robust pattern for dynamic element measurements in React applications.
+
+This pattern not only solves the immediate problem but does so in a way that's efficient, modern, and respects React's principles of explicit state management and unidirectional data flow.
+
+## When useRef Is the Right Tool for DOM References
+
+Despite its limitations for tracking dimensional changes, `useRef` remains invaluable for many DOM interaction scenarios:
+
+1. **Focus Management**: When you need to programmatically focus an input element:
+
+```tsx
+const inputRef = useRef<HTMLInputElement>(null);
+
+// Later in your component
+const focusInput = () => {
+  inputRef.current?.focus();
+};
+
+return <input ref={inputRef} />;
+```
+
+2. **DOM Methods & Properties**: For calling native DOM methods or accessing properties when you don't need to react to changes:
+
+```tsx
+const videoRef = useRef<HTMLVideoElement>(null);
+
+// Play/pause functionality that doesn't need to trigger re-renders
+const togglePlay = () => {
+  if (videoRef.current?.paused) {
+    videoRef.current.play();
+  } else {
+    videoRef.current?.pause();
+  }
+};
+```
+
+3. **Integration with Third-Party Libraries**: When you need to pass a DOM node to a non-React library:
+
+```tsx
+const chartContainerRef = useRef<HTMLDivElement>(null);
+
+useEffect(() => {
+  if (chartContainerRef.current) {
+    const chart = new ChartLibrary(chartContainerRef.current);
+    chart.render(data);
+
+    return () => chart.destroy();
+  }
+}, [data]);
+```
+
+4. **Scroll Position Control**: For scrolling to specific positions without needing to track the scroll position reactively:
+
+```tsx
+const messageEndRef = useRef<HTMLDivElement>(null);
+
+const scrollToBottom = () => {
+  messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+};
+```
+
+5. **Measurements That Don't Affect UI**: When you need to measure an element, but the measurement doesn't influence your component's rendering:
+
+```tsx
+const reportElementSize = () => {
+  if (elementRef.current) {
+    analytics.logEvent('element_size', {
+      width: elementRef.current.offsetWidth,
+      height: elementRef.current.offsetHeight
+    });
+  }
+};
+```
+
+The key distinction is reactivity: use `useRef` when you need to interact with the DOM but don't need React to re-render in response to changes. When measurements need to participate in the reactive data flow of your application, combine `useRef` with state management and observers as described earlier.

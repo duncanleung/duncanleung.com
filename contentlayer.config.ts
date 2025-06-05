@@ -24,6 +24,12 @@ import rehypePrismPlus from 'rehype-prism-plus'
 import rehypePresetMinify from 'rehype-preset-minify'
 import siteMetadata from './data/siteMetadata'
 import { allCoreContent, sortPosts } from 'pliny/utils/contentlayer.js'
+// Import refractor and jsx language
+import { refractor } from 'refractor'
+import jsx from 'refractor/lang/jsx.js'
+
+// Register jsx language
+refractor.register(jsx)
 
 const root = process.cwd()
 // heroicon mini link
@@ -99,7 +105,7 @@ function createSearchIndex(allBlogs) {
 
 export const Blog = defineDocumentType(() => ({
   name: 'Blog',
-  filePathPattern: 'blog/**/*.mdx',
+  filePathPattern: 'blog/**/*.{mdx,md}',
   contentType: 'mdx',
   fields: {
     title: { type: 'string', required: true },
@@ -179,16 +185,18 @@ export default makeSource({
         },
       ],
       rehypeKatex,
+      [rehypeCitation, { path: path.join(root, 'data'), linkCitations: true }],
       [
-        rehypeCitation,
+        rehypePrismPlus,
         {
-          path: path.join(root, 'data'),
-          linkCitations: true,
-          showTooltips: true,
-          tooltipAttribute: 'data-tooltip',
+          defaultLanguage: 'js',
+          ignoreMissing: true,
+          showLineNumbers: true,
+          aliases: {
+            jsx: ['js', 'javascript'],
+          },
         },
       ],
-      [rehypePrismPlus, { defaultLanguage: 'js', ignoreMissing: true }],
       rehypePresetMinify,
     ],
   },

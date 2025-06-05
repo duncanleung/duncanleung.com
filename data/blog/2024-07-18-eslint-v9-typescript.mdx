@@ -1,0 +1,219 @@
+---
+title: 'Preparing for ESLint v9: TypeScript Integration Changes'
+date: '2024-07-18'
+tags: ['eslint', 'typescript', 'javascript', 'tooling', 'development']
+summary: 'A comprehensive guide to the upcoming changes in ESLint v9 regarding TypeScript integration, including migration strategies and best practices.'
+authors: ['Duncan Leung']
+draft: false
+---
+
+## Problem: Migrating to ESLint v9
+
+I was running into an issue when migrating to the ESLint v9 flat config on my NextJS project.
+
+When I included the the `typescript-eslint` configuration to lint with type information:
+
+```
+export default tseslint.config(
+  ...tseslint.configs.recommendedTypeChecked,
+  ...tseslint.configs.stylisticTypeChecked,
+  {
+    files: ['**/*.ts', '**/*.tsx'],
+    languageOptions: {
+      parserOptions: {
+        project: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  },
+);
+```
+
+I would get the following error:
+
+```terminal
+Error: Error while loading rule '@typescript-eslint/await-thenable':
+You have used a rule which requires parserServices to be generated.
+
+You must therefore provide a value for the "parserOptions.project" property for @typescript-eslint/parser.
+
+Parser: typescript-eslint/parser
+```
+
+```
+import { fixupPluginRules } from '@eslint/compat';
+
+import pluginJs from '@eslint/js';
+import tseslint from 'typescript-eslint';
+
+import pluginTypescript from '@typescript-eslint/eslint-plugin';
+import parserTypescript from '@typescript-eslint/parser';
+
+import pluginRegExp from 'eslint-plugin-regexp';
+import pluginImportX from 'eslint-plugin-import-x';
+
+import pluginReact from 'eslint-plugin-react';
+import pluginReactHooks from 'eslint-plugin-react-hooks';
+import pluginJsxA11y from 'eslint-plugin-jsx-a11y';
+import pluginNext from '@next/eslint-plugin-next';
+import pluginTailwind from 'eslint-plugin-tailwindcss';
+import pluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
+
+export default tseslint.config(
+  {
+    ignores: [
+      '**/.next',
+      'next-env.d.ts',
+      'package.json',
+      'renovate.json',
+      '**/public',
+      '**/node_modules',
+      '**/*.config.js',
+    ],
+  },
+
+  // General ESLint configuration
+  pluginJs.configs.recommended,
+
+  // TypeScript configuration
+  ...tseslint.configs.recommendedTypeChecked,
+  ...tseslint.configs.stylisticTypeChecked,
+  {
+    files: ['**/*.ts', '**/*.tsx'],
+    languageOptions: {
+      parser: parserTypescript,
+      parserOptions: {
+        project: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    plugins: {
+      '@typescript-eslint': pluginTypescript,
+    },
+    rules: {
+      // Enforce the use of 'import type' for importing types
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        {
+          fixStyle: 'inline-type-imports',
+          disallowTypeAnnotations: false,
+        },
+      ],
+
+      // Enforce the use of top-level import type qualifier when an import only has specifiers with inline type qualifiers
+      '@typescript-eslint/no-import-type-side-effects': 'error',
+    },
+  },
+
+  // General-purpose configuration
+  pluginRegExp.configs['flat/recommended'],
+  {
+    plugins: {
+      'import-x': pluginImportX,
+    },
+    settings: {
+      ...pluginImportX.configs.typescript.settings,
+    },
+    languageOptions: {
+      parserOptions: {
+        ...pluginImportX.configs.recommended.parserOptions,
+      },
+    },
+    rules: {
+      ...pluginImportX.configs.recommended.rules,
+      ...pluginImportX.configs.typescript.rules,
+    },
+  },
+
+  // React configuration
+  {
+    files: ['**/*.jsx', '**/*.tsx'],
+    plugins: {
+      react: pluginReact.configs.recommended,
+      'react-hooks': fixupPluginRules(pluginReactHooks),
+      'jsx-a11y': fixupPluginRules(pluginJsxA11y),
+    },
+    rules: {
+      ...pluginReactHooks.configs.recommended.rules,
+      ...pluginJsxA11y.configs.recommended.rules,
+    },
+    settings: {
+      react: {
+        version: 'detect',
+      },
+    },
+  },
+
+  // Next.js configuration
+  {
+    plugins: {
+      '@next/next': fixupPluginRules(pluginNext),
+    },
+    rules: {
+      ...pluginNext.configs.recommended.rules,
+      ...pluginNext.configs['core-web-vitals'].rules,
+    },
+  },
+  // Tailwind configuration
+  ...pluginTailwind.configs['flat/recommended'],
+
+  // Prettier configuration
+  // Encapsulates eslint-plugin-prettier and eslint-config-prettier
+  pluginPrettierRecommended,
+);
+```
+
+## Issue:
+
+The error message is misleading since I had specified `parserOptions.project` in eslint.config.js.
+
+The issue seems to be caused because the `@typescript-eslint/await-thenable` rule requires type information to function correctly.
+
+This type information is only available when ESLint procceses TypeScript files with the TypeScript parser with the `parserOptions.project` configuration.
+
+## Possible Solution 1:
+
+A possible solution is to specify that these rules should only apply to `.ts` files:
+
+```
+export default tseslint.config(
+  ...tseslint.configs.recommendedTypeChecked.map((config) => ({
+    ...config,
+    files: ['**/*.ts', '**/*.tsx'],
+  })),
+  ...tseslint.configs.stylisticTypeChecked.map((config) => ({
+    ...config,
+    files: ['**/*.ts', '**/*.tsx'],
+  })),
+  {
+    files: ['**/*.ts', '**/*.tsx'],
+    languageOptions: {
+      parserOptions: {
+        project: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  },
+);
+```
+
+## Solution 2:
+
+I realized then that the original reason for the error is because the config block specifying `parserOptions.project` is scoped only to TypeScript files.
+
+A more straightforward fix is to remove the filetype specification for the TypeScript parser.
+
+```
+export default tseslint.config(
+  ...tseslint.configs.recommendedTypeChecked,
+  ...tseslint.configs.stylisticTypeChecked,
+  {
+    languageOptions: {
+      parserOptions: {
+        project: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  },
+);
+```

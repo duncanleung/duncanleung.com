@@ -143,7 +143,7 @@ export default function ListLayoutWithTags({
                   // Get the tag to determine which thumbnail to show
                   const tag = tags && tags.length > 0 ? tags[0].toLowerCase() : null
                   // Use first tag to determine thumbnail if available
-                  const thumbnailPath = tag ? `/data/thumbnails/${tag}.png` : null
+                  const thumbnailPath = tag ? `/static/thumbnails/${tag}.png` : null
 
                   return (
                     <li key={path} className="py-12 first:pt-0">
@@ -155,7 +155,7 @@ export default function ListLayoutWithTags({
                               <Link href={`/${path}`} aria-label={`Link to ${title}`}>
                                 <div className="h-24 w-24 overflow-hidden rounded-md">
                                   <Image
-                                    src={`/data/thumbnails/${tag}.png`}
+                                    src={`/static/thumbnails/${tag}.png`}
                                     alt={title}
                                     width={96}
                                     height={96}

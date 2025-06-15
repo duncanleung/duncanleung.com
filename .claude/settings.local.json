@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "Bash(pkill:*)",
+      "Bash(kill:*)",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_tab_new",
+      "mcp__playwright__browser_press_key",
+      "mcp__playwright__browser_click"
+    ],
+    "deny": []
+  }
+}

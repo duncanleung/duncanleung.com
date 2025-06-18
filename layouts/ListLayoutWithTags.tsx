@@ -151,12 +151,12 @@ export default function ListLayoutWithTags({
                           {thumbnailPath && (
                             <div className="hidden flex-shrink-0 sm:block">
                               <Link href={`/${path}`} aria-label={`Link to ${title}`}>
-                                <div className="h-24 w-24 overflow-hidden rounded-md">
+                                <div className="h-18 w-18 overflow-hidden rounded-md">
                                   <Image
                                     src={thumbnailPath}
                                     alt={title}
-                                    width={96}
-                                    height={96}
+                                    width={72}
+                                    height={72}
                                     className="h-full w-full object-cover object-center"
                                   />
                                 </div>
@@ -171,8 +171,26 @@ export default function ListLayoutWithTags({
                               <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
                                 <Link href={`/${path}`}>{title}</Link>
                               </h2>
-                              <div className="flex flex-wrap gap-2">
-                                {tags?.map((tag) => <Tag key={tag} text={tag} />)}
+                              <div className="flex items-center gap-2">
+                                {/* Thumbnail */}
+                                {thumbnailPath && (
+                                  <div className="block flex-shrink-0 sm:hidden">
+                                    <Link href={`/${path}`} aria-label={`Link to ${title}`}>
+                                      <div className="h-12 w-12 overflow-hidden rounded-md">
+                                        <Image
+                                          src={thumbnailPath}
+                                          alt={title}
+                                          width={48}
+                                          height={48}
+                                          className="h-full w-full object-cover object-center"
+                                        />
+                                      </div>
+                                    </Link>
+                                  </div>
+                                )}
+                                <div className="flex flex-wrap gap-2">
+                                  {tags?.map((tag) => <Tag key={tag} text={tag} />)}
+                                </div>
                               </div>
                             </div>
                             <p className="text-gray-600 dark:text-gray-300">{summary}</p>

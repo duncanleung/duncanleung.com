@@ -139,23 +139,21 @@ export default function ListLayoutWithTags({
                 )}
 
                 {displayPosts.map((post) => {
-                  const { path, date, title, summary, tags } = post
-                  // Get the tag to determine which thumbnail to show
-                  const tag = tags && tags.length > 0 ? tags[0].toLowerCase() : null
-                  // Use first tag to determine thumbnail if available
-                  const thumbnailPath = tag ? `/static/thumbnails/${tag}.png` : null
+                  const { path, date, title, summary, tags, images } = post
+                  // Use images from frontmatter for thumbnail
+                  const thumbnailPath = images && images.length > 0 ? images[0] : null
 
                   return (
                     <li key={path} className="py-12 first:pt-0">
                       <article>
                         <div className="flex gap-6">
                           {/* Thumbnail */}
-                          {tag && (
+                          {thumbnailPath && (
                             <div className="hidden flex-shrink-0 sm:block">
                               <Link href={`/${path}`} aria-label={`Link to ${title}`}>
                                 <div className="h-24 w-24 overflow-hidden rounded-md">
                                   <Image
-                                    src={`/static/thumbnails/${tag}.png`}
+                                    src={thumbnailPath}
                                     alt={title}
                                     width={96}
                                     height={96}

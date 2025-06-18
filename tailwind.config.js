@@ -1,8 +1,4 @@
-// @ts-check
-const { fontFamily } = require('tailwindcss/defaultTheme')
-const colors = require('tailwindcss/colors')
-
-/** @type {import("tailwindcss/types").Config } */
+const colors = require('tailwindcss/dist/colors')
 module.exports = {
   content: [
     './node_modules/pliny/**/*.js',
@@ -22,7 +18,7 @@ module.exports = {
         14: '3.5rem',
       },
       fontFamily: {
-        sans: ['var(--font-inter)', ...fontFamily.sans],
+        sans: ['var(--font-inter)', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'],
       },
       colors: {
         primary: colors.sky,

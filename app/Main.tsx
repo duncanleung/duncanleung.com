@@ -55,7 +55,7 @@ export default function Home({ posts }) {
             const { slug, date, title, summary, tags, images } = post
             // Use images from frontmatter for thumbnail
             const thumbnailPath = images && images.length > 0 ? images[0] : null
-            
+
             return (
               <li key={slug} className="py-12">
                 <article>
@@ -64,12 +64,12 @@ export default function Home({ posts }) {
                     {thumbnailPath && (
                       <div className="hidden flex-shrink-0 sm:block">
                         <Link href={`/blog/${slug}`} aria-label={`Link to ${title}`}>
-                          <div className="h-24 w-24 overflow-hidden rounded-md">
+                          <div className="h-18 w-18 overflow-hidden rounded-md">
                             <Image
                               src={thumbnailPath}
                               alt={title}
-                              width={96}
-                              height={96}
+                              width={72}
+                              height={72}
                               className="h-full w-full object-cover object-center"
                             />
                           </div>
@@ -85,10 +85,30 @@ export default function Home({ posts }) {
                           <h3 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
                             <Link href={`/blog/${slug}`}>{title}</Link>
                           </h3>
-                          <div className="flex flex-wrap gap-2">
-                            {tags.map((tag) => (
-                              <Tag key={tag} text={tag} />
-                            ))}
+
+                          <div className="flex items-center gap-2">
+                            {/* Thumbnail */}
+                            {thumbnailPath && (
+                              <div className="block flex-shrink-0 sm:hidden">
+                                <Link href={`/blog/${slug}`} aria-label={`Link to ${title}`}>
+                                  <div className="h-12 w-12 overflow-hidden rounded-md">
+                                    <Image
+                                      src={thumbnailPath}
+                                      alt={title}
+                                      width={48}
+                                      height={48}
+                                      className="h-full w-full object-cover object-center"
+                                    />
+                                  </div>
+                                </Link>
+                              </div>
+                            )}
+
+                            <div className="flex flex-wrap gap-2">
+                              {tags.map((tag) => (
+                                <Tag key={tag} text={tag} />
+                              ))}
+                            </div>
                           </div>
                         </div>
 

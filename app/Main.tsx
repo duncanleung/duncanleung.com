@@ -1,5 +1,6 @@
 import Link from '@/components/Link'
 import Tag from '@/components/Tag'
+import Image from '@/components/Image'
 import siteMetadata from '@/data/siteMetadata'
 import { formatDate } from 'pliny/utils/formatDate'
 import NewsletterForm from 'pliny/ui/NewsletterForm'
@@ -51,35 +52,58 @@ export default function Home({ posts }) {
           )}
 
           {posts.slice(0, MAX_DISPLAY).map((post) => {
-            const { slug, date, title, summary, tags } = post
+            const { slug, date, title, summary, tags, images } = post
+            // Use images from frontmatter for thumbnail
+            const thumbnailPath = images && images.length > 0 ? images[0] : null
+            
             return (
               <li key={slug} className="py-12">
                 <article>
-                  <div className="space-y-8">
-                    <div className="space-y-4">
-                      <div className="flex flex-col gap-4 text-sm text-gray-500 dark:text-gray-400">
-                        <time dateTime={date}>{formatDate(date, siteMetadata.locale)}</time>
-                        <h3 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                          <Link href={`/blog/${slug}`}>{title}</Link>
-                        </h3>
-                        <div className="flex flex-wrap gap-2">
-                          {tags.map((tag) => (
-                            <Tag key={tag} text={tag} />
-                          ))}
+                  <div className="flex gap-6">
+                    {/* Thumbnail */}
+                    {thumbnailPath && (
+                      <div className="hidden flex-shrink-0 sm:block">
+                        <Link href={`/blog/${slug}`} aria-label={`Link to ${title}`}>
+                          <div className="h-24 w-24 overflow-hidden rounded-md">
+                            <Image
+                              src={thumbnailPath}
+                              alt={title}
+                              width={96}
+                              height={96}
+                              className="h-full w-full object-cover object-center"
+                            />
+                          </div>
+                        </Link>
+                      </div>
+                    )}
+
+                    {/* Post content */}
+                    <div className="flex-grow space-y-8">
+                      <div className="space-y-4">
+                        <div className="flex flex-col gap-4 text-sm text-gray-500 dark:text-gray-400">
+                          <time dateTime={date}>{formatDate(date, siteMetadata.locale)}</time>
+                          <h3 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                            <Link href={`/blog/${slug}`}>{title}</Link>
+                          </h3>
+                          <div className="flex flex-wrap gap-2">
+                            {tags.map((tag) => (
+                              <Tag key={tag} text={tag} />
+                            ))}
+                          </div>
                         </div>
+
+                        <p className="max-w-4xl text-gray-600 dark:text-gray-400">{summary}</p>
                       </div>
 
-                      <p className="max-w-4xl text-gray-600 dark:text-gray-400">{summary}</p>
+                      <Link
+                        href={`/blog/${slug}`}
+                        className="group inline-flex items-center text-sm text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                        aria-label={`Read "${title}"`}
+                      >
+                        Read article
+                        <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                      </Link>
                     </div>
-
-                    <Link
-                      href={`/blog/${slug}`}
-                      className="group inline-flex items-center text-sm text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-                      aria-label={`Read "${title}"`}
-                    >
-                      Read article
-                      <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                    </Link>
                   </div>
                 </article>
               </li>

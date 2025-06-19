@@ -19,7 +19,8 @@
       "Bash(true)",
       "mcp__playwright__browser_resize",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:duncanleung.com)"
+      "WebFetch(domain:duncanleung.com)",
+      "Bash(ast-grep:*)"
     ],
     "deny": []
   }

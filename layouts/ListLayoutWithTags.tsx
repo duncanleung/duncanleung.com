@@ -101,31 +101,29 @@ export default function ListLayoutWithTags({
           <div className="flex flex-col gap-8 md:flex-row">
             {/* Tags Sidebar */}
             <aside className="hidden md:block md:w-64">
-              <div className="sticky top-24 space-y-8">
-                <div className="space-y-4">
-                  <h2 className="font-mono text-sm tracking-wider text-gray-500 uppercase dark:text-gray-300">
-                    Filter by tag
-                  </h2>
-                  <nav className="flex flex-col space-y-3">
-                    {sortedTags.map((tag) => (
-                      <Link
-                        key={tag}
-                        href={`/tags/${slug(tag)}`}
-                        className={`font-mono text-sm uppercase ${
-                          pathname === `/tags/${slug(tag)}`
-                            ? 'text-primary-600 dark:text-primary-400 font-extrabold'
-                            : 'hover:text-primary-600 dark:hover:text-primary-400 text-gray-600 dark:text-gray-300'
-                        }`}
-                        aria-label={`View posts tagged ${tag}`}
-                      >
-                        {tag}
-                        <span className="ml-2 text-gray-400 dark:text-gray-400">
-                          ({tagCounts[tag]})
-                        </span>
-                      </Link>
-                    ))}
-                  </nav>
-                </div>
+              <div className="sticky top-24 space-y-4">
+                <h2 className="font-mono text-sm tracking-wider text-gray-500 uppercase dark:text-gray-300">
+                  Filter by tag
+                </h2>
+                <nav className="flex flex-col space-y-3 max-h-[calc(100vh-8rem)] overflow-y-auto pr-2 pb-6">
+                  {sortedTags.map((tag) => (
+                    <Link
+                      key={tag}
+                      href={`/tags/${slug(tag)}`}
+                      className={`font-mono text-sm uppercase ${
+                        pathname === `/tags/${slug(tag)}`
+                          ? 'text-primary-600 dark:text-primary-400 font-extrabold'
+                          : 'hover:text-primary-600 dark:hover:text-primary-400 text-gray-600 dark:text-gray-300'
+                      }`}
+                      aria-label={`View posts tagged ${tag}`}
+                    >
+                      {tag}
+                      <span className="ml-2 text-gray-400 dark:text-gray-400">
+                        ({tagCounts[tag]})
+                      </span>
+                    </Link>
+                  ))}
+                </nav>
               </div>
             </aside>
 

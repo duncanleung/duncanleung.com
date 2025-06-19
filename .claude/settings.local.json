@@ -18,7 +18,8 @@
       "mcp__playwright__browser_close",
       "Bash(true)",
       "mcp__playwright__browser_resize",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:duncanleung.com)"
     ],
     "deny": []
   }

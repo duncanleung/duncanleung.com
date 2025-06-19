@@ -3,7 +3,7 @@ title: 'Tailwind CSS Unknown at Rule'
 date: '2023-01-11'
 tags: ['tailwind', 'css']
 summary: 'Fixing VSCode warnings for Tailwind CSS directives by creating custom CSS data configuration files for proper syntax recognition.'
-images: [/static/thumbnails/css.png]
+images: [/static/thumbnails/tailwind.png]
 draft: false
 ---
 
@@ -11,13 +11,11 @@ draft: false
 
 I was running into an issue with VSCode warnings on CSS "Unknown at rule" for Tailwind directives.
 
-
-
 <div class="filename">./styles/globals.css</div>
 
 ```css{3}
 @tailwind base;
-^^^^^^^^^ 
+^^^^^^^^^
 Unknown at rule @tailwind css(unknownAtRules)
 
 ```
@@ -28,7 +26,7 @@ Unknown at rule @tailwind css(unknownAtRules)
 @layer base {
   * {
     @apply text-gray-dark;
-    ^^^^^^^^ 
+    ^^^^^^^^
     Unknown at rule @apply css(unknownAtRules)
   }
 }
@@ -42,7 +40,6 @@ A list of the different Tailwind Directives in the docs: [Functions & Directives
 
 > Note: It's usually necessary to reload the VS Code window for the change to be recognized.
 
-
 <div class="filename">.vscode/settings.json</div>
 
 ```json
@@ -51,10 +48,9 @@ A list of the different Tailwind Directives in the docs: [Functions & Directives
 }
 ```
 
-
 <div class="filename">.vscode/tailwindcss.json</div>
 
-```json
+````json
 {
   "version": 1.1,
   "atDirectives": [
@@ -110,4 +106,4 @@ A list of the different Tailwind Directives in the docs: [Functions & Directives
     }
   ]
 }
-```
+````

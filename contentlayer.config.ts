@@ -30,6 +30,8 @@ import jsx from 'refractor/lang/jsx.js'
 
 // Register jsx language
 refractor.register(jsx)
+// Register terminal as an alias for bash
+refractor.alias('bash', 'terminal')
 
 const root = process.cwd()
 // heroicon mini link
@@ -193,7 +195,11 @@ export default makeSource({
           ignoreMissing: true,
           showLineNumbers: true,
           aliases: {
-            jsx: ['js', 'javascript'],
+            js: 'jsx',
+            javascript: 'jsx',
+            terminal: 'bash',
+            shell: 'bash',
+            sh: 'bash',
           },
         },
       ],

@@ -26,12 +26,14 @@ import siteMetadata from './data/siteMetadata'
 import { allCoreContent, sortPosts } from 'pliny/utils/contentlayer.js'
 // Import refractor and jsx language
 import { refractor } from 'refractor'
-import jsx from 'refractor/lang/jsx.js'
+import jsx from 'refractor/jsx'
 
 // Register jsx language
 refractor.register(jsx)
-// Register terminal as an alias for bash
-refractor.alias('bash', 'terminal')
+// Register aliases (rehype-prism-plus 2.x dropped its own aliases option;
+// refractor.alias is now the source of truth)
+refractor.alias('bash', ['terminal', 'shell', 'sh'])
+refractor.alias('jsx', ['js', 'javascript'])
 
 const root = process.cwd()
 // heroicon mini link
@@ -194,13 +196,6 @@ export default makeSource({
           defaultLanguage: 'js',
           ignoreMissing: true,
           showLineNumbers: true,
-          aliases: {
-            js: 'jsx',
-            javascript: 'jsx',
-            terminal: 'bash',
-            shell: 'bash',
-            sh: 'bash',
-          },
         },
       ],
       rehypePresetMinify,

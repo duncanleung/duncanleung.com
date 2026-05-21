@@ -187,7 +187,7 @@ export default makeSource({
         },
       ],
       rehypeKatex,
-      [rehypeCitation, { path: path.join(root, 'data'), linkCitations: true }],
+      [rehypeCitation as any, { path: path.join(root, 'data'), linkCitations: true }],
       [
         rehypePrismPlus,
         {

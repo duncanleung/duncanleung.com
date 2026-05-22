@@ -142,12 +142,6 @@ While `useRef` is perfect for maintaining non-reactive references to DOM element
 
 This pattern not only solves the immediate problem but does so in a way that's efficient, modern, and respects React's principles of explicit state management and unidirectional data flow.
 
-## Conclusion
-
-While `useRef` is perfect for maintaining non-reactive references to DOM elements, it falls short when we need to respond to changes in element dimensions. The combination of `useState` for reactivity, callback refs for setup, and `ResizeObserver` for change detection creates a robust pattern for dynamic element measurements in React applications.
-
-This pattern not only solves the immediate problem but does so in a way that's efficient, modern, and respects React's principles of explicit state management and unidirectional data flow.
-
 ## When useRef Is the Right Tool for DOM References
 
 Despite its limitations for tracking dimensional changes, `useRef` remains invaluable for many DOM interaction scenarios:

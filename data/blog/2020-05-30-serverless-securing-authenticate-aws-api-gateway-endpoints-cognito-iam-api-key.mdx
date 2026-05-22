@@ -195,7 +195,7 @@ Construct the `CognitoAuthorizer` as a CloudFormation resource and then referenc
 
 <div class="filename">serverless.yml</div>
 
-```yml{3,12}
+```yaml{3,12}
 resources:
   Resources:
     CognitoAuthorizer:
@@ -212,7 +212,7 @@ resources:
 
 <div class="filename">serverless.yml</div>
 
-```yml{8-10}
+```yaml{8-10}
 functions:
   search-stores:
     handler: functions/search-stores.handler
@@ -227,7 +227,7 @@ functions:
 
 <div class="filename">serverless.yml</div>
 
-```yml{3-37,39-47,49-57}
+```yaml{3-37,39-47,49-57}
 resources:
   Resources:
     CognitoUserPool:
@@ -289,7 +289,7 @@ resources:
 
 <div class="filename">serverless.yml</div>
 
-```yml{12-14,18-52,54-62,64-72,74-83}
+```yaml{12-14,18-52,54-62,64-72,74-83}
 provider:
   name: aws
   runtime: nodejs12.x
@@ -418,7 +418,7 @@ Add the `execute-api:Invoke` to the IAM execution role in the `iamRoleStatements
 
 <div class="filename">serverless.yml</div>
 
-```yml{7-8,26}
+```yaml{7-8,26}
 provider:
   name: aws
   runtime: nodejs12.x
@@ -437,7 +437,7 @@ We'll also need the URL of the `/stores` API Gateway endpoint, so we're passing 
 
 <div class="filename">serverless.yml</div>
 
-```yml{9,17}
+```yaml{9,17}
 functions:
   get-index:
     handler: functions/get-index.handler
@@ -526,7 +526,7 @@ We'll also need the URL of the /stores API Gateway endpoint, so we're passing th
 
 <div class="filename">serverless.yml</div>
 
-```yml{9,17}
+```yaml{9,17}
 functions:
   get-index:
     handler: functions/get-index.handler
@@ -564,7 +564,7 @@ In our implementation, we're specifying the API key names and allowing AWS to ge
 
 <div class="filename">serverless.yml</div>
 
-```yml{7,9,11-18,19-26}
+```yaml{7,9,11-18,19-26}
 provider:
   name: aws
   runtime: nodejs12.x

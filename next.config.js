@@ -101,6 +101,13 @@ module.exports = () => {
           destination: '/serverless-pseudo-parameters-reference-another-lambda/',
           permanent: true,
         },
+        // Fix the long-standing "declearation" typo in the URL (the live
+        // Gatsby URL carried the typo since 2020); preserve the old URL.
+        {
+          source: '/typescript-module-declearation-svg-img-assets/',
+          destination: '/typescript-module-declaration-svg-img-assets/',
+          permanent: true,
+        },
       ]
     },
     turbopack: {

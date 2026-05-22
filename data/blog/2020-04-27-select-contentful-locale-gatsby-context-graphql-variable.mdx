@@ -21,8 +21,7 @@ Contentful provides a nice headless CMS platform that handles internationalizati
 
 All the Contentful locale content was sourced into GraphQL via **gatsby-source-contentful**, but we had to map this data into a new dictionary `mappedLocaleContent`, where content is stored according to the locale as the `key`.
 
-```typescript{8}
-// Page content shape from Contentful
+```typescript {8}// Page content shape from Contentful
 export type Page = {
   /** Type of page. Eg: Home Page, FAQ Page */
   pageName: string;
@@ -45,8 +44,7 @@ This would allow us to select the correct locale content with a quick object key
 
 <div class="filename">./src/pages/index.tsx</div>
 
-```typescript{5,11,25-26,30}
-import React from "react";
+```typescript {5,11,25-26,30}import React from "react";
 import { PageRendererProps, graphql } from "gatsby";
 import { injectIntl, InjectedIntlProps } from "gatsby-plugin-intl";
 
@@ -87,8 +85,7 @@ Where the mapping function would be something like:
 
 <div class="filename">./src/utils/mapContentByLocale.tsx</div>
 
-```typescript{9-16}
-type QueryData = {
+```typescript {9-16}type QueryData = {
   contentfulPage: {
     edges: {
       node: Page;
@@ -114,8 +111,7 @@ A more "Gatsby" solution that follows the paradigm of utilizing GraphQL's query 
 
 In this specific case, we want to filter the Contentful locale property `node_locale` associated with each localized content node.
 
-```typescript{8}
-// Page content shape from Contentful
+```typescript {8}// Page content shape from Contentful
 export type Page = {
   /** Type of page. Eg: Home Page, FAQ Page */
   pageName: string;
@@ -134,15 +130,15 @@ To do this, we modify our GraphQL query by creating the `(\$intlLocale: String)`
 
 Now we can query the `contentfulPage` by the `node_locale` that matches the `$intlLocale` variable from React-Intl.
 
-```typescript{2,3}
-export const query = graphql`
-  query ContentfulQuery($intlLocale: String) {
-    contentfulPage(node_locale: { eq: $intlLocale }) {
-      h1Headline
-    }
-  }
+```typescript {2,3}export const query = graphql`
+query ContentfulQuery($intlLocale: String) {
+contentfulPage(node_locale: { eq: $intlLocale }) {
+h1Headline
+}
+}
 `;
-```
+
+````
 
 ### Add the GraphQL variable to the Gatsby Page Context
 
@@ -152,8 +148,7 @@ Here we're adding `intLocale` to the Gatsby page context:
 
 <div class="filename">./gatsby-node.js</div>
 
-```javascript{4,20}
-exports.onCreatePage = ({ page, actions }) => {
+```javascript {4,20}exports.onCreatePage = ({ page, actions }) => {
   const { createPage, deletePage } = actions;
   const { context } = page;
   const { intl } = context;
@@ -177,7 +172,7 @@ exports.onCreatePage = ({ page, actions }) => {
     });
   }
 };
-```
+````
 
 ### Final solution:
 
@@ -185,8 +180,7 @@ This approach utilizes the power of GraphQL, and the resulting React component i
 
 <div class="filename">./src/pages/index.tsx</div>
 
-```typescript{5-9,19,23}
-import React from "react";
+```typescript {5-9,19,23}import React from "react";
 import { PageRendererProps, graphql } from "gatsby";
 
 export const query = graphql`

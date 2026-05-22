@@ -46,8 +46,7 @@ This is a problem, knowing that [React's `setState()` behavior is asynchronous](
 
 However, what if I want to use `event.target` within `setState()`?
 
-```js{4-5}
-  handleChange(e) {
+```js {4-5}  handleChange(e) {
     this.setState((prevState, props) => {
       return {
         username: e.target.value     // Attempting to use e.target.value
@@ -74,8 +73,7 @@ Using `event.target` to construct a new state is a common pattern, and React has
 
 Calling `event.persist()` on the event removes the synthetic event from the pool and allows references to the event to be retained asynchronously.
 
-```js{2}
-  handleChange(e) {
+```js {2}  handleChange(e) {
     e.persist();
 
     this.setState((prevState, props) => {
@@ -90,8 +88,7 @@ Calling `event.persist()` on the event removes the synthetic event from the pool
 
 Another solution is to cache the result of `event.target` within the event handler, and reference this cached value within the `setState()` callback.
 
-```js{2}
-  handleChange(e) {
+```js {2}  handleChange(e) {
     let inputValue = e.target.value;  // Cache the value of e.target.value
 
     this.setState((prevState, props) => {

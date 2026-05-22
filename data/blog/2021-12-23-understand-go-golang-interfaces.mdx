@@ -73,8 +73,7 @@ To start off, we can think about the electrical devices: a **blender** and a **m
 
 To represent our electrical devices, we could use the following structs and struct instances:
 
-```go{2,3}
-// The type of electrical devices
+```go {2,3}// The type of electrical devices
 type Blender struct{}
 type Microwave struct{}
 
@@ -94,8 +93,7 @@ To represent the behavior of drawing power, we could use the receiver functions:
 
 In Go, function receivers allow us to set a method on variables without having to deal with classes or inheritance:
 
-```go{5,10}
-type Blender struct{}
+```go {5,10}type Blender struct{}
 type Microwave struct{}
 
 // Draw(power int) receiver function for the Blender type
@@ -111,8 +109,7 @@ func (m Microwave) Draw(power int) {
 
 Any struct instances created from the `Blender` and `Microwave` types have access to a `Draw(power int)` method.
 
-```go{6-7}
-// The instances of these devices
+```go {6-7}// The instances of these devices
 var blender Blender
 var microwave Microwave
 
@@ -125,8 +122,7 @@ microwave.Draw(50)
 
 To represent a wall power socket, we could use the following struct and struct instance:
 
-```go{2}
-// The type of the power socket
+```go {2}// The type of the power socket
 type PowerSocket struct {}
 
 // The wallOutlet instance of the power socket
@@ -137,8 +133,7 @@ We also need to consider that a wall power socket has a finite power output.
 
 Let's add a property `powerCapacity` to the `PowerSocket` struct to describe the maximum power out that an outlet can support.
 
-```go{3}
-// Socket has a max power capacity
+```go {3}// Socket has a max power capacity
 type PowerSocket struct {
 	powerCapacity int
 }
@@ -152,8 +147,7 @@ To represent the behavior of plugging in the `blender` into the `wallOutlet`, we
 
 - `func (s *PowerSocket) PlugInBlender(blenderDevice Blender)`.
 
-```go{2}
-// PowerSockets can plug in any Blender
+```go {2}// PowerSockets can plug in any Blender
 func (s *PowerSocket) PlugInBlender(blenderDevice Blender) error {
                       ^^^^^^^^^^^^^               ^^^^^^^
 }
@@ -166,8 +160,7 @@ However, this approach isn't very "universal". **This requires us to write anoth
 
 The function `PlugInBlender(blenderDevice Blender)` only plugs in devices of type `Blender`, so to plug in the `microwave` into the `wallOutlet`, we need to create another function `func (s *PowerSocket) PlugInMicrowave(microwaveDevice Microwave)`.
 
-```go{2}
-// Plug in a Microwave to draw power from the PowerSocket
+```go {2}// Plug in a Microwave to draw power from the PowerSocket
 func (s *PowerSocket) PlugInMicrowave(microwaveDevice Microwave) error {
                       ^^^^^^^^^^^^^^^                 ^^^^^^^^^
 }
@@ -186,8 +179,7 @@ We want to describe a common "plug shape" so the power socket can support any ty
 
 To declare an interface in Go, we describe the set of method signatures that should be implemented.
 
-```go{2,4}
-// Appliance represents an electrical device that can draw power.
+```go {2,4}// Appliance represents an electrical device that can draw power.
 type Appliance interface {
                ^^^^^^^^^
 	Draw(power int)
@@ -199,8 +191,7 @@ The goal of declaring the `Appliance` interface type is to write a generalized `
 - Accept any devices that implement this `Appliance` interface type
 - Allow all `Appliance` types to draw power from the power socket in a defined way
 
-```go{2,6,7}
-// Plug in any Appliance device to the power socket
+```go {2,6,7}// Plug in any Appliance device to the power socket
 func (s *PowerSocket) PlugIn(appliance Appliance) error {
                       ^^^^^^           ^^^^^^^^^
 }
@@ -228,8 +219,7 @@ To declare an interface in Go, we describe the set of method signatures that sho
 - Here, we declare a type `Appliance` interface.
 - The `Appliance` interface implements the function signature, `Draw(power int)`.
 
-```go{3}
-// Appliance represents an electrical device that can draw power.
+```go {3}// Appliance represents an electrical device that can draw power.
 type Appliance interface {
 	Draw(power int)
   ^^^^^^^^^^^^^^
@@ -242,8 +232,7 @@ To implement an interface, a struct needs to implement the function signature of
 
 - The two structs `Blender` and `Microwave` are said to **_"implement the `Appliance` interface"_** because their structs implement the `Draw(power int)` function signature.
 
-```go{3,10,17}
-// Appliance represents an electrical device that can draw power.
+```go {3,10,17}// Appliance represents an electrical device that can draw power.
 type Appliance interface {
 	Draw(power int)
   ^^^^^^^^^^^^^^
@@ -267,8 +256,7 @@ func (m Microwave) Draw(power int) {
 - The structs `Blender` and `Microwave` types implement the `Appliance` interface.
 - The receiver function `func (s *PowerSocket) PlugIn(appliance Appliance)` can now be used on any type that implements the `Appliance` interface.
 
-```go{2,22,26}
-// Plug in any Appliance device to the power socket
+```go {2,22,26}// Plug in any Appliance device to the power socket
 func (s *PowerSocket) PlugIn(appliance Appliance) error {
                                        ^^^^^^^^^
 
@@ -307,8 +295,7 @@ The flexibility we gain from Go interfaces is that the power socket can now prov
 
 A power socket can power any device as long as the device has a `Draw(power int)` method.
 
-```go{7}
-type Refrigerator struct{}
+```go {7}type Refrigerator struct{}
 func (r Refrigerator) Draw(power int) {
 }
 

@@ -195,8 +195,7 @@ Construct the `CognitoAuthorizer` as a CloudFormation resource and then referenc
 
 <div class="filename">serverless.yml</div>
 
-```yaml{3,12}
-resources:
+```yaml {3,12}resources:
   Resources:
     CognitoAuthorizer:
       Type: AWS::ApiGateway::Authorizer
@@ -212,8 +211,7 @@ resources:
 
 <div class="filename">serverless.yml</div>
 
-```yaml{8-10}
-functions:
+```yaml {8-10}functions:
   search-stores:
     handler: functions/search-stores.handler
     events:
@@ -227,8 +225,7 @@ functions:
 
 <div class="filename">serverless.yml</div>
 
-```yaml{3-37,39-47,49-57}
-resources:
+```yaml {3-37,39-47,49-57}resources:
   Resources:
     CognitoUserPool:
       Type: AWS::Cognito::UserPool
@@ -289,8 +286,7 @@ resources:
 
 <div class="filename">serverless.yml</div>
 
-```yaml{12-14,18-52,54-62,64-72,74-83}
-provider:
+```yaml {12-14,18-52,54-62,64-72,74-83}provider:
   name: aws
   runtime: nodejs12.x
 
@@ -418,8 +414,7 @@ Add the `execute-api:Invoke` to the IAM execution role in the `iamRoleStatements
 
 <div class="filename">serverless.yml</div>
 
-```yaml{7-8,26}
-provider:
+```yaml {7-8,26}provider:
   name: aws
   runtime: nodejs12.x
 
@@ -437,8 +432,7 @@ We'll also need the URL of the `/stores` API Gateway endpoint, so we're passing 
 
 <div class="filename">serverless.yml</div>
 
-```yaml{9,17}
-functions:
+```yaml {9,17}functions:
   get-index:
     handler: functions/get-index.handler
     events:
@@ -463,8 +457,7 @@ We pass this authentication header into our HTTP request to the `get-stores` URL
 
 <div class="filename">/functions/get-index.js</div>
 
-```js{5,10-13,15,18}
-const http = require("axios");
+```js {5,10-13,15,18}const http = require("axios");
 const aws4 = require("aws4");
 const URL = require("url");
 
@@ -526,8 +519,7 @@ We'll also need the URL of the /stores API Gateway endpoint, so we're passing th
 
 <div class="filename">serverless.yml</div>
 
-```yaml{9,17}
-functions:
+```yaml {9,17}functions:
   get-index:
     handler: functions/get-index.handler
     events:
@@ -564,8 +556,7 @@ In our implementation, we're specifying the API key names and allowing AWS to ge
 
 <div class="filename">serverless.yml</div>
 
-```yaml{7,9,11-18,19-26}
-provider:
+```yaml {7,9,11-18,19-26}provider:
   name: aws
   runtime: nodejs12.x
 
@@ -595,8 +586,7 @@ provider:
 
 After you redeploy the stack, the API key name and values will be returned in the Serverless CLI output:
 
-```bash{15,16}
-$ sls deploy
+```bash {15,16}$ sls deploy
 
 Serverless: Packaging service...
 ...
@@ -631,8 +621,7 @@ Now that the `get-stores` Lambda has the `private` boolean, API calls to `get-st
 
 <div class="filename">/functions/get-index.js</div>
 
-```js{8}
-const http = require("axios");
+```js {8}const http = require("axios");
 
 const storesApi = process.env.stores_api;
 

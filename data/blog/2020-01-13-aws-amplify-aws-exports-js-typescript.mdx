@@ -15,8 +15,7 @@ When I was importing the `aws-exports.js` configuration file to initialize Ampli
 
 <div class="filename">./src/components/Layout.tsx</div>
 
-```tsx{4}
-import React from "react";
+```tsx {4}import React from "react";
 import Amplify from "aws-amplify";
 
 import config from "../../aws-exports";
@@ -49,8 +48,7 @@ Also, since `aws-exports.js` is a `.js` file extension, `tsconfig.json` needs to
 
 <div class="filename">tsconfig.json</div>
 
-```json{3}
-{
+```json {3}{
   "compilerOptions": {
     "allowJs": true
     // Other configs ...

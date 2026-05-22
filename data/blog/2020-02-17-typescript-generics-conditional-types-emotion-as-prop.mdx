@@ -19,8 +19,7 @@ Here's a stripped down version of the component:
 
 <div class="filename">Button.tsx</div>
 
-```typescript{12-13}
-import React from "react";
+```typescript {12-13}import React from "react";
 import styled from "@emotion/styled";
 import { Link } from "gatsby";
 
@@ -44,8 +43,7 @@ export default Button;
 
 Using the `<Button />` component:
 
-```typescript{1}
-<Button as={Link} to="/login">
+```typescript {1}<Button as={Link} to="/login">
   Log In
 </Button>
 ```
@@ -58,8 +56,7 @@ However, we would still like Intellisense to let us know when these props are ne
 
 <div class="filename">Button.tsx</div>
 
-```typescript{5-6}
-//... taken from the above example
+```typescript {5-6}//... taken from the above example
 
 type Props = {
   as?: React.ComponentType | typeof Link | string;
@@ -134,8 +131,7 @@ The `<Button />` component type annotation takes a Generic type `T` (this coinci
 
 The return type of the `<Button />` component also depends on the Generic type `T`.
 
-```typescript{4,7,8}
-type RenderComponent = React.ComponentType | typeof Link | "a";
+```typescript {4,7,8}type RenderComponent = React.ComponentType | typeof Link | "a";
 
 type Props<E extends RenderComponent> = {
   as?: E;
@@ -155,8 +151,7 @@ Using the conditional type `GetRenderComponentProps`, we can now correctly creat
 
 This intersection now correctly resolves to the type depending on the type of element, `E`, passed into the `as` prop.
 
-```typescript{3}
-type Props<E extends RenderComponent> = {
+```typescript {3}type Props<E extends RenderComponent> = {
   as?: E;
 } & GetRenderComponentProps<E>;
 ```
@@ -165,8 +160,7 @@ type Props<E extends RenderComponent> = {
 
 <div class="filename">Button.tsx</div>
 
-```typescript{10,12-14,16,21}
-import React from "react";
+```typescript {10,12-14,16,21}import React from "react";
 import styled from "@emotion/styled";
 import { Link } from "gatsby";
 

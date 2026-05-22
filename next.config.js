@@ -89,6 +89,18 @@ module.exports = () => {
           destination: '/python-name-main-pattern/',
           permanent: true,
         },
+        // Slugs were shortened during the Gatsby -> Next.js migration.
+        // Preserve inbound links and SEO from the old Gatsby URLs.
+        {
+          source: '/load-python-environment-variables-dotenv/',
+          destination: '/python-environment-variables/',
+          permanent: true,
+        },
+        {
+          source: '/serverless-reference-another-aws-lambda-pseudo-parameters-variables/',
+          destination: '/serverless-pseudo-parameters-reference-another-lambda/',
+          permanent: true,
+        },
       ]
     },
     turbopack: {

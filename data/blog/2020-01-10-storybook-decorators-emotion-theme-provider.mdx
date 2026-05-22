@@ -25,8 +25,7 @@ I had set up Emotion's Theme provider in Storybook `.storybook/preview.js` in th
 
 <div class="filename">.storybook/preview.js</div>
 
-```js{9,11}
-// !! This does not work
+```js {9,11}// !! This does not work
 
 import { ThemeProvider } from "emotion-theming";
 import theme from "~/theme";
@@ -45,8 +44,7 @@ This was the pattern used in our parent `<App />` React component.
 
 <div class="filename">~/src/components/App.tsx</div>
 
-```js{13,15}
-import React, { ReactNode } from "react";
+```js {13,15}import React, { ReactNode } from "react";
 import { ThemeProvider } from "emotion-theming";
 
 import theme from "~/theme";
@@ -73,8 +71,7 @@ The fix is to extract Emotion's `<ThemeProvider />` into its own decorator.
 
 <div class="filename">.storybook/preview.js</div>
 
-```js{10}
-import React from "react";
+```js {10}import React from "react";
 
 import { addDecorator } from "@storybook/react";
 
@@ -97,8 +94,7 @@ addDecorator(EmotionThemeProvider);
 
 <div class="filename">.storybook/decorators/EmotionThemeProvider.js</div>
 
-```js{5-7}
-import React from "react";
+```js {5-7}import React from "react";
 import { ThemeProvider } from "emotion-theming";
 import theme from "~/theme";
 

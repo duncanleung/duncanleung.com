@@ -33,8 +33,7 @@ Interestingly, if I removed my `validationSchema`, the warning would go away.
 
 <div class="filename">PersonalInfoForm.test.js</div>
 
-```js{49-56}
-import React from 'react';
+```js {49-56}import React from 'react';
 import { act, RenderResult, fireEvent, wait } from '@testing-library/react';
 
 import PersonalInfoForm from '../PersonalInfoForm';
@@ -104,8 +103,7 @@ describe('PersonalInfoForm', () => {
 
 <div class="filename">PersonalInfoForm.tsx</div>
 
-```tsx{45-77,107}
-import React, { useCallback } from "react";
+```tsx {45-77,107}import React, { useCallback } from "react";
 import { Form, Formik, FormikHelpers, FormikState } from "formik";
 
 import * as Yup from "yup";
@@ -313,8 +311,7 @@ Because our form has validation as defined by the `validationSchema`, the test a
 
 <div class="filename">Formik.tsx - Line: 516-546</div>
 
-```ts{5}
-const setValues = useEventCallback((values: Values) => {
+```ts {5}const setValues = useEventCallback((values: Values) => {
     dispatch({ type: 'SET_VALUES', payload: values });
     return validateOnChange
       ? validateFormWithLowPriority(state.values)
@@ -325,8 +322,7 @@ So back in the test file `PersonalInfoForm.test.js`, we need to `await` on `act(
 
 <div class="filename">PersonalInfoForm.test.js</div>
 
-```js{7,14}
-describe("Form Interaction", async () => {
+```js {7,14}describe("Form Interaction", async () => {
   //...
   //...
 

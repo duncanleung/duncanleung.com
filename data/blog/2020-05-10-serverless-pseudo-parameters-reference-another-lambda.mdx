@@ -18,8 +18,7 @@ Consider the two lambda functions defined in this `serverless.yml`:
 
 <div class="filename">serverless.yml</div>
 
-```yaml{13,23}
-provider:
+```yaml {13,23}provider:
   name: aws
   runtime: nodejs12.x
 
@@ -75,8 +74,7 @@ Serverless generates a `cloudformation-template-update-stack.json` CloudFormatio
 
 <div class="filename">cloudformation-template-update-stack.json</div>
 
-```json{2,3}
-"Resources": {
+```json {2,3}"Resources": {
   "ApiGatewayRestApi": {
       "Type": "AWS::ApiGateway::RestApi",
       "Properties": {

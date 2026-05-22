@@ -11,8 +11,7 @@ draft: false
 
 I was running into an issue where SVG imports in Storybook were `undefined` instead of being imported as React components.
 
-```js{4}
-import React from "react";
+```js {4}import React from "react";
 import { ReactComponent as ArrowUpIcon } from "~/icons/icon-up-arrow.svg";
 
 console.log(ArrowUpIcon); // undefined
@@ -44,8 +43,7 @@ Storybook has a <a href="https://github.com/storybookjs/storybook/blob/next/lib/
 
 <div class="filename">base-webpack.config.js - Line 64 - Line 69</div>
 
-```js{3}
-{
+```js {3}{
   test: /\.(svg|ico|jpg|jpeg|png|gif|eot|otf|webp|ttf|woff|woff2|cur|ani|pdf)(\?.*)?$/,
   loader: require.resolve('file-loader'),
   query: {
@@ -64,8 +62,7 @@ Place the `@svgr/webpack` loader <a href="https://developer.mozilla.org/en-US/do
 
 <div class="filename">.storybook/webpack.config.js</div>
 
-```js{11-14}
-// Add SVGR Loader
+```js {11-14}// Add SVGR Loader
 // ========================================================
 const assetRule = config.module.rules.find(({ test }) => test.test(".svg"));
 

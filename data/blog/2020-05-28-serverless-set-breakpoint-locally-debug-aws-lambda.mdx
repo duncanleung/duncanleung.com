@@ -47,8 +47,7 @@ $ sls invoke local --function index --path 'logs-export.json'
 
 <div class="filename">serverless.yml</div>
 
-```yaml{6}
-provider:
+```yaml {6}provider:
   name: aws
   runtime: nodejs12.x
 
@@ -63,8 +62,7 @@ functions:
 
 <div class="filename">/functions/index.js</div>
 
-```javascript{7}
-module.exports.handler = async (event) => {
+```javascript {7}module.exports.handler = async (event) => {
   return {
     statusCode: 200,
     body: JSON.stringify(
@@ -98,8 +96,7 @@ The main part of the `launch.json` is to:
 
 <div class="filename">launch.json</div>
 
-```json{8-9}
-{
+```json {8-9}{
   "version": "0.2.0",
   "configurations": [
     {

@@ -15,8 +15,7 @@ I needed to test our SEO component that the correct meta tags were being passed,
 
 It's still possible to use the Browser API `document.getElementsByTagName("meta")` with **jest-dom**.
 
-```tsx{7-17,26-30,37}
-import React from "react";
+```tsx {7-17,26-30,37}import React from "react";
 import { render } from "test-utils";
 import { wait } from "@testing-library/react";
 
@@ -57,8 +56,7 @@ describe("<SEO />", () => {
 });
 ```
 
-```tsx{21}
-import React, { useEffect } from "react";
+```tsx {21}import React, { useEffect } from "react";
 import Helmet, { HelmetProps } from "react-helmet";
 import { Location } from "@reach/router";
 

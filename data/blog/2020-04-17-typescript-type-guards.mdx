@@ -20,8 +20,7 @@ export const isS3Document = (document: Document): document is S3Document => 'url
 
 You could use the **type-guard** as such:
 
-```typescript{2}
-const onlyS3Files = (files: Document[]): S3Document[] =>
+```typescript {2}const onlyS3Files = (files: Document[]): S3Document[] =>
   files.filter(isS3Document);
 ```
 
@@ -37,7 +36,6 @@ export const isType = <T>(variable: any, property: keyof T): variable is T =>
   (variable as T)[property] !== undefined
 ```
 
-```typescript{2}
-const onlyS3Files = (files: Document[]): S3Document[] =>
+```typescript {2}const onlyS3Files = (files: Document[]): S3Document[] =>
   files.filter((document) => isType<S3Document>(document, "url"));
 ```

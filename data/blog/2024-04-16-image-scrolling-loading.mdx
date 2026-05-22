@@ -1,5 +1,5 @@
 ---
-title: 'Tackling the Image Loading Scroll Problem in Chat Applications'
+title: "Tackling 'on load' Scrolling in Chat Applications"
 date: '2024-04-16'
 tags: ['react', 'DOM']
 summary: 'How to solve one of the most frustrating UX issues in chat applications: ensuring automatic scrolling works correctly when images load asynchronously.'
@@ -7,15 +7,15 @@ images: ['/static/thumbnails/react.png']
 draft: false
 ---
 
-# Tackling the Image Loading Scroll Problem in Chat Applications
+I encountered a frustrating scrollling user experience in our chat platform that was occurring due to a race condition of images loading within the chat, and a scroll-to-bottom function.
 
-In modern chat applications, one of the most frustrating user experiences is when the chat view fails to automatically scroll to the latest messages after images load. This is a common problem that many developers face, and it's particularly challenging because it involves the intersection of asynchronous image loading, DOM updates, and scroll positioning. In this article, I'll walk through a real-world scenario of fixing this issue in a React chat application.
+Ideally, when a chat loads, the UI should automatically scroll to the latest messages. However, when there are images in the chat history, the scroll wouldn't reach the end of the chat due to the timing of asynchronous image loading, DOM updates, and scroll positioning.
 
 ## The Problem: Auto-Scrolling Fails When Images Load
 
-Our application features a chat interface where users can share images and text messages. While the auto-scroll worked fine for text messages, we noticed a frustrating issue: when a message contained an image, the chat would initially scroll to show the latest message, but as soon as the image loaded (which expands the content height), the view would remain at an earlier point in the conversation instead of keeping the latest message visible.
+Our React app has a chat interface where users can share images and text messages. While the auto-scroll worked fine for text messages, there was an annoying issue: when the chat history contained an image, the chat UI would initially scroll to show the latest message, but as soon as the images loaded (which expands the content height), the view would remain at an earlier point in the conversation instead of keeping the latest message visible.
 
-### Original Approach
+## Original Approach: IntersectionObserver
 
 Our initial implementation relied on React's rendering cycle and the `IntersectionObserver` API to detect when images appeared in the viewport:
 

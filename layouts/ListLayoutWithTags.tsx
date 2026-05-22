@@ -105,7 +105,7 @@ export default function ListLayoutWithTags({
                 <h2 className="font-mono text-sm tracking-wider text-gray-500 uppercase dark:text-gray-300">
                   Filter by tag
                 </h2>
-                <nav className="flex flex-col space-y-3 max-h-[calc(100vh-8rem)] overflow-y-auto pr-2 pb-6">
+                <nav className="flex max-h-[calc(100vh-8rem)] flex-col space-y-3 overflow-y-auto pr-2 pb-6">
                   {sortedTags.map((tag) => (
                     <Link
                       key={tag}

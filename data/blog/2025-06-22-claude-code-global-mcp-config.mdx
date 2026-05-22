@@ -1,0 +1,145 @@
+---
+title: 'Setting up Global MCP Configuration for Claude Code'
+date: '2025-06-22'
+tags: ['claude-code', 'mcp']
+summary: 'Learn how to configure MCP (Model Context Protocol) servers globally for Claude Code, making them available across all your projects.'
+images: ['/static/thumbnails/anthropic.png']
+draft: false
+---
+
+## Problem: Local vs Global MCP Configuration
+
+When working with Claude Code, MCP (Model Context Protocol) servers can be configured at different scopes:
+
+- **Local scope**: Configure MCPs to be available only within a specific project
+- **User scope**: Configure MCPs to be available globally across all your projects
+
+By default, when you add an MCP server, it's configured locally - this means that the MCP is configured only to that specific project, and you need to do a new configuration for each project you're working in.
+
+I work across multiple repos, and it was tedious to set up the multiple MCPs I work with for each project.
+
+### Checking Claude Code MCP Configuration
+
+You can verify the scope that an MCP is configured at by first listing all the configured MCP servers:
+
+```terminal
+❯ claude mcp list
+```
+
+This will show all your configured servers:
+
+```terminal
+❯ claude mcp list
+  playwright: npx @playwright/mcp@latest
+  context7: https://mcp.context7.com/sse (SSE)
+  perplexity-ask: npx -y server-perplexity-ask
+  notionMCP: npx -y mcp-remote https://mcp.notion.com/sse
+```
+
+Then you can check the detailed configuration and scope of any specific MCP server:
+
+```terminal
+❯ claude mcp get playwright
+```
+
+This might show something like:
+
+```terminal
+❯ claude mcp get playwright
+  playwright:
+    Scope: Local (private to you in this project)
+    Type: stdio
+    Command: npx
+    Args: @playwright/mcp@latest
+    Environment:
+```
+
+## The Solution: Remove local server and add the Global MCP Configuration
+
+Before configuring Claude Code with a globally scoped MCP server, you first need to remove the local MCP server.
+
+```terminal
+❯ claude mcp remove "playwright" -s local
+```
+
+Then, to make an MCP server available globally, you need to use the `--scope user` flag when adding them.
+
+### Example: Adding Playwright MCP Globally (user scope)
+
+Run this command to add the Playwright MCP globally in Claude Code:
+
+```terminal
+❯ claude mcp add playwright --scope user -- npx @playwright/mcp@latest
+```
+
+## Benefits of Global MCP Configuration
+
+- **Consistency**: Same tools available across all projects
+- **Efficiency**: No need to reconfigure for each new project
+- **Convenience**: Tools like Playwright, etc. work immediately in any project
+
+## Here are the MCP servers that I use:
+
+**Notion integration (with API authentication):**
+
+GitHub link: [https://github.com/makenotion/notion-mcp-server](https://github.com/makenotion/notion-mcp-server)
+
+```terminal
+❯ claude mcp add notionApi --scope user --env OPENAPI_MCP_HEADERS='{"Authorization": "Bearer YOUR_NOTION_TOKEN", "Notion-Version": "2022-06-28"}' -- npx -y @notionhq/notion-mcp-server
+```
+
+**Playwright for browser automation:**
+
+GitHub link: [https://github.com/microsoft/playwright-mcp](https://github.com/microsoft/playwright-mcp)
+
+```terminal
+❯ claude mcp add playwright --scope user -- npx @playwright/mcp@latest
+```
+
+**Context7 documentation lookup (SSE server):**
+
+GitHub link: [https://github.com/upstash/context7](https://github.com/upstash/context7)
+
+```terminal
+❯ claude mcp add context7 --scope user --type sse -- https://mcp.context7.com/sse
+```
+
+**Perplexity AI search:**
+
+GitHub link: [https://github.com/ppl-ai/modelcontextprotocol](https://github.com/ppl-ai/modelcontextprotocol)
+
+```terminal
+❯ claude mcp add perplexity-ask --scope user --env PERPLEXITY_API_KEY=YOUR_PERPLEXITY_API_KEY -- npx -y server-perplexity-ask
+```
+
+**Task management AI:**
+
+GitHub link: [https://github.com/eyaltoledano/claude-task-master](https://github.com/eyaltoledano/claude-task-master)
+
+```terminal
+❯ claude mcp add taskmaster-ai --scope user -- npx -y --package=task-master-ai task-master-ai
+```
+
+**Sequential thinking server:**
+
+GitHub link: [https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking](https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking)
+
+```terminal
+❯ claude mcp add sequential-thinking --scope user -- npx -y @modelcontextprotocol/server-sequential-thinking
+```
+
+**Atlassian integration:**
+
+GitHub link: [https://github.com/sooperset/mcp-atlassian](https://github.com/sooperset/mcp-atlassian)
+
+```terminal
+❯ claude mcp add mcp-atlassian --scope user -- npx mcp-remote https://mcp.atlassian.com/v1/sse
+```
+
+**Local zen server (adjust path to your installation):**
+
+GitHub link: [https://github.com/BeehiveInnovations/zen-mcp-server](https://github.com/BeehiveInnovations/zen-mcp-server)
+
+```terminal
+❯ claude mcp add zen --scope user -- /path/to/your/zen-mcp-server/.zen_venv/bin/python /path/to/your/zen-mcp-server/server.py
+```

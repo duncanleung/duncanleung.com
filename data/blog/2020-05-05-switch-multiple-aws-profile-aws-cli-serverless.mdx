@@ -62,7 +62,7 @@ Default output format [None]: json
 
 Successfully running `aws configure` will set up the `.aws/` folder in your root directory:
 
-```
+```text
 (root)
 └── .aws/
      ├── config      // Your AWS Profiles
@@ -118,13 +118,9 @@ You can switch the AWS profile per project executing once when you start your pr
 Run an npm script for:
 
 ```bash
-export AWS_PROFILE="devProfile" && export AWS_REGION=us-west-1.
+export AWS_PROFILE="devProfile" && export AWS_REGION=us-west-1
 ```
 
 ### C. Specifying the AWS profile as a Serverless CLI flag with `--aws-profile`
 
 Or manually pass the AWS profile as an option to the Serverless CLI command with the `--aws-profile` flag.
-
-```
-
-```

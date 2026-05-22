@@ -13,23 +13,28 @@ I was running into an issue with VSCode warnings on CSS "Unknown at rule" for Ta
 
 <div class="filename">./styles/globals.css</div>
 
-```css{3}
+```css
 @tailwind base;
+```
+
+```text
 ^^^^^^^^^
 Unknown at rule @tailwind css(unknownAtRules)
-
 ```
 
 <div class="filename">./styles/globals.css</div>
 
-```css{5}
+```css
 @layer base {
   * {
     @apply text-gray-dark;
-    ^^^^^^^^
-    Unknown at rule @apply css(unknownAtRules)
   }
 }
+```
+
+```text
+    ^^^^^^^^
+    Unknown at rule @apply css(unknownAtRules)
 ```
 
 ## VSCode Solution: Define Custom Data for CSS

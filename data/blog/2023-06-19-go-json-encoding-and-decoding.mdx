@@ -31,7 +31,7 @@ For example, there is a time typing Go, which represents a current timestamp, bu
 
 JSON is one of the most common serialization formats used. Here are the mappings between JSON and Go:
 
-```
+```text
   JSON        | Go
 +-------------+----------------------------------------------------+
 | true/false  | true / false                                       |
@@ -65,7 +65,7 @@ If we want this flexibility in Go, we need to define an array with the `any` typ
 
 JSON objects can be decoded into either a `map[string]interface{}` (for arbitrary JSON objects) or a specific struct in Go (when you know the structure of the JSON object).
 
-# Go net/http Package
+## Go net/http Package
 
 We'll use the `net/http` package to practically explore JSON encoding and decoding in Go.
 

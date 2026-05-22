@@ -15,7 +15,7 @@ In practice, this means that inside the function, any changes made to this copy 
 
 There are also some particular things to keep in mind when dealing with different types of data:
 
-# Passing integers into a function
+## Passing integers into a function
 
 Integers are passed by value into a function.
 
@@ -34,7 +34,7 @@ func main() {
 }
 ```
 
-```
+```text
    Main function                          modifyInt function
 ------------------                        ---------------
 |                 |                       |              |
@@ -48,7 +48,7 @@ func main() {
 
 ```
 
-# Passing pointers to modify the original value
+## Passing pointers to modify the original value
 
 By passing a pointer to a function, the function gets a copy of the pointer, and not a reference to the original pointer.
 
@@ -69,7 +69,7 @@ func main() {
 }
 ```
 
-```
+```text
    Main function                      modifyIntPointer function
 ------------------                        ---------------
 |                 |                       |              |
@@ -83,7 +83,7 @@ func main() {
 
 ```
 
-# Passing pointers to indicate optional values
+## Passing pointers to indicate optional values
 
 In addition to allowing modifying the original value in a calling function, passing a pointer is also used to indicate that function parameter is optional.
 
@@ -91,7 +91,7 @@ By accepting a pointer, `nil` can be passed as a function argument to indicate t
 
 However, inside the function, a nil check is needed if the pointer is nil before dereferencing it.
 
-# Passing slices into a function
+## Passing slices into a function
 
 Note: Go uses a data structure called a "slice header" when dealing with slices, which includes:
 
@@ -137,7 +137,7 @@ func main() {
 }
 ```
 
-# Passing a slice pointer to modify the original
+## Passing a slice pointer to modify the original
 
 By passing a "pointer to a slice" to a function, the modifications to the slice will affect the original slice.
 
@@ -171,7 +171,7 @@ func main() {
 }
 ```
 
-# Passing strings into a function
+## Passing strings into a function
 
 Note: Strings are immutable in Go, so a string can't be modified within the function like with an array or a slice. Attempting to change a string in a function will result in a compile-time error.
 
@@ -203,7 +203,7 @@ func main() {
 }
 ```
 
-# Passing a string pointer to modify the original
+## Passing a string pointer to modify the original
 
 Although the string that a pointer points to is immutable, the pointer itself is not.
 
@@ -225,7 +225,7 @@ func main() {
 
 Again, it should be noted, that it is more idiomatic in Go to return the new string from the function rather than changing it in place through a pointer.
 
-# Passing structs into a function
+## Passing structs into a function
 
 Structs are passed by value into a function.
 
@@ -249,7 +249,7 @@ func main() {
 }
 ```
 
-# Passing a struct pointer to modify the original
+## Passing a struct pointer to modify the original
 
 By passing a "pointer to a struct" to a function, the modifications to the struct will affect the original struct.
 
@@ -291,6 +291,6 @@ func main() {
 }
 ```
 
-# Passing pointers to optimize performance
+## Passing pointers to optimize performance
 
 For complex types (structs), if you pass it directly, the whole structure will be copied. But if you pass a pointer to the structure, only the pointer will be copied which can improve performance.

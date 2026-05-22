@@ -79,7 +79,7 @@ When a user registers and confirms their email, the client talks with Cognito Us
 3. **Client:** Confirms the verification token.
 4. **Cognito User Pool:** Completes the registration process.
 
-```
+```text
 Client         Cognito User Pool         API Gateway            AWS Lambda
   |                      |                    |                     |
   | Register             |                    |                     |
@@ -117,7 +117,7 @@ After a successful sign-in, Cognito User Pool returns a JWT token. This token ne
 
 3. **Client:** Includes the JWT in the header of HTTP requests to API Gateway that are secured with the Cognito authorizer.
 
-```
+```text
 Client           Cognito User Pool       API Gateway           AWS Lambda
   |                      |                    |                     |
   | Sign In              |                    |                     |
@@ -153,7 +153,7 @@ The auth token issued by an auth provider is exchanged for temporary AWS IAM cre
 5. If the auth token is valid, Cognito will **issue a temporary AWS IAM credential** to the Client
 6. The client can now **access other AWS services using the temporary AWS IAM credential**
 
-```
+```text
 
      Identity Providers
      ┌────────────────────────────────────────────────────────┐

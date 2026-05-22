@@ -33,7 +33,7 @@ We can use `git reflog show` to show the reference logs (hence, "reflog"), which
 
 After we get the SHA-1 checksum of the commit before our `git push --force`, we can recreate the branch and push the branch back to the remote.
 
-```bash
+```terminal
 // Show the reference logs
 $ git reflog show remotes/origin/feature/our-collab-branch
 
@@ -44,7 +44,7 @@ $ git reflog show remotes/origin/feature/our-collab-branch
 $ git checkout 7138c46
 $ git branch -D feature/our-collab-branch
 
-$ checkout -b feature/our-collab-branch
+$ git checkout -b feature/our-collab-branch
 $ git push origin HEAD --force
 ```
 

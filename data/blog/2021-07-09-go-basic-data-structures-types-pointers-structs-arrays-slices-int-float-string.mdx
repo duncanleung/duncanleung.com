@@ -23,7 +23,9 @@ Go has several integer types:
 
 ```go
 i := 12
+```
 
+```text
 +------+
 |  12  | int
 +------+
@@ -36,7 +38,9 @@ In the above example:
 
 ```go
 j := int32(12)
+```
 
+```text
 +------+
 |  12  | int32
 +------+
@@ -108,7 +112,9 @@ The default type for floating point values is `float64`.
 
 ```go
 f := float32(2.33)
+```
 
+```text
 +--------+
 |  2.33  | float32
 +--------+
@@ -123,7 +129,9 @@ In the above example:
 
 ```go
 language := [6]byte{'g', 'o', 'l', 'a', 'n', 'g'}
+```
 
+```text
 +-----+-----+-----+-----+-----+-----+
 |  g  |  o  |  l  |  a  |  n  |  g  | [6]byte
 +-----+-----+-----+-----+-----+-----+
@@ -136,7 +144,9 @@ In the above example:
 
 ```go
 primes := [3]int{2, 3, 5}
+```
 
+```text
 +-----+-----+-----+
 |  2  |  3  |  5  | [3]byte
 +-----+-----+-----+
@@ -174,6 +184,9 @@ In the above example:
 type Point struct{ X, Y int }
 
 var p = Point{10, 20}
+```
+
+```text
 +------+------+
 |  10  |  20  | Point
 +------+------+
@@ -188,6 +201,9 @@ In the above example:
 type Point struct{ X, Y int }
 
 var pp *Point = &Point{10, 20}
+```
+
+```text
 +-----+
 |  +  | *Point
 +--|--+
@@ -208,6 +224,9 @@ In the above example:
 type Rect1 struct{ Min, Max Point }
 
 r1 := Rect1{Point{10, 20}, Point{50, 60}}
+```
+
+```text
 +------+------+------+------+
 |  10  |  20  |  50  |  60  | Rect1
 +------+------+------+------+
@@ -222,6 +241,9 @@ In the above example:
 type Rect2 struct{ Min, Max *Point}
 
 r1 := Rect1{&Point{10, 20}, &Point{50, 60}}
+```
+
+```text
 +-----+-----+
 |  +  |  +  | *Point
 +--|--+--|--+
@@ -257,7 +279,9 @@ It should be noted, slicing a string does not allocate or copy the underlying da
 
 ```go
 s := "hello"
+```
 
+```text
   ptr   len
 +-----+-----+
 |  +  |  5  | string
@@ -296,7 +320,9 @@ Slicing an array also does not allocate or copy the underlying data:
 
 ```go
 x := []int{1, 3, 5, 7}
+```
 
+```text
   ptr   len   cap
 +-----+-----+-----+
 |  +  |  4  |  4  | []int
@@ -318,7 +344,9 @@ In the above example:
 
 ```go
 x := []int{1, 3, 5, 7}
+```
 
+```text
   ptr   len   cap
 +-----+-----+-----+
 |  +  |  4  |  4  | []int
@@ -359,6 +387,9 @@ In the above example:
 type Point struct{ X, Y int }
 
 new(Point)
+```
+
+```text
   ptr
 +-----+
 |  +  | *Point
@@ -368,8 +399,9 @@ new(Point)
    +-----+-----+
    |  0  |  0  | Point
    +-----+-----+
+```
 
-
+```go
 point := new(Point)
 Println(*point)      // {0 0}
 ```
@@ -384,7 +416,9 @@ type Point struct{ X, Y int }
 type Rect1 struct{ Min, Max Point }
 
 new(Rect1)
+```
 
+```text
   ptr
 +-----+
 |  +  | *Rect1
@@ -394,8 +428,9 @@ new(Rect1)
    +-----+-----+-----+-----+
    |  0  |  0  |  0  |  0  | Rect1
    +-----+-----+-----+-----+
+```
 
-
+```go
 rect1 := new(Rect1)
 Println(*rect1)      // {{0 0} {0 0}}
 ```
@@ -410,7 +445,9 @@ type Point struct{ X, Y int }
 type Rect2 struct{ Min, Max *Point}
 
 new(Rect2)
+```
 
+```text
   ptr
 +-----+
 |  +  | *Rect2
@@ -422,8 +459,9 @@ new(Rect2)
    +--|--+--|--+
       v     v
      nil    nil
+```
 
-
+```go
 rect2 := new(Rect2)
 Println(*rect2)      // {<nil> <nil>}
 ```
@@ -435,7 +473,9 @@ In the above example:
 
 ```go
 new([]int)
+```
 
+```text
   ptr
 +-----+
 |  +  | *[]int
@@ -450,8 +490,9 @@ new([]int)
       +-+
       | | [0]int (array)
       +-+
+```
 
-
+```go
 data := new([]int)
 Println(len(*data)) // 0
 Println(cap(*data)) // 0
@@ -468,7 +509,9 @@ Println(*data)      // []
 
 ```go
 make([]int, 0)
+```
 
+```text
   ptr   len   cap
 +-----+-----+-----+
 |  +  |  0  |  0  | []int (slice)
@@ -478,8 +521,9 @@ make([]int, 0)
    +-+
    | | [0]int (array)
    +-+
+```
 
-
+```go
 makeData := new([]int)
 Println(len(makeData)) // 0
 Println(cap(makeData)) // 0
@@ -493,7 +537,9 @@ In the above example:
 
 ```go
 make([]int, 2, 5)
+```
 
+```text
   ptr   len   cap
 +-----+-----+-----+
 |  +  |  2  |  5  | []int (slice)
@@ -503,8 +549,9 @@ make([]int, 2, 5)
    +-----+-----+-----+-----+-----+
    |  0  |  0  |  0  |  0  |  0  | [5]int (array)
    +-----+-----+-----+-----+-----+
+```
 
-
+```go
 make([]int, 2, 5)
 Println(len(makeData)) // 2
 Println(cap(makeData)) // 5

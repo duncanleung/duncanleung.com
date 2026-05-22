@@ -53,3 +53,6 @@ yarn-error.log*
 
 # Contentlayer
 .contentlayer
+
+# Claude Code local settings
+.claude/settings.local.json

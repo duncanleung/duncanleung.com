@@ -11,7 +11,7 @@ draft: false
 
 I was running into an issue when migrating to the ESLint v9 flat config on my NextJS project.
 
-When I included the the `typescript-eslint` configuration to lint with type information:
+When I included the `typescript-eslint` configuration to lint with type information:
 
 ```
 export default tseslint.config(
@@ -169,7 +169,7 @@ The error message is misleading since I had specified `parserOptions.project` in
 
 The issue seems to be caused because the `@typescript-eslint/await-thenable` rule requires type information to function correctly.
 
-This type information is only available when ESLint procceses TypeScript files with the TypeScript parser with the `parserOptions.project` configuration.
+This type information is only available when ESLint processes TypeScript files with the TypeScript parser with the `parserOptions.project` configuration.
 
 ## Possible Solution 1:
 

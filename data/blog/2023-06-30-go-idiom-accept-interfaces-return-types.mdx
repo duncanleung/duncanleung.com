@@ -7,13 +7,13 @@ images: ['/static/thumbnails/go.png']
 draft: false
 ---
 
-When writing functions or methods Go, it is idiomatic to accept interfaces and return types as it helps keep your Go code flexible, reusable, and robust against changes in implementation.
+When writing functions or methods in Go, it is idiomatic to accept interfaces and return types as it helps keep your Go code flexible, reusable, and robust against changes in implementation.
 
 We'll discuss some examples of this idiom, but it should be noted that this is not a hard and fast rule. There are times when it makes sense to accept concrete types and return interfaces, or to accept interfaces and return concrete types. The important thing is to understand the tradeoffs and make the best decision for your particular situation.
 
 ### Accept Interfaces
 
-Specify parameters as interfaces rather than concrete types makes your function more flexible and reusable because it can accept any type that fulfills the interface. Interfaces are a way to describe the behavior of an object. If something implements all the methods described in an interface, we say it implements the interface.
+Specifying parameters as interfaces rather than concrete types makes your function more flexible and reusable because it can accept any type that fulfills the interface. Interfaces are a way to describe the behavior of an object. If something implements all the methods described in an interface, we say it implements the interface.
 
 For example, if you have a function that needs to write to a stream, don't specify the parameter as a `*os.File` (a concrete type), specify it as `io.Writer` (an interface). That way, the function can write to any type that has a Write method, not just files.
 
@@ -25,7 +25,7 @@ This approach provides more information to the caller about what exactly they're
 
 ## Example: Return Types
 
-Let's first look at an implementation that --doesn't-- follow the Go idiom.
+Let's first look at an implementation that doesn't follow the Go idiom.
 
 Here we have a type `MyStore` and its methods, and an interface `Storer` that defines the methods that `MyStore` implements:
 
@@ -114,7 +114,7 @@ Now, we can use the `directoryPath` field and any other methods defined in `MySt
 
 ## Example: Accepting Interfaces
 
-Let's look at another implementation that --doesn't-- follow the Go idiom.
+Let's look at another implementation that doesn't follow the Go idiom.
 
 ### Wrong: Accepting a Concrete Type
 

@@ -9,7 +9,7 @@ draft: false
 
 In Go, a `slice` is a data structure representing data in a sequence. In Go, it is described by:
 
-- A pointer to the first element of the an underlying array
+- A pointer to the first element of the underlying array
 - The length
 - The capacity
 
@@ -142,7 +142,7 @@ s3   |
 
 In Go, although functions arguments are "pass by copy", we need to pay attention when passing slices to functions because it is actually a copy of the "slice header" that is being passed.
 
-This means that the copied slice header is still pointing to the same underlying array, and if we modify the slice within the function, we will --also-- modify the original slice.
+This means that the copied slice header is still pointing to the same underlying array, and if we modify the slice within the function, we will also modify the original slice.
 
 For example, here we have a function `median` that takes a slice of `float64` values and returns the median value.
 

@@ -11,7 +11,7 @@ Knowing how Go handles function arguments helps us to understand the behavior of
 
 In Go, all function arguments are passed by value (a copy of the value is passed to a function, not a reference to the original value itself).
 
-In practice, this means that inside the function, any changes made to this copy of the value does not affect the original variable.
+In practice, this means that inside the function, any changes made to this copy of the value do not affect the original variable.
 
 There are also some particular things to keep in mind when dealing with different types of data:
 
@@ -52,7 +52,7 @@ func main() {
 
 By passing a pointer to a function, the function gets a copy of the pointer, and not a reference to the original pointer.
 
-The the "copy of the pointer" points to the same memory location as the original value, and any changes made to the data in the memory location that the pointer points to will affect the original data.
+The "copy of the pointer" points to the same memory location as the original value, and any changes made to the data in the memory location that the pointer points to will affect the original data.
 
 Inside the function, to modify the value that this "copy of the pointer" is pointing to, it first needs to be dereferenced `*i`. After dereferencing it, a new value can be assigned to the memory location that `i` points to with `*i = 5`.
 
@@ -85,7 +85,7 @@ func main() {
 
 ## Passing pointers to indicate optional values
 
-In addition to allowing modifying the original value in a calling function, passing a pointer is also used to indicate that function parameter is optional.
+In addition to allowing modifying the original value in a calling function, passing a pointer is also used to indicate that a function parameter is optional.
 
 By accepting a pointer, `nil` can be passed as a function argument to indicate the absence of a value.
 
@@ -103,7 +103,7 @@ When a slice is passed as an argument into a function, the slice header is passe
 
 Practically, this means that changes can be made to the original slice --by indexing a specific element in the slice--. This is because both the original "slice header" and the copy "slice header" point to the same underlying array.
 
-Here, `modifySlice` can change an element the original slice. Although a copy of the slice header is passed in, it still points to the same underlying array.
+Here, `modifySlice` can change an element of the original slice. Although a copy of the slice header is passed in, it still points to the same underlying array.
 
 ```go
 func modifySlice(s []int) {

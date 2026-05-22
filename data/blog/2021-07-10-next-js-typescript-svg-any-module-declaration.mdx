@@ -70,7 +70,7 @@ declare module "*.svg" {
 
 ## Reason
 
-Next.js 11 <a href="https://github.com/vercel/next.js/pull/26485" target="_blank">introduced it's own image import types</a> to prevent conflicts with existing image handling set-ups.
+Next.js 11 <a href="https://github.com/vercel/next.js/pull/26485" target="_blank">introduced its own image import types</a> to prevent conflicts with existing image handling set-ups.
 
 Unfortunately, these image import module declarations are included in the non-modifiable (and regenerated at every build) `next-env.d.ts` file:
 
@@ -101,7 +101,7 @@ declare module "*.svg" {
 
 ## Solution
 
-### Create a custom next-env.dts to exclude image-types/global
+### Create a custom next-env.d.ts to exclude image-types/global
 
 Although Next.js owns the `next-env.d.ts` file, the <a href="https://github.com/vercel/next.js/pull/26485#issuecomment-867091407" target="_blank">original PR implementing this change into Next.js 11</a> states that we can customize `tsconfig.json` to add our own `custom-next-env.d.ts` declaration file that doesn't include the `next/image-types/global` module declarations.
 

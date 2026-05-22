@@ -11,7 +11,7 @@ draft: false
 
 In programming languages, interfaces act as a contract that enables decoupling of types and help create more maintainable programs.
 
-In Go, interfaces allow for polymorphism and provide a way to work with abstract types by just knowing about that type's behavior. This is called "Duck Typing"
+In Go, interfaces allow for polymorphism and provide a way to work with abstract types by just knowing about that type's behavior. This is called "Duck Typing".
 
 **_If it walks like a duck and quacks like a duck, then it must be a duck._**
 
@@ -83,7 +83,7 @@ var blender Blender
 var microwave Microwave
 ```
 
-Each electrical device should also able to draw power from the power socket.
+Each electrical device should also be able to draw power from the power socket.
 
 To represent the behavior of drawing power, we could use the receiver functions:
 
@@ -238,7 +238,7 @@ type Appliance interface {
 
 #### II. Implement the `Appliance` interface:
 
-To implement an interface, a struct needs implement the function signature of the interface.
+To implement an interface, a struct needs to implement the function signature of the interface.
 
 - The two structs `Blender` and `Microwave` are said to **_"implement the `Appliance` interface"_** because their structs implement the `Draw(power int)` function signature.
 

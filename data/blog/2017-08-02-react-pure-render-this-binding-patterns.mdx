@@ -116,7 +116,7 @@ constructor(props) {
 
 **To reiterate, a pure `render()` should not create new functions within `render()`.**
 
-The following two non-pure patterns, using `.bind` and arrow functions, **return a new function every time the Component re-renders**. This will cause problems when trying to utilize `shouldComponentUpdate()` and `React.PurecComponent`.
+The following two non-pure patterns, using `.bind` and arrow functions, **return a new function every time the Component re-renders**. This will cause problems when trying to utilize `shouldComponentUpdate()` and `React.PureComponent`.
 
 ### 1. Calling `bind()` in `render()` - Non Pure `render()` Pattern
 
@@ -235,7 +235,7 @@ class Form extends React.Component {
 }
 ```
 
-### 2. Arrow Function Class Method- Pure `render()` Pattern
+### 2. Arrow Function Class Method - Pure `render()` Pattern
 
 This solution takes advantage of a stage-2 experimental feature, <a href='https://babeljs.io/docs/plugins/transform-class-properties/' target='_blank'>Arrow Function Class Methods</a>, allowing arrow functions to be used as class methods to preserve the `this` context of your method.
 

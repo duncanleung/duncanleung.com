@@ -74,7 +74,7 @@ When rendering the component as a Gatsby `<Link />` component, we need to includ
 <Button as={Link} to="some-internal-path" />
 ```
 
-When rendering tthe component as a native HTML anchor element `<a>`, we need to include the attribute, `href`:
+When rendering the component as a native HTML anchor element `<a>`, we need to include the attribute, `href`:
 
 ```typescript
 <Button as="a" href="some-external-path" />
@@ -132,7 +132,7 @@ The `as` prop is a generic (`E` for element), of type `RenderComponent`.
 
 The `<Button />` component type annotation takes a Generic type `T` (this coincides with the generic Prop type annotation above).
 
-The return type of the `<Button />` component is also depends on the Generic type `T`.
+The return type of the `<Button />` component also depends on the Generic type `T`.
 
 ```typescript{4,7,8}
 type RenderComponent = React.ComponentType | typeof Link | "a";
@@ -153,7 +153,7 @@ const Button = <T extends RenderComponent>(props: Props<T>):
 
 Using the conditional type `GetRenderComponentProps`, we can now correctly create a type intersection.
 
-This intesection now correctly resolves to the type depending on the type of element, `E`, passed into the `as` prop.
+This intersection now correctly resolves to the type depending on the type of element, `E`, passed into the `as` prop.
 
 ```typescript{3}
 type Props<E extends RenderComponent> = {

@@ -67,7 +67,7 @@ In webpack, `DefinePlugin`,<a href='https://webpack.js.org/plugins/define-plugin
 
 This instance of `DefinePlugin` <a href='https://webpack.js.org/guides/production/#node-environment-variable' target='_blank'>performs a search-and-replace on the original source code</a>, and instances of `process.env.NODE_ENV` in the imported code is replaced by `"production"`.
 
-React's internals has references to `process.env.NODE_ENV`. When set to, `"production"`, React removes warning messages to reduce file-size and increase performance.
+React's internals have references to `process.env.NODE_ENV`. When set to `"production"`, React removes warning messages to reduce file-size and increase performance.
 
 <div class="filename">webpack.config.js</div>
 

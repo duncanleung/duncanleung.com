@@ -43,7 +43,7 @@ This solution would return a hamming distance value of `1` for the given string 
 
 However, consider the case of the string inputs `"aua"` and `"aüa"`. This implementation would actually error out since the character `"ü"` is represented by two bytes.
 
-```bash
+```terminal
 Error: the two dna strings should be equal length
 ```
 
@@ -135,8 +135,6 @@ import "errors"
 // Distance returns the Hamming Distance between two strands of DNA
 func Distance(a, b string) (int, error) {
 	ar, br := []rune(a), []rune(b)
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  Convert the strings to a slice of runes
 
 	if len(ar) != len(br) {
 		return 0, errors.New("the two dna strings should be equal length")
@@ -151,6 +149,12 @@ func Distance(a, b string) (int, error) {
 
 	return distance, nil
 }
+```
+
+```text
+	ar, br := []rune(a), []rune(b)
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  Convert the strings to a slice of runes
 ```
 
 ## Additional reading

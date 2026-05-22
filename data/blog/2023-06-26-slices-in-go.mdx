@@ -79,7 +79,7 @@ When we print out the original `s2`, we'll see that it has also been modified.
 
 If you remember from this article: <a href='/go-basic-data-structures-types-pointers-structs-arrays-slices-int-float-string' target='_blank'>Basic Data Structures in Go</a>, we can visualize how the new slice points to the same underlying array as the original slice.
 
-```go
+```text
 s2 := []int{1, 2, 3, 4, 5, 6}
 s3 := s2[1:4]
 
@@ -106,7 +106,7 @@ s3   |
 
 Because `s3` points to the same underlying array as `s2`, when we modify `s3`, we are also modifying `s2`.
 
-```go
+```text
 s2 := []int{1, 2, 3, 4, 5, 6}
 s3 := s2[1:4]
 s3 = append(s3, 100)

@@ -23,9 +23,9 @@ Serialization is the process of taking a data structure in your language and con
 
 Deserialization is the process of taking a sequence of bytes, and converting it back into a data structure in your language.
 
-Understanding this serialization/deserialization mapping is important because there are always edge cases where the types in our programming language doesn't match the types in the serialization format.
+Understanding this serialization/deserialization mapping is important because there are always edge cases where the types in our programming language don't match the types in the serialization format.
 
-For example, there is a time typing Go, which represents a current timestamp, but this type does not exist in JSON. To encode time in JSON, it either needs to be encoded as an integer (usually the number of seconds or milliseconds since epoch) or as a string (usually as ISO 8601)
+For example, there is a time type in Go, which represents a current timestamp, but this type does not exist in JSON. To encode time in JSON, it either needs to be encoded as an integer (usually the number of seconds or milliseconds since epoch) or as a string (usually as ISO 8601)
 
 ## JSON Serialization
 
@@ -86,7 +86,7 @@ One of the differences between Go and other languages like JavaScript is that Go
 
 The philosophy behind this is that errors are just values and should be treated as such. This allows us to check for errors explicitly, and handle them in a way that makes sense for our program.
 
-Although some developer find this pattern repetitive, this pattern enforces defensive programming and forces Go developers to explicitly think the error case all the time.
+Although some developers find this pattern repetitive, this pattern enforces defensive programming and forces Go developers to explicitly think about the error case all the time.
 
 ```go
 func main() {

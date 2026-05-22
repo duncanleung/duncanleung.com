@@ -83,7 +83,7 @@ Go uses embedding to compose types together in a powerful yet simple way.
 
 Embedding promotes simplicity and clarity in structuring code via composition. Inheritance, especially multiple inheritance, can lead to complex hierarchies and relationships between classes that are often difficult to understand and maintain.
 
-Embedding also allows a struct to "borrow" fields and methods of another struct via composition. This means modifying or extend behavior can be done without modifying the original struct.
+Embedding also allows a struct to "borrow" fields and methods of another struct via composition. This means modifying or extending behavior can be done without modifying the original struct.
 
 Here we define a `Player` type that has a `Name` and also embeds the `Coordinates` field. This means that the `Player` type will have access to the `Move` method.
 

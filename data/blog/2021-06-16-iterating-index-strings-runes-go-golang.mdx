@@ -7,7 +7,7 @@ images: ['/static/thumbnails/go.png']
 draft: false
 ---
 
-I've been using <a href='https://exercism.io/tracks/go' target='_blank'>exercism's Go track</a> to help me learn Go. It's been an amazing experience so far. Exercism is mentor-based exercise platform that allows students to request feedback from mentors.
+I've been using <a href='https://exercism.io/tracks/go' target='_blank'>exercism's Go track</a> to help me learn Go. It's been an amazing experience so far. Exercism is a mentor-based exercise platform that allows students to request feedback from mentors.
 
 After working on <a href='https://exercism.io/my/solutions/fa4669b49e1946969e0d95e25296a912' target='_blank'>a Go exercise that involves comparing the difference "distance" between two strings</a>, <a href='https://exercism.io/profiles/bitfield' target='_blank'>John Arundel</a> (who is also a Go maintainer) pointed out in my mentor review, that I need to consider the implications of indexing a string in Go versus indexing runes.
 
@@ -57,7 +57,7 @@ So, when indexing a string, the index accesses the individual bytes in the strin
 
 With this in mind, when we iterate over a string, the index doesn't move by each single UTF-8 encoded character increments, but instead by every byte.
 
-If we wish to increment the index by character, we must either cas the slice to a string or rune.
+If we wish to increment the index by character, we must either cast the slice to a string or rune.
 
 For example, consider the characters `"u"`, and `"ü"`:
 

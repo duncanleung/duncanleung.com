@@ -45,7 +45,7 @@ The `rules` property in `.eslintrc` allows:
 - Enabling rules that are defined in an **eslint-plugin-\***
 - Overriding options for rules that were set by an existing **eslint-config-\*** configuration.
 
-ESlint Docs: <a href="https://eslint.org/docs/user-guide/configuring#configuring-rules" target="_blank" rel="noopener noreferrer">Configuring Rules</a>
+ESLint Docs: <a href="https://eslint.org/docs/user-guide/configuring#configuring-rules" target="_blank" rel="noopener noreferrer">Configuring Rules</a>
 
 <div class="filename">.eslintrc.js</div>
 
@@ -71,12 +71,12 @@ For example, extending off the base ESLint <a href="https://github.com/eslint/es
 
 Shared configs are distributed as **eslint-config-\*** NPM packages. One of the commonly used configurations is Airbnb's <a href="https://github.com/airbnb/javascript/tree/master/packages/eslint-config-airbnb" target="_blank" rel="noopener noreferrer">eslint-config-airbnb</a>.
 
-ESlint Docs: <a href="https://eslint.org/docs/user-guide/configuring#extending-configuration-files" target="_blank" rel="noopener noreferrer">Extending Configuration Files</a>
+ESLint Docs: <a href="https://eslint.org/docs/user-guide/configuring#extending-configuration-files" target="_blank" rel="noopener noreferrer">Extending Configuration Files</a>
 
 <div class="filename">.eslintrc.js</div>
 
 ```js{4}
-// The example settings below tell ESLint use the eslint:recommended base configuration and the eslint-config-airbnb shared configuration.
+// The example settings below tell ESLint to use the eslint:recommended base configuration and the eslint-config-airbnb shared configuration.
 
 module.exports = {
   extends: ["eslint:recommended"]
@@ -95,16 +95,16 @@ The `plugins` property in `.eslintrc` allows using third-party plugins to apply 
 
 For example, <a href='https://github.com/yannickcr/eslint-plugin-react' target="_blank" rel="noopener noreferrer">eslint-plugin-react</a>, and <a href='https://github.com/vuejs/eslint-plugin-vue' target="_blank" rel="noopener noreferrer">eslint-plugin-vue</a>, adds specific linting rules for React or Vue projects, respectively.
 
-ESLint plugins contain implementation for additional rules that ESLint will check for, however, these defined ESlint rules still need to be manually configured in an `.eslintrc` to determine how to handle each rule.
+ESLint plugins contain implementation for additional rules that ESLint will check for, however, these defined ESLint rules still need to be manually configured in an `.eslintrc` to determine how to handle each rule.
 
 The new rules defined by an **eslint-plugin-\*** still need to be configured under the `rules` property, or by taking a set of rule configurations in the `extends` property.
 
-ESlint Docs: <a href="https://eslint.org/docs/user-guide/configuring#configuring-plugins" target="_blank" rel="noopener noreferrer">Configuring Plugins</a>
+ESLint Docs: <a href="https://eslint.org/docs/user-guide/configuring#configuring-plugins" target="_blank" rel="noopener noreferrer">Configuring Plugins</a>
 
 <div class="filename">.eslintrc.js</div>
 
 ```js
-// The example settings below tell ESLint use the eslint-plugin-react linting rules, and manually configures two rules.
+// The example settings below tell ESLint to use the eslint-plugin-react linting rules, and manually configures two rules.
 
 module.exports = {
   plugins: ['react'],
@@ -126,7 +126,7 @@ The `env` property in `.eslintrc` declares which environments your code is expec
 
 Each environment brings with it a certain set of predefined global variables, and prevents ESLint from throwing an `no-undef` rule error when referencing an expected global variable such as, `window`, or `document`.
 
-ESlint Docs: <a href="https://eslint.org/docs/user-guide/configuring#specifying-environments" target="_blank" rel="noopener noreferrer">Specifying Environments</a>
+ESLint Docs: <a href="https://eslint.org/docs/user-guide/configuring#specifying-environments" target="_blank" rel="noopener noreferrer">Specifying Environments</a>
 
 <div class="filename">.eslintrc.js</div>
 
@@ -145,7 +145,7 @@ module.exports = {
 
 The `parser` property in `.eslintrc` declares which parser ESLint should use to parse your code into an AST. By default, ESLint uses Espree as its parser.
 
-ESlint Docs: <a href="https://eslint.org/docs/user-guide/configuring#specifying-parser" target="_blank" rel="noopener noreferrer">Specifying Parser</a>
+ESLint Docs: <a href="https://eslint.org/docs/user-guide/configuring#specifying-parser" target="_blank" rel="noopener noreferrer">Specifying Parser</a>
 
 <div class="filename">.eslintrc.js</div>
 
@@ -163,7 +163,7 @@ The `parserOptions` property in `.eslintrc` specifies the JavaScript language op
 
 By default, ESLint supports ECMAScript 5 syntax. Configure `parserOptions` to enable support for other ECMAScript versions as well as JSX.
 
-ESlint Docs: <a href="https://eslint.org/docs/user-guide/configuring#specifying-parser-options" target="_blank" rel="noopener noreferrer">Specifying Parser Options</a>
+ESLint Docs: <a href="https://eslint.org/docs/user-guide/configuring#specifying-parser-options" target="_blank" rel="noopener noreferrer">Specifying Parser Options</a>
 
 <div class="filename">.eslintrc.js</div>
 

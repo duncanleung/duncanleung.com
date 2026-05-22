@@ -56,7 +56,7 @@ This expression is not callable.
 
 ## Solution:
 
-Apparently, for union types, members which are functions will also be typed as union types, so the the type of `Array.prototype.map` is not callable.
+Apparently, for union types, members which are functions will also be typed as union types, so the type of `Array.prototype.map` is not callable.
 
 To fix this issue, the correct typing of `uploadedDocuments` should be an array of the union of `S3Document` and `FileWithPath` types.
 

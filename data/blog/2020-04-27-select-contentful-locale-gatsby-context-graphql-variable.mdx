@@ -11,7 +11,7 @@ _Credit 👏: My teammate,_ <a href='https://github.com/riley-rangel' target='_b
 
 ## Problem: How to select the correct Contentful locale content data from GraphQL
 
-I was working with my teammate, <a href='https://github.com/riley-rangel' target='_blank'>Riley</a>, to connect our web app to Contentful to drive page content. Previously page was handled by <a href='https://github.com/formatjs/formatjs/tree/master/packages/react-intl' target='_blank'>React-Intl</a> and <a href='https://github.com/wiziple/gatsby-plugin-intl' target='_blank'>gatsby-plugin-intl</a>. However, text updates from the product leads meant that a we had to do a full release.
+I was working with my teammate, <a href='https://github.com/riley-rangel' target='_blank'>Riley</a>, to connect our web app to Contentful to drive page content. Previously page was handled by <a href='https://github.com/formatjs/formatjs/tree/master/packages/react-intl' target='_blank'>React-Intl</a> and <a href='https://github.com/wiziple/gatsby-plugin-intl' target='_blank'>gatsby-plugin-intl</a>. However, text updates from the product leads meant that we had to do a full release.
 
 _(Granted our CI/CD is pretty streamlined, but we wanted to reduce this step by allowing product leads to make text changes outside of the release cycle.)_
 
@@ -128,9 +128,9 @@ export type Page = {
 
 ### Query GraphQL by a variable
 
-To do this, we modify our GraphQL query by creating the `(\$intlLocale: String)` variable definition after the query operation name `ContentfulQuery`, which declare `$intlLocale` as a variable accepted by the query.
+To do this, we modify our GraphQL query by creating the `(\$intlLocale: String)` variable definition after the query operation name `ContentfulQuery`, which declares `$intlLocale` as a variable accepted by the query.
 
-(Similar to an argument definitions for a function in a typed language, a GraphQL variable definition lists all of the variables, prefixed by `\$`, followed by their type.)
+(Similar to an argument definition for a function in a typed language, a GraphQL variable definition lists all of the variables, prefixed by `\$`, followed by their type.)
 
 Now we can query the `contentfulPage` by the `node_locale` that matches the `$intlLocale` variable from React-Intl.
 

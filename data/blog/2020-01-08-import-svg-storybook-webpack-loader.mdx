@@ -58,7 +58,7 @@ Storybook has a <a href="https://github.com/storybookjs/storybook/blob/next/lib/
 
 A <a href='https://storybook.js.org/docs/configurations/custom-webpack-config/#full-control-mode' target="_blank">custom webpack config for Storybook</a> needs to be set up to specify `@svgr/webpack` as a webpack loader for `.svg` assets.
 
-> The `@svgr/webpack` loader rule needs to occur before that other loaders like the `file-loader` rule so that `@svgr/webpack` takes precedence.
+> The `@svgr/webpack` loader rule needs to occur before the other loaders such as the `file-loader` rule so that `@svgr/webpack` takes precedence.
 
 Place the `@svgr/webpack` loader <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/unshift" target="_blank">before existing webpack asset loaders using `Array.prototype.unshift()`</a>.
 

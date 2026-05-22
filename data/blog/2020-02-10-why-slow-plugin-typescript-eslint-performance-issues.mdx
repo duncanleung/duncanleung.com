@@ -13,7 +13,7 @@ _I previously wrote about [profiling ESLint and removing slow running rules](/pr
 
 While setting up our team's ESLint config with TypeScript, I noticed that running ESLint with `typescript-eslint` was quite slow.
 
-After digging around GitHub issues, I discovered the <a href="https://github.com/typescript-eslint/typescript-eslint/blob/master/docs/getting-started/linting/TYPED_LINTING.md#performance" target="_blank">root cause</a> was that running `typescript-eslint` with type information incurs overheard performance cost.
+After digging around GitHub issues, I discovered the <a href="https://github.com/typescript-eslint/typescript-eslint/blob/master/docs/getting-started/linting/TYPED_LINTING.md#performance" target="_blank">root cause</a> was that running `typescript-eslint` with type information incurs overhead performance cost.
 
 ## typescript-eslint Converts the TypeScript AST into an ESLint AST
 
@@ -90,7 +90,7 @@ The underlying issue is still the overhead of the TypeScript compiler generating
 However, there are some minor tweaks:
 
 - Set up `.eslintignore` to ignore irrelevant directories like `node_modules` and non-typescript files
-- Use the `--cache` flag when running eslint: `eslint --cache \*\*/\_.ts`. Store the info about processed files in order to only operate on the changed ones.
+- Use the `--cache` flag when running eslint: `eslint --cache **/*.ts`. Store the info about processed files in order to only operate on the changed ones.
 
 There is also a whole article on <a href="https://github.com/microsoft/TypeScript/wiki/Performance" target="_blank">TypeScript performance</a> which recommends:
 

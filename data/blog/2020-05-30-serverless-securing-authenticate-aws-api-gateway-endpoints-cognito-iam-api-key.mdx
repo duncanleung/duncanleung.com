@@ -395,7 +395,7 @@ plugins:
 
 **To require that the caller submit IAM access keys to be authenticated to invoke your Lambda Function, set the authorizer to `aws_iam`.**
 
-Generally, Lambdas that are only accessed by your infrastructure (and are not intended to be called by the client directly), should be restricted access by IAM role-based permissions
+Generally, Lambdas that are only accessed by your infrastructure (and are not intended to be called by the client directly), should be restricted access by IAM role-based permissions.
 
 IAM authorization also makes sense as the caller will already be running within AWS and will already have an IAM role.
 

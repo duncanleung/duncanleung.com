@@ -1,0 +1,624 @@
+---
+title: 'Understanding JavaScript Promises: Chaining, Error Handling, and async/await'
+date: '2020-05-05'
+tags: ['javascript', 'async']
+summary: 'A practical guide to working with JavaScript Promises - from basic chaining and resolve/reject behavior to .catch, Promise.all fail-fast handling, and async/await error patterns.'
+images: ['/static/thumbnails/programming.png']
+draft: false
+---
+
+JavaScript is single-threaded, but most of the interesting work in a real app - network requests, file reads, timers - happens asynchronously. Promises are the language primitive that makes this asynchronous work composable.
+
+I've spent a lot of time tripping over the same subtle behaviors of Promises: a missing `return`, a `.catch` placed in the wrong spot, a `Promise.all` that fails too fast. This post collects the rules and patterns that I keep coming back to.
+
+## How Asynchronous Code Gets Scheduled
+
+Any function passed to `setTimeout` is executed asynchronously - it runs after the main thread is no longer busy with synchronous work.
+
+```javascript
+setTimeout(function () {
+  console.log('I am an asynchronous message')
+}) // You can omit the 0
+
+console.log('Test 1')
+
+for (let i = 0; i < 10000; ++i) {
+  doSomeStuff()
+}
+
+console.log('Test 2')
+
+// 'I am an asynchronous message' is logged
+// only after the synchronous loop finishes
+
+function doSomeStuff() {
+  return 1 + 1
+}
+```
+
+The same scheduling model applies to Promises - the `.then` callback never runs in the same tick as the code that registered it. This is what allows promises to compose cleanly without blocking.
+
+```javascript
+var promise = new Promise((resolve) => {
+  setTimeout(() => {
+    resolve('1')
+  }, 1000)
+})
+
+promise.then(function (data) {
+  console.log('data', data)
+  return Promise.resolve('2')
+})
+```
+
+## Always Return a Promise From a Function That Returns a Promise
+
+When a function _can_ return a promise, it should _always_ return a promise. Mixing return types makes it impossible for callers to chain consistently.
+
+```javascript
+// Don't do this - sometimes returns a Promise, sometimes a raw number
+function job() {
+  if (test) {
+    return aNewPromise()
+  } else {
+    return 42
+  }
+}
+```
+
+Instead, wrap the synchronous branch in `Promise.resolve` or `Promise.reject`:
+
+```javascript
+function job() {
+  if (test) {
+    return aNewPromise()
+  } else {
+    return Promise.reject(new Error('test failed'))
+  }
+}
+```
+
+This applies even when you want to signal an error. Return a rejected promise rather than throwing synchronously - the caller can handle both success and failure through the same `.then` / `.catch` chain.
+
+```javascript
+function asyncWork(data) {
+  return new Promise((resolve, reject) => {
+    if (typeof data !== 'number') {
+      reject(new Error('data must be a number'))
+    }
+    // ...
+  })
+}
+```
+
+## The Result of `then` Is Always a Promise
+
+This is the single most important rule for understanding chaining: `.then` always returns a new promise. _Always_. At worst, it returns a never-resolved promise, but it is still a promise.
+
+That means each link in a chain - the `.catch` you attach, the next `.then` - operates on the promise returned by the previous step, not the original promise.
+
+```javascript
+function job1() {
+  return new Promise(function (resolve, reject) {
+    setTimeout(function () {
+      resolve('result of job 1')
+    }, 1000)
+  })
+}
+
+function job2() {
+  return new Promise(function (resolve, reject) {
+    setTimeout(function () {
+      resolve('result of job 2')
+    }, 1000)
+  })
+}
+
+var promise = job1()
+
+promise
+  // By chaining job1 then job2, job2 is always executed after job1
+  .then(function (data1) {
+    console.log('data1', data1)
+
+    // Returning a promise inside `then` makes that promise
+    // the result of the `then` call
+    return job2()
+  })
+
+  .then(function (data2) {
+    console.log('data2', data2)
+
+    // Returning a non-promise creates an auto-resolved promise
+    // with that value as the resolution
+    return 'Hello world'
+  })
+```
+
+## resolve vs reject: Subtler Than They Look
+
+Passing a value to `reject` does _not_ simply mean the promise has "failed", and passing a value to `resolve` does _not_ simply mean the promise has "succeeded".
+
+The rejection callback will be called if you pass something into `resolve` that is either:
+
+- A promise that rejects
+- Not defined as expected (an error is thrown inside the executor - the promise machinery catches it and turns it into a rejection)
+
+```javascript
+new Promise(function (resolve, reject) {
+  // Resolving with a rejected promise
+  resolve(Promise.reject())
+}).then(
+  function () {
+    console.log('Success callback')
+  },
+  function () {
+    console.log('Failure callback')
+  }
+)
+
+// Output:
+// Failure callback
+```
+
+All three of these end up in a rejected state for the same reason - the value resolved with or returned from `.then` itself rejects:
+
+```javascript
+var promise1 = Promise.resolve(Promise.reject())
+
+var promise2 = Promise.resolve().then(function () {
+  return Promise.reject()
+})
+
+var promise3 = Promise.reject().catch(function () {
+  return Promise.reject()
+})
+```
+
+## Handling Errors with `.catch`
+
+`.catch(fn)` is shorthand for `.then(null, fn)`. Both register an error handler:
+
+```javascript
+var promise = request()
+
+promise.catch(function (error) {
+  displayError(error)
+})
+
+// Identical to:
+promise.then(null, function (error) {
+  displayError(error)
+})
+```
+
+If a `.then` has no error callback, **it will not stop on a rejected promise** - the rejection passes through until it reaches a handler that can catch it.
+
+```javascript
+let rejectedPromise = new Promise((resolve, reject) => {
+  reject('I failed')
+})
+
+rejectedPromise
+  // This `then` has no error callback - the rejection
+  // passes through to the next handler
+  .then(function (data) {
+    console.log('success callback')
+    console.log(data)
+  })
+  .then(null, function (error) {
+    console.log('error callback')
+    console.error(error)
+  })
+
+// Output:
+// error callback
+// I failed
+```
+
+And the equivalent written with `.catch`:
+
+```javascript
+let rejectedPromise = new Promise((resolve, reject) => {
+  reject('I failed')
+})
+
+rejectedPromise
+  .then(function (data) {
+    console.log('success callback')
+    console.log(data)
+  })
+  .catch(function (error) {
+    console.log('error callback')
+    console.error(error)
+  })
+
+// Output:
+// error callback
+// I failed
+```
+
+### Errors Thrown Inside a `then` Callback
+
+A `then` callback can crash. It can throw explicitly, or accidentally - for example, by reading a property of `null`. The promise machinery catches these crashes and converts them into rejections, which `.catch` will receive.
+
+```javascript
+let resolvedPromise = new Promise((resolve, reject) => {
+  resolve('I succeeded')
+})
+
+resolvedPromise
+  .then(function (data) {
+    console.log('success callback')
+    console.log(data)
+    // Only a `throw` will trigger the error path
+    throw new Error('throw error')
+  })
+  // The thrown error skips this `then` block entirely
+  .then(function (data) {
+    console.log('success callback')
+    console.log(data)
+  })
+  .catch(function (error) {
+    console.log('error callback')
+    console.error(error)
+  })
+
+// Output:
+// success callback
+// I succeeded
+// error callback
+// Error: throw error
+```
+
+## `.catch` vs `.then(null, errorCallback)`
+
+These look interchangeable, but their placement changes what they handle.
+
+Pass an error callback as the second argument to `.then` when you want to handle errors that happened in _exactly that step_:
+
+```javascript
+let resolvedPromise = new Promise((resolve, reject) => {
+  resolve('I succeeded')
+})
+
+resolvedPromise.then(
+  function (data) {
+    console.log('success callback')
+    console.log(data)
+  },
+  function (error) {
+    // Only handles errors from the original promise,
+    // NOT errors thrown inside the success callback above
+    console.log('error callback')
+    console.error(error)
+  }
+)
+```
+
+The catch to that pattern: errors thrown in the _success_ callback of the same `.then` are not caught by the error callback of that same `.then`. They escape to the next link in the chain.
+
+Use a trailing `.catch` instead when you want one final handler that catches errors from anywhere earlier in the chain:
+
+```javascript
+let resolvedPromise = new Promise((resolve, reject) => {
+  resolve('I succeeded')
+})
+
+resolvedPromise
+  .then(function (data) {
+    console.log('success callback')
+    console.log(data)
+  })
+  .catch(function (error) {
+    // Catches rejections from the original promise
+    // AND any errors thrown inside the `then` above
+    console.log('error callback')
+    console.error(error)
+  })
+```
+
+## Promise.all
+
+`Promise.all` takes an array of promises and resolves with an array of their results - but only if every promise resolves. It has **fail-fast behavior**:
+
+- If any promise in the array rejects, the result of `Promise.all` rejects at that exact moment
+- It does not wait for the other promises to complete
+- The only value you receive is the error of the rejected promise
+
+```javascript
+let p1 = new Promise(function (resolve, reject) {
+  setTimeout(resolve, 500, 'p1')
+})
+
+let p2 = new Promise(function (resolve, reject) {
+  setTimeout(resolve, 1000, 'p2')
+})
+
+let p3 = new Promise(function (resolve, reject) {
+  setTimeout(reject, 300, 'p3')
+})
+
+let p4 = new Promise(function (resolve, reject) {
+  setTimeout(resolve, 1200, 'p4')
+})
+
+let promise = Promise.all([p1, p2, p3, p4])
+
+promise
+  .then(function (data) {
+    data.forEach(function (data) {
+      console.log(data)
+    })
+  })
+  .catch(function (error) {
+    console.error('error', error)
+  })
+
+// Output:
+// error p3
+```
+
+### Opting Out of Fail-Fast
+
+To collect every result regardless of individual failures, attach a `.catch` to each promise _before_ handing it to `Promise.all`. The `.catch` returns an auto-resolved promise, so `Promise.all` only ever sees resolved promises.
+
+The trade-off: you have to inspect each result yourself to figure out which ones actually succeeded.
+
+```javascript
+let p1 = new Promise(function (resolve, reject) {
+  setTimeout(resolve, 500, 'p1')
+})
+
+let p2 = new Promise(function (resolve, reject) {
+  setTimeout(resolve, 1000, 'p2')
+})
+
+let p3 = new Promise(function (resolve, reject) {
+  setTimeout(reject, 300, 'p3')
+})
+
+let p4 = new Promise(function (resolve, reject) {
+  setTimeout(resolve, 1200, 'p4')
+})
+
+let promise = Promise.all([
+  p1.catch(function (error) {
+    console.log(`Failed: ${error}`)
+  }),
+  p2.catch(function (error) {
+    console.log(`Failed: ${error}`)
+  }),
+  p3.catch(function (error) {
+    console.log(`Failed: ${error}`)
+  }),
+  p4.catch(function (error) {
+    console.log(`Failed: ${error}`)
+  }),
+])
+
+promise
+  .then(function (data) {
+    data.forEach(function (data) {
+      if (data !== undefined) {
+        console.log(`Success: ${data}`)
+      }
+    })
+  })
+  .catch(function (error) {
+    console.error('error', error)
+  })
+
+// Failed: p3
+// Success: p1
+// Success: p2
+// Success: p4
+```
+
+## Promise.race
+
+`Promise.race` returns a new promise that settles - resolved or rejected - as soon as the first promise in the array settles. The rest are ignored.
+
+```javascript
+function delay(time) {
+  return new Promise(function (resolve) {
+    setTimeout(resolve, time, 'success ' + time)
+  })
+}
+
+Promise.race([delay(500), delay(100)]).then(function (data) {
+  console.log(data)
+})
+
+// Output:
+// success 100
+```
+
+This is useful for timeouts - race the real work against a `setTimeout` that rejects, and you get a deadline on the operation.
+
+## Checking If an Object Is a Promise
+
+```javascript
+obj instanceof Promise
+```
+
+## async / await
+
+`async` is syntactic sugar over promises. An `async` function _always_ returns a promise, and `return` from inside an `async` function produces an auto-resolved promise with that value.
+
+```javascript
+function job() {
+  return new Promise(function (resolve, reject) {
+    setTimeout(resolve, 500, 'Hello world 1')
+  })
+}
+
+async function test() {
+  let message = await job()
+  console.log(message)
+
+  return 'Hello world 2'
+}
+
+test().then(function (message) {
+  console.log(message)
+})
+```
+
+That `async` version is exactly equivalent to writing the chain by hand:
+
+```javascript
+function test() {
+  return job().then(function (message) {
+    console.log(message)
+
+    return 'Hello world 2'
+  })
+}
+```
+
+## Catching Rejected Promises in async / await
+
+To return a rejected promise from an `async` function, throw an error - the language wraps the throw in a rejection.
+
+To handle a rejected promise that you `await`, use `try / catch`. The `await` keyword unwraps the rejection into a thrown error.
+
+```javascript
+async function job() {
+  throw new Error('Reject')
+}
+
+async function test() {
+  try {
+    let message = await job()
+    console.log(message)
+
+    return 'Hello world'
+  } catch (error) {
+    console.error(error)
+
+    return 'Error happened during test'
+  }
+}
+
+test().then(function (message) {
+  console.log(message)
+})
+```
+
+The equivalent in promise-chain form:
+
+```javascript
+function job() {
+  return Promise.reject(new Error('Reject'))
+}
+
+job()
+  .then(function (message) {
+    console.log(message)
+    return 'Hello world'
+  })
+  .catch(function (error) {
+    console.log(error)
+    return 'Error happened during test'
+  })
+  .then(function (message) {
+    console.log(message)
+  })
+```
+
+## Awaiting in Parallel With `Promise.all`
+
+A common performance trap: awaiting promises sequentially when they could have run in parallel.
+
+In the example below, each `await` waits for the previous job to finish before starting the next. Three 500ms jobs take 1500ms total:
+
+```javascript
+const start = Date.now()
+function timeLog(text) {
+  console.log(`${Date.now() - start}ms - ${text}`)
+}
+
+function job(number) {
+  return new Promise(function (resolve, reject) {
+    timeLog(`Job start ${number}`)
+    setTimeout(function () {
+      timeLog(`Job done ${number}`)
+      resolve(`Data ${number}`)
+    }, 500)
+  })
+}
+
+async function main() {
+  let message1 = await job(1),
+    message2 = await job(2),
+    message3 = await job(3)
+
+  timeLog(message1)
+  timeLog(message2)
+  timeLog(message3)
+}
+
+main()
+
+// Output:
+// 9ms - Job start 1
+// 514ms - Job done 1
+// 514ms - Job start 2
+// 1015ms - Job done 2
+// 1015ms - Job start 3
+// 1517ms - Job done 3
+// 1519ms - Data 1
+// 1519ms - Data 2
+// 1519ms - Data 3
+```
+
+The jobs are independent, so they can be started together and awaited as a group. Wrap the kickoffs in `Promise.all` and `await` once - the same three 500ms jobs finish in ~500ms total:
+
+```javascript
+const start = Date.now()
+function timeLog(text) {
+  console.log(`${Date.now() - start}ms - ${text}`)
+}
+
+function job(number) {
+  return new Promise(function (resolve, reject) {
+    timeLog(`Job start ${number}`)
+    setTimeout(function () {
+      timeLog(`Job done ${number}`)
+      resolve(`Data ${number}`)
+    }, 500)
+  })
+}
+
+async function main() {
+  let messages = await Promise.all([job(1), job(2), job(3)])
+
+  messages.forEach(function (message) {
+    timeLog(message)
+  })
+}
+
+main()
+
+// Output:
+// 7ms - Job start 1
+// 11ms - Job start 2
+// 11ms - Job start 3
+// 520ms - Job done 1
+// 521ms - Job done 2
+// 521ms - Job done 3
+// 528ms - Data 1
+// 529ms - Data 2
+// 529ms - Data 3
+```
+
+The rule of thumb: if two `await`s don't depend on each other's results, they probably shouldn't be sequential.
+
+## Takeaways
+
+- A function that can return a promise should _always_ return a promise. Use `Promise.resolve` / `Promise.reject` to wrap synchronous branches.
+- Every `.then` returns a new promise. The `.catch` you attach catches errors from the promise it's chained to - not the original one.
+- A `.then` with no error callback passes rejections through. Errors thrown inside a `then` callback also propagate down the chain.
+- `Promise.all` is fail-fast. To keep going past a failure, attach a `.catch` to each promise before passing them in.
+- `async / await` is the same model dressed up with synchronous-looking syntax. Use `try / catch` for errors, and `Promise.all` to run independent awaits in parallel.

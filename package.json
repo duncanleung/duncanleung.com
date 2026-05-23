@@ -8,8 +8,8 @@
     "build": "cross-env INIT_CWD=$PWD next build && cross-env NODE_OPTIONS='--experimental-json-modules' node ./scripts/postbuild.mjs",
     "serve": "next start",
     "analyze": "cross-env ANALYZE=true next build",
-    "lint": "next lint --fix --dir pages --dir app --dir components --dir lib --dir layouts --dir scripts",
-    "lint:check": "next lint --dir pages --dir app --dir components --dir lib --dir layouts --dir scripts",
+    "lint": "eslint --fix app components layouts scripts",
+    "lint:check": "eslint app components layouts scripts",
     "clean": "rm -rf .next && rm -rf .contentlayer",
     "prepare": "husky"
   },
@@ -49,6 +49,8 @@
     "unist-util-visit": "^5.1.0"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.5",
+    "@eslint/js": "^10.0.1",
     "@svgr/webpack": "^8.1.0",
     "@types/mdx": "^2.0.13",
     "@types/react": "^19.2.13",
@@ -59,6 +61,7 @@
     "eslint-config-next": "15.5.12",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",
+    "globals": "^17.6.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "prettier": "^3.8.1",
@@ -67,7 +70,7 @@
   },
   "lint-staged": {
     "*.+(js|jsx|ts|tsx)": [
-      "cross-env ESLINT_USE_FLAT_CONFIG=false eslint --fix"
+      "eslint --fix"
     ],
     "*.+(js|jsx|ts|tsx|json|css|md|mdx)": [
       "prettier --write"

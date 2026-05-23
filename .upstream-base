@@ -1,0 +1,47 @@
+# Upstream Tracking
+
+This repository was forked from
+[**tailwind-nextjs-starter-blog**](https://github.com/timlrx/tailwind-nextjs-starter-blog)
+by Timothy Lin (timlrx).
+
+The original commit history (Tim's years of upstream development) has been
+rewritten into a single root commit so this repo presents as a standalone
+project. Tim's history remains fully accessible via the `upstream` remote
+and on his original repo.
+
+## Last upstream sync
+
+| | |
+|---|---|
+| **SHA** | `953f052e7c4e6b2263b4768daa31133cc6a616e6` |
+| **Date** | 2026-02-08 |
+| **Subject** | `fix: update dependencies` |
+
+This is the most recent upstream commit integrated into this repo. Any
+commits Tim has made to `tailwind-nextjs-starter-blog` *after* this SHA
+are not yet present here.
+
+## Check what upstream has changed since the last sync
+
+```bash
+git fetch upstream
+git log 953f052..upstream/master --oneline
+# Filter to a specific area:
+git log 953f052..upstream/master -- package.json
+git diff 953f052..upstream/master -- contentlayer.config.ts
+```
+
+## After integrating a new batch from upstream
+
+1. Cherry-pick or manually apply the desired commits.
+2. Update the **SHA**, **Date**, and **Subject** lines above with the new
+   upstream HEAD watermark.
+3. Commit this file change along with the integration work, e.g.
+   `chore: sync upstream through <new-sha>`.
+
+## Remotes
+
+```
+origin    git@github.com:duncanleung/duncanleung.com.git
+upstream  git@github.com:timlrx/timlrx.com.git
+```

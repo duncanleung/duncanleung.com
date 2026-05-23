@@ -1,0 +1,32 @@
+---
+title: 'Use async/await instead of callbacks in NodeJS AWS Lambdas'
+date: '2020-02-15'
+tags: ['serverless', 'aws-lambda', 'nodejs']
+summary: 'DRAFT: Use async/await instead of callbacks in NodeJS AWS Lambdas'
+images: ['/static/thumbnails/serverless.png']
+draft: true
+---
+
+{/* ------------------------------------------------------------------------------------------------------- */}
+
+```javascript
+module.exports.handler = async (event, context, cb) => {
+  const response = {
+    statusCode: 200,
+    body: JSON.stringify({ message: "hello world" })
+  };
+
+  cb(null, response);
+};
+```
+
+```javascript
+module.exports.handler = async (event, context) => {
+  const response = {
+    statusCode: 200,
+    body: JSON.stringify({ message: "hello world" })
+  };
+
+  return response;
+};
+```

@@ -1,0 +1,33 @@
+---
+title: 'Serverless Notes'
+date: '2020-02-15'
+tags: ['serverless', 'aws-lambda', 'aws-api-gateway', 'aws-iam']
+summary: 'DRAFT: Serverless Notes'
+images: ['/static/thumbnails/serverless.png']
+draft: true
+---
+
+manage users when using cognito user pools?
+
+- how can I fetch a list of orders based on user id?
+- Are all the users stored in the user pool or would we also store our users in a database?
+
+* lambda test function: API Gateway Event - apigateway-aws-proxy
+  - will receive a test payload similar to what is passed by API Gateway
+  - `requestContext`
+  - if API is protected by cognito
+  - `identify`
+    - `cognitoIdentityPoolId`
+    - `accountId`
+    - `user`
+
+- Can use this information from API gateway in function
+- Can then fetch user orders in another function
+
+Cognito has hooks
+
+- before a user is created
+- call another lambda
+- Take infor about user
+- put into db
+-

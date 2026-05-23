@@ -49,7 +49,8 @@ ESLint Docs: <a href="https://eslint.org/docs/user-guide/configuring#configuring
 
 <div class="filename">.eslintrc.js</div>
 
-```js {6-7}// The example settings below tell ESLint to error when single-quotes are used, and when semi-colons are missing.
+```js {6-7}
+// The example settings below tell ESLint to error when single-quotes are used, and when semi-colons are missing.
 
 module.exports = {
   rules: {
@@ -74,7 +75,8 @@ ESLint Docs: <a href="https://eslint.org/docs/user-guide/configuring#extending-c
 
 <div class="filename">.eslintrc.js</div>
 
-```js {4}// The example settings below tell ESLint to use the eslint:recommended base configuration and the eslint-config-airbnb shared configuration.
+```js {4}
+// The example settings below tell ESLint to use the eslint:recommended base configuration and the eslint-config-airbnb shared configuration.
 
 module.exports = {
   extends: ["eslint:recommended"]
@@ -213,7 +215,8 @@ From the <a href='https://github.com/typescript-eslint/typescript-eslint/blob/ma
 
 <div class="filename">.eslintrc.js</div>
 
-```js {2-3}module.exports = {
+```js {2-3}
+module.exports = {
   parser: "@typescript-eslint/parser", // allows ESLint to understand TypeScript
   plugins: ["@typescript-eslint"] // use the plugin rules within ESLint
 };
@@ -225,7 +228,8 @@ From the <a href='https://github.com/yannickcr/eslint-plugin-react' target="_bla
 
 <div class="filename">.eslintrc.js</div>
 
-```js {2,5,10-11}module.exports = {
+```js {2,5,10-11}
+module.exports = {
   plugins: ["react"], // use the plugin rules within ESLint
   parserOptions: {
     ecmaFeatures: {
@@ -334,7 +338,8 @@ For our TypeScript example, we'll use <a href="https://github.com/iamturns" targ
 
 <div class="filename">.eslintrc.js</div>
 
-```js {2}module.exports = {
+```js {2}
+module.exports = {
   extends: ["airbnb-typescript"]
 };
 ```
@@ -372,7 +377,8 @@ If we look in the **eslint-config-airbnb-typescript** source code you'll see tha
 
 <div class="filename">eslint-config-airbnb-typescript/lib/shared.js - Line 9 - 10</div>
 
-```js {4-5}// ... imports
+```js {4-5}
+// ... imports
 
 module.exports = {
   plugins: ["@typescript-eslint"],
@@ -388,7 +394,8 @@ Also for the <a href='https://github.com/yannickcr/eslint-plugin-react' target="
 
 <div class="filename">.eslintrc.js</div>
 
-```js {2,5,10-11}module.exports = {
+```js {2,5,10-11}
+module.exports = {
   plugins: ["react"],
   parserOptions: {
     ecmaFeatures: {
@@ -408,7 +415,8 @@ Looking in the **eslint-config-airbnb-typescript** source code you'll see that i
 
 <div class="filename">eslint-config-airbnb-typescript/index.js</div>
 
-```js {5}// This file adds some React specific settings. Not using React? Use base.js instead.
+```js {5}
+// This file adds some React specific settings. Not using React? Use base.js instead.
 
 module.exports = {
   extends: [
@@ -424,7 +432,8 @@ Following the dependency chain to **eslint-config-airbnb**, and its source code,
 
 <div class="filename">eslint-config-airbnb/rules/react.js - Line 7 - 15, Line 511 - 514</div>
 
-```js {5,9,17-18}// ... imports and setup
+```js {5,9,17-18}
+// ... imports and setup
 
 module.exports = {
   plugins: [

@@ -15,7 +15,8 @@ When I was importing any `*.svg` files, the TypeScript compiler was erroring:
 
 <div class="filename">./src/components/ReactComponent.tsx</div>
 
-```tsx {2}import React from "react";
+```tsx {2}
+import React from "react";
 import { ReactComponent as SVGIcon } from "~/icons/icon.svg";
                                            ^^^^^^^^^^^^^^^^
 
@@ -40,7 +41,8 @@ Moving the `index.d.ts` for `.svg` files to it's own `./src/@types/assets` subfo
 
 <div class="filename">./src/@types/assets/index.d.ts</div>
 
-```ts {1-6}declare module "*.svg" {
+```ts {1-6}
+declare module "*.svg" {
   import React = require("react");
   export const ReactComponent: React.SFC<React.SVGProps<SVGSVGElement>>;
   const src: string;
@@ -67,7 +69,8 @@ Here is an example `tsconfig.json`:
 
 <div class="filename">tsconfig.json</div>
 
-```json {9}{
+```json {9}
+{
   "compileOnSave": false,
   "compilerOptions": {
     "target": "es5",

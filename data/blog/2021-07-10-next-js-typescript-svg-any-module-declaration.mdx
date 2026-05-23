@@ -23,7 +23,8 @@ The TypeScript ESLint errors were occurring on all previously working SVG compon
 
 <div class="filename">SomeComponent.tsx</div>
 
-```typescript {5,9}import { default as Logo } from '~/public/logo.svg';
+```typescript {5,9}
+import { default as Logo } from '~/public/logo.svg';
 
 <Logo
   height={40}
@@ -41,7 +42,8 @@ The TypeScript ESLint errors were occurring on all previously working SVG compon
 
 <div class="filename">SomeComponent.tsx</div>
 
-```typescript {7}import { default as XIcon } from '~/public/icons/x.svg';
+```typescript {7}
+import { default as XIcon } from '~/public/icons/x.svg';
 
 <IconButton
   component='a'
@@ -72,7 +74,8 @@ Next.js 11 <a href="https://github.com/vercel/next.js/pull/26485" target="_blank
 
 Unfortunately, these image import module declarations are included in the non-modifiable (and regenerated at every build) `next-env.d.ts` file:
 
-```typescript {3}  /// <reference types="next" />
+```typescript {3}
+  /// <reference types="next" />
   /// <reference types="next/types/global" />
 + /// <reference types="next/image-types/global" />
 ```
@@ -81,7 +84,8 @@ The newly included <a href="https://github.com/vercel/next.js/blob/canary/packag
 
 <div class="filename">next.js/packages/next/image-types/global.d.ts</div>
 
-```typescript {7}declare module "*.svg" {
+```typescript {7}
+declare module "*.svg" {
   /**
    * Use `any` to avoid conflicts with
    * `@svgr/webpack` plugin or
@@ -103,7 +107,8 @@ Although Next.js owns the `next-env.d.ts` file, the <a href="https://github.com/
 
 <div class="filename">custom-next-env.d.ts</div>
 
-```typescript {3}  /// <reference types="next" />
+```typescript {3}
+  /// <reference types="next" />
   /// <reference types="next/types/global" />
 - /// <reference types="next/image-types/global" />
 ```
@@ -125,7 +130,8 @@ Here's an example of my `.eslintignore`
 
 <div class="filename">.eslintignore</div>
 
-```bash {8}  # Dependency directories
+```bash {8}
+  # Dependency directories
   /node_modules
 
   # NextJS Files
@@ -141,7 +147,8 @@ We can then configure `tsconfig.json` to exclude the original `next-env.d.ts` to
 
 <div class="filename">tsconfig.json</div>
 
-```json {26,27}{
+```json {26,27}
+{
   "compilerOptions": {
     "target": "es5",
     "lib": ["es6", "dom", "dom.iterable", "esnext"],
@@ -177,7 +184,8 @@ Now we can create a `@types/images.d.ts` file and take the content of the origin
 
 <div class="filename">@types/images.d.ts</div>
 
-```typescript {23-26}  type StaticImageData = {
+```typescript {23-26}
+  type StaticImageData = {
     src: string;
     height: number;
     width: number;

@@ -13,7 +13,8 @@ I was running into a TypeScript issue trying to call `Array.prototype.map()` ove
 
 <div class="filename">UserDocumentList.tsx</div>
 
-```typescript {7,13}import React from "react";
+```typescript {7,13}
+import React from "react";
 import { FileWithPath } from "react-dropzone";
 
 import { S3Document } from "~/api/user/getUserDocuments";
@@ -39,7 +40,8 @@ Depending on where my `<UserDocumentList />` component is used, `uploadedDocumen
 
 Naively, I declared the type of `uploadedDocuments` as:
 
-```typescript {2}type Props = {
+```typescript {2}
+type Props = {
   uploadedDocuments: S3Document[] | FileWithPath[];
 };
 ```
@@ -58,7 +60,8 @@ Apparently, for union types, members which are functions will also be typed as u
 
 To fix this issue, the correct typing of `uploadedDocuments` should be an array of the union of `S3Document` and `FileWithPath` types.
 
-```typescript {2}type Props = {
+```typescript {2}
+type Props = {
   uploadedDocuments: (S3Document | FileWithPath)[];
 };
 ```

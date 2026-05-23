@@ -36,7 +36,8 @@ React components in Gatsby would parse and render the Emotion `css` prop styles 
 
 <div class="filename">gatsby-config.js</div>
 
-```js {2}const plugins = [
+```js {2}
+const plugins = [
   "gatsby-plugin-emotion"
   // ... other gatsby-plugins
 ];
@@ -58,7 +59,8 @@ A [custom webpack config for Storybook](https://storybook.js.org/docs/configurat
 
 <div class="filename">.storybook/webpack.config.js</div>
 
-```ts {8,20}const path = require("path");
+```ts {8,20}
+const path = require("path");
 
 module.exports = ({ config }) => {
   // use @babel/preset-react for JSX and env (instead of staged presets)

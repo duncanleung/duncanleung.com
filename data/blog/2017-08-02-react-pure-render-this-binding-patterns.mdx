@@ -93,7 +93,8 @@ For the curious minds: Apparently, passing `props` into `super()` **allows acces
 
 Interestingly, if you omit passing `props` into `super()`, it does not affect access to `this.props` outside of the `constructor()` (ex. `render()`, `componentDidMount()`, etc. will still have access to `this.props`).
 
-```js {3,11}// Not recommended, omitting props.
+```js {3,11}
+// Not recommended, omitting props.
 constructor() {
   super();
 
@@ -177,7 +178,8 @@ class Form extends React.Component {
 
 **Note:** Using arrow functions in `render()` is popular because it serves as a _"useful"_ and convenient way to pass in arguments to an event handler. We'll touch on this more below.
 
-```js {17}class Form extends React.Component {
+```js {17}
+class Form extends React.Component {
   constructor(props) {
     super(props);
 
@@ -209,7 +211,8 @@ The following pure `render()` patterns do not create new function instances with
 
 This solution still utilizes `bind()`, however, we assign the context bound function in the constructor of the Component.
 
-```js {10,15}class Form extends React.Component {
+```js {10,15}
+class Form extends React.Component {
   constructor(props) {
     super(props);
 
@@ -238,7 +241,8 @@ This solution takes advantage of a stage-2 experimental feature, <a href='https:
 
 **Note:** Class properties are currently <a href='https://babeljs.io/docs/plugins/preset-stage-2/' target='_blank'>stage-2</a> and require an additional Babel plugin. I've included my `.babelrc`, `webpack.config.js`, and `package.json` at the end of the article for reference.
 
-```js {13}class Form extends React.Component {
+```js {13}
+class Form extends React.Component {
   constructor(props) {
     super(props);
 
@@ -263,7 +267,8 @@ This solution takes advantage of a stage-2 experimental feature, <a href='https:
 
 ES6 Class syntax is the current standard for writing React (the React docs have also switched over to use ES6 Class syntax). However, when using the traditional syntax of `React.createClass`, the `this` context of methods in the Component are actually automatically bound.
 
-```js {10}var Form = React.createClass({
+```js {10}
+var Form = React.createClass({
   getInitialState() {
     return {
       name: "Joe"
@@ -291,7 +296,8 @@ There's nothing special here. An easy way to pass arguments to a method within `
 
 However, this is a non-pure pattern.
 
-```js {17}class Form extends React.Component {
+```js {17}
+class Form extends React.Component {
   constructor(props) {
     super(props);
 
@@ -321,7 +327,8 @@ The concept of this pattern is to create a separate Component, `<Button />` with
 
 `wrapperHandler()` can call the parent's event handler, `handleClick()`, and pass in any arguments:
 
-```js {6}// Create a child Component
+```js {6}
+// Create a child Component
 
 const Button = props => {
   const wrapperHandler = () => {
@@ -339,7 +346,8 @@ In the parent Component, we render an instance of the `<Button />` Component we 
 
 Note that the method, `handleClick()`, still needs to have its `this` context correctly bound. In this example, I chose to do the binding in the `constructor()`.
 
-```js {9,20,22}class Form extends React.Component {
+```js {9,20,22}
+class Form extends React.Component {
   constructor(props) {
     super(props);
 

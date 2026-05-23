@@ -233,7 +233,7 @@ In the `store` package, we can see that the `NewFileStore` function returns a co
 
 ```go
 // NewFileStore returns an instance of FileStore.
-func NewFileStore(path string, fs utilfs.Filesystem) (Store, error) {
+func NewFileStore(path string, fs utilfs.Filesystem) (*FileStore, error) {
 	// Implementation
 
 	return &FileStore{directoryPath: path}, nil

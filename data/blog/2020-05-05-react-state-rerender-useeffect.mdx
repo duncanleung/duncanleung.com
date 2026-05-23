@@ -1,100 +1,99 @@
 ---
-title: 'Switch the AWS Profile for Serverless CLI'
+title: 'Understanding useEffect: Each Render Has Its Own Props, State, and Effects'
 date: '2020-05-05'
-tags: ['serverless', 'aws-cli']
-summary: 'DRAFT: Switch the AWS Profile for Serverless CLI'
-images: ['/static/thumbnails/serverless.png']
-draft: true
+tags: ['react', 'hooks']
+summary: 'A mental model for useEffect — moving past the lifecycle (mount/update/unmount) mindset to thinking about effects as a way to synchronize side effects with React state and props.'
+images: ['/static/thumbnails/react.png']
+draft: false
 ---
 
-## Old mental model
+When I first started using `useEffect`, I kept reaching for the old class-component lifecycle mental model: `componentDidMount`, `componentDidUpdate`, `componentWillUnmount`. I would try to write effects that behave _differently_ depending on whether the component was rendering for the first time or not.
 
-mount/update/unmount mental model
+That mental model fights against how `useEffect` actually works, and it produces a lot of subtle bugs — stale closures, missing dependencies, and infinite loops.
 
-Don't think of writing effect that behave differently depending on whether the component renders for the first time or not
+This post is my attempt to write down a mental model that has helped me reason about effects more consistently.
 
-doesn't matter whether we rendered with props A, B, and C, or if we rendered with C immediately
+---
 
-there may be some temporary differences (e.g. while we’re fetching data)
+## TLDR;
 
-eventually the end result should be the same.
+- `useEffect` is not a lifecycle hook. It is a way to **synchronize side effects** with the current props and state.
+- **Each render has its own props, state, event handlers, and effects.** They are captured at the time of that render.
+- The dependency array tells React when it is safe to **skip** synchronizing — not what the effect "depends on" in a general sense.
+- When you fight the data flow (missing deps, mutable refs, stale closures), you are usually working around something the effect is trying to tell you.
 
-## React synchronizes the DOM according to our current props and state
+---
 
-mindset of useEffect, things are synchronized by default
-Side effects become a part of the React data flow
-synchronize props and state to some side effect
+## The Old Mental Model: Mount / Update / Unmount
 
-no distinction between a “mount” or an “update” when rendering.
+With class components, I trained myself to think about effects in terms of _when_ they fire:
 
-think of effects in a similar way.
+- "Run this on mount."
+- "Run this when this prop changes."
+- "Clean this up before unmount."
 
-useEffect lets you synchronize things outside of the React tree according to our props and state.
+This framing pushes you to write effects that behave _differently_ on the first render than on subsequent renders. It also tempts you to "skip" updates by stripping things out of the dependency array.
 
-```javascript
+The hidden cost is that the same component can end up in inconsistent states depending on the order of prop changes.
+
+## The Mental Model That Actually Works: Synchronization
+
+`useEffect` is not really about lifecycle. It is about synchronizing things _outside_ of the React tree (the DOM title, a subscription, a fetched resource) with the props and state _inside_ the React tree.
+
+The framing that helped me click:
+
+- It should not matter whether the component rendered with props `A`, `B`, `C` in sequence, or jumped straight to `C`.
+- There may be temporary differences (e.g. while data is fetching), but eventually the side effect should reflect the current props and state.
+
+```js
 function Greeting({ name }) {
   useEffect(() => {
-    document.title = "Hello, " + name;
-  });
-  return <h1 className="Greeting">Hello, {name}</h1>;
+    document.title = 'Hello, ' + name
+  })
+
+  return <h1>Hello, {name}</h1>
 }
 ```
 
+There is no "mount" or "update" here. There is just: _the document title should match `name`_. React calls our effect after every render to keep that promise.
+
+---
+
 ## Each Render Has Its Own Props and State
 
-Inside any particular render, props and state forever stay the same.
-any values using them (including the event handlers).
-even async functions inside an event handler will “see” the same count value.
+This is the single most important idea, and it took me an embarrassingly long time to internalize.
 
-count variable does not change inside a component render.
-It’s the effect function itself that’s different on every render.
+Inside any particular render, **props and state are constants**. They do not change over time within that render. They are captured by the closure of that specific render.
 
-count is just a number
-
-It only embeds a number value into the render output
-
-That number is provided by React. When we setCount, React calls our component again with a different count value.
-
-The first time our component renders, the count variable we get from useState() is 0. When we call setCount(1), React calls our component again. This time, count will be 1. And so on:
-
-```javascript
+```js
 function Counter() {
-  const [count, setCount] = useState(0);
+  const [count, setCount] = useState(0)
 
   return (
     <div>
       <p>You clicked {count} times</p>
       <button onClick={() => setCount(count + 1)}>Click me</button>
     </div>
-  );
+  )
 }
 ```
 
-Whenever we update the state, React calls our component.
+When `setCount(1)` is called, React does not "mutate" `count`. React calls our function _again_ — and the new render has its own `count` value of `1`.
 
-Each render result “sees” its own counter state value which is a constant inside our function.
-
-the count constant inside any particular render doesn’t change over time. It’s our component that’s called again — and each render “sees” its own count value that’s isolated between renders.
-
-count is constant within a particular component render.
+The `count` inside any given render does not change. The component re-runs, and each run sees its own value.
 
 ### Each Render Has Its Own Event Handlers
 
-count variable does not change inside a component render.
-It’s the handler function itself that’s different on every render.
+Because props and state are captured by the render, **event handlers defined inside the render see those captured values** — even if they fire asynchronously.
 
-Each version “sees” the count value from the render that it “belongs” to:
-
-shows an alert with the count after three seconds:
-
-```javascript
+```js
 function Counter() {
-  const [count, setCount] = useState(0);
+  const [count, setCount] = useState(0)
 
   function handleAlertClick() {
     setTimeout(() => {
-      alert("You clicked on: " + count);
-    }, 3000);
+      alert('You clicked on: ' + count)
+    }, 3000)
   }
 
   return (
@@ -103,292 +102,273 @@ function Counter() {
       <button onClick={() => setCount(count + 1)}>Click me</button>
       <button onClick={handleAlertClick}>Show alert</button>
     </div>
-  );
+  )
 }
 ```
 
-event handler captures the count at the time of the click
+If I click "Show alert" when the count is `3`, then quickly click "Click me" a few more times, the alert will still say **"You clicked on: 3"** — because `handleAlertClick` belongs to the render where `count` was `3`.
 
-each render returns its own “version” of handleAlertClick. Each of those versions “remembers” its own count:
+This is not a bug. The event handler captured the value from _its_ render.
 
-count value is constant for every particular call to our function component.
+### Each Render Has Its Own Effects
 
-our function gets called once per each render, and every one of those times the count value inside of it is constant and set to a particular value (state for that render).
+The same rule applies to effects.
 
-Event handlers “see” the count state from the render that they “belong” to because count is a variable in their scope.
-
-## Each Render Has Its Own Effects
-
-send only the minimal necessary information from inside the effects into a component
-
-effect functions belong to a particular render in the same way that event handlers do.
-
-count variable does not change inside a component render.
-It’s the effect function itself that’s different on every render.
-
-there is one conceptual effect in the component (updating the document title),
-But it is represented by a different function on every render
-
-each effect function “sees” props and state from the particular render it “belongs” to.
-
-Each version “sees” the count value from the render that it “belongs” to:
-
-```javascript
+```js
 function Counter() {
-  const [count, setCount] = useState(0);
+  const [count, setCount] = useState(0)
 
   useEffect(() => {
-    document.title = `You clicked ${count} times`;
-  });
+    document.title = `You clicked ${count} times`
+  })
 
   return (
     <div>
       <p>You clicked {count} times</p>
       <button onClick={() => setCount(count + 1)}>Click me</button>
     </div>
-  );
+  )
 }
 ```
 
-React remembers the effect function you provided
-runs it after flushing changes to the DOM and letting the browser paint the screen.
+There is one _conceptual_ effect ("update the document title"), but it is a **different function on every render**, each one closed over its own `count`. React runs the effect for the latest render after it commits to the DOM.
 
-## useEffect Cleanup
+---
 
-props “seen” by the first render effect’s cleanup is `{id: 10}`.
+## useEffect Cleanup Also Belongs to Its Render
 
-```javascript
-// First render, props are `{id: 10}`
-function Example() {
-  // ...
-  useEffect(
-    // Effect from first render
-    () => {
-      ChatAPI.subscribeToFriendStatus(10, handleStatusChange);
-      // Cleanup for effect from first render
-      return () => {
-        ChatAPI.unsubscribeFromFriendStatus(10, handleStatusChange);
-      };
-    }
-  );
-  // ...
-}
+The cleanup function returned from an effect closes over the _same_ props and state as the effect itself.
 
-// Next render, props are `{id: 20}`
-function Example() {
-  // ...
-  useEffect(
-    // Effect from second render
-    () => {
-      ChatAPI.subscribeToFriendStatus(20, handleStatusChange);
-      // Cleanup for effect from second render
-      return () => {
-        ChatAPI.unsubscribeFromFriendStatus(20, handleStatusChange);
-      };
-    }
-  );
-  // ...
-}
+```js
+// First render, props are `{ id: 10 }`
+useEffect(() => {
+  ChatAPI.subscribeToFriendStatus(10, handleStatusChange)
+  return () => {
+    ChatAPI.unsubscribeFromFriendStatus(10, handleStatusChange)
+  }
+})
+
+// Next render, props are `{ id: 20 }`
+useEffect(() => {
+  ChatAPI.subscribeToFriendStatus(20, handleStatusChange)
+  return () => {
+    ChatAPI.unsubscribeFromFriendStatus(20, handleStatusChange)
+  }
+})
 ```
 
-## Read the latest value
+When React runs the cleanup for the first render, it cleans up `id: 10` — not the current `id: 20`. This is what makes subscriptions correct: each render is responsible for tearing down its own work before the next render's effect runs.
 
-want to read the latest rather than captured value inside some callback defined in an effect. The easiest way to do it is by using refs
+---
 
-```javascript
+## Reading the Latest Value with `useRef`
+
+Sometimes you genuinely want to read the **latest** value, not the captured one — typically inside a callback fired long after the render.
+
+The escape hatch is `useRef`, because a ref's `.current` is a mutable container that lives outside the render closure.
+
+```js
 function Counter() {
-  const [count, setCount] = useState(0);
-  const latestCount = useRef(count);
+  const [count, setCount] = useState(0)
+  const latestCount = useRef(count)
 
   useEffect(() => {
-    // Set the mutable latest value
-    latestCount.current = count;
+    latestCount.current = count
+
     setTimeout(() => {
-      // Read the mutable latest value
-      console.log(`You clicked ${latestCount.current} times`);
-    }, 3000);
-  });
+      console.log(`You clicked ${latestCount.current} times`)
+    }, 3000)
+  })
 
   return (
     <div>
       <p>You clicked {count} times</p>
       <button onClick={() => setCount(count + 1)}>Click me</button>
     </div>
-  );
+  )
 }
 ```
 
-## DEpendencies
+This is an _escape hatch_, not a default. Reach for it only when you really want to break out of the render's closure on purpose.
 
-deps should contain every value used by the effect so React knows when to re-run the effect
+---
 
-only uses name and nothing else from the render scope
+## The Dependency Array Is Not a "When to Run" List
 
-React will skip the effect if each of these values is the same between the current and the previous time this effect ran
+The most common bug I see (and have written) is treating the dependency array as a list of "things I want to re-run this effect for." That is the wrong mental model.
 
-"there’s nothing to synchronize"
+The dependency array is React's way of asking:
 
-all values from inside your component that are used by the effect must be there
-props, state, functions — anything in your component
+> "Given that I am going to re-run this effect to keep things synchronized, when is it safe to _skip_ it because nothing it uses has changed?"
 
-## Fetching Data
+The rule is mechanical:
 
-```javascript
+- **Every value from inside the component that the effect uses must be listed.**
+- That includes props, state, _and_ functions defined inside the component.
+
+If you lie about dependencies, you create stale closures. The bug shows up as "this effect somehow has old data."
+
+---
+
+## Fetching Data: The Empty Array Trap
+
+Here is the canonical version of this bug:
+
+```js
 function SearchResults() {
   async function fetchData() {
-    // ...
+    // ... uses `query` from props ...
   }
 
   useEffect(() => {
-    fetchData();
-  }, []); // Is this okay? Not always -- and there's a better way to write it.
-
-  // ...
+    fetchData()
+  }, []) // 🚨 Lying about deps
 }
 ```
 
-## Infinite loop call useEffect
+`fetchData` uses `query`, but the effect claims it has no dependencies. The result: the search never re-runs when the query changes.
 
-The solution to that problem is not to remove a dependency
+---
 
-### dependency array to include all the values inside the component that are used inside the effect
+## Infinite Loops and How to Actually Fix Them
 
-oops: interval would be cleared and set again whenever the count changes
+A classic infinite loop:
 
-```javascript
+```js
 useEffect(() => {
   const id = setInterval(() => {
-    setCount(count + 1);
-  }, 1000);
-  return () => clearInterval(id);
-}, [count]);
+    setCount(count + 1)
+  }, 1000)
+  return () => clearInterval(id)
+}, [count]) // 🚨 Interval is torn down and re-created every tick
 ```
 
-### second strategy is to change our effect code so that it wouldn’t need a value that changes more often than we want
+The instinct is to remove `count` from the deps. But that would be lying — and the effect would see a stale `count` forever.
 
-### techniques for removing dependencies
+The fix is to **remove the need for the dependency**, not the dependency itself.
 
-### don't have effect doesn’t read the counter value from the render scope anymore
+### Strategy 1: Functional Updater Form
 
-what are we using count for?
+If you only need `count` to compute the next state, use the functional form of `setState`. React already knows the current value — you just need to tell it how to change.
 
-```javascript
+```js
 useEffect(() => {
   const id = setInterval(() => {
-    setCount(count + 1);
-  }, 1000);
-  return () => clearInterval(id);
-}, [count]);
+    setCount((c) => c + 1)
+  }, 1000)
+  return () => clearInterval(id)
+}, []) // ✅ Deps are honest — the effect no longer reads `count`
 ```
 
-update state based on the previous state, we can use the functional updater form of setState
+The effect no longer reads `count` from the render scope, so it does not need it as a dependency.
 
-React already knows the current count. All we needed to tell React is to increment the state
+### Strategy 2: `useReducer`
 
-tell React about how the state should change
+If you find yourself writing `setSomething((s) => ...)` repeatedly, or if the next state depends on multiple pieces of current state, reach for `useReducer`.
 
-```javascript
-useEffect(() => {
-  const id = setInterval(() => {
-    setCount((c) => c + 1);
-  }, 1000);
-  return () => clearInterval(id);
-}, []);
+```js
+const initialState = { count: 0, step: 1 }
+
+function reducer(state, action) {
+  const { count, step } = state
+  if (action.type === 'tick') {
+    return { count: count + step, step }
+  } else if (action.type === 'step') {
+    return { count, step: action.step }
+  }
+  throw new Error()
+}
+
+function Counter() {
+  const [state, dispatch] = useReducer(reducer, initialState)
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      dispatch({ type: 'tick' })
+    }, 1000)
+    return () => clearInterval(id)
+  }, [dispatch]) // ✅ `dispatch` identity is stable
+}
 ```
 
-### useReducer
+The effect no longer needs to read `count` or `step`. It just dispatches an _action_ — what happened — and the reducer decides how state updates in response.
 
-find yourself writing setSomething(something => ...), it’s a good time to consider using a reducer instead
+This decouples "what happened" from "how state changes," which is what lets the effect stay free of state dependencies.
 
-decouple expressing the “actions” that happened in your component from how the state updates in response to them.
+### Strategy 3: Move the Function Into the Effect
 
-Instead of reading the state inside an effect, it dispatches an action that encodes the information about what happened
+If a helper function is only used inside an effect, move it _into_ the effect. That removes it from the render scope and from the dependency list:
 
-### Move function inside effect
-
-If you only use some functions inside an effect, move them directly into that effect:
-
-aren’t using anything from the outer scope of the component in our effect.
-
-makes sense to refetch the data when the query changes
-
-design of useEffect forces you to notice the change in our data flow and choose how our effects should synchronize it
-
-```javascript
+```js
 function SearchResults() {
-  const [query, setQuery] = useState("react");
+  const [query, setQuery] = useState('react')
 
   useEffect(() => {
     function getFetchUrl() {
-      return "https://hn.algolia.com/api/v1/search?query=" + query;
+      return 'https://hn.algolia.com/api/v1/search?query=' + query
     }
 
     async function fetchData() {
-      const result = await axios(getFetchUrl());
-      setData(result.data);
+      const result = await axios(getFetchUrl())
+      setData(result.data)
     }
 
-    fetchData();
-  }, [query]); // ✅ Deps are OK
-
-  // ...
+    fetchData()
+  }, [query]) // ✅ Honest deps — refetches when `query` changes
 }
 ```
 
-## Move Function Outside Function Component
+### Strategy 4: Hoist the Function Out of the Component
 
-if a function doesn’t use anything from the component scope, you can hoist it outside the component and then freely use it inside your effects:
+If a function does not use _anything_ from the component scope, hoist it out of the component entirely. It is then not part of the data flow and does not belong in the deps list:
 
-no need to specify it in deps because it’s not in the render scope and can’t be affected by the data flow
-
-```javascript
-// ✅ Not affected by the data flow
+```js
+// ✅ Lives outside the render — not part of the data flow
 function getFetchUrl(query) {
-  return "https://hn.algolia.com/api/v1/search?query=" + query;
+  return 'https://hn.algolia.com/api/v1/search?query=' + query
 }
 
 function SearchResults() {
   useEffect(() => {
-    const url = getFetchUrl("react");
-    // ... Fetch data and do something ...
-  }, []); // ✅ Deps are OK
-
-  useEffect(() => {
-    const url = getFetchUrl("redux");
-    // ... Fetch data and do something ...
-  }, []); // ✅ Deps are OK
-
-  // ...
+    const url = getFetchUrl('react')
+    // ... fetch and do something ...
+  }, []) // ✅ Deps are honest
 }
 ```
 
-## useCallback
+### Strategy 5: `useCallback`
 
-With useCallback, functions can fully participate in the data flow. We can say that if the function inputs changed, the function itself has changed
+When a function _must_ live inside the component (because it uses props or state) _and_ is passed down or used inside an effect, wrap it in `useCallback`. That gives the function a stable identity that only changes when its own inputs change.
 
-useful when a function is both passed down and called from inside an effect in some children
-Or if you’re trying to prevent breaking memoization of a child component
-
-make the function itself only change when necessary
-
-if query changes, getFetchUrl will also change, and we will re-fetch the data
-
-```javascript
+```js
 function SearchResults() {
-  const [query, setQuery] = useState("react");
+  const [query, setQuery] = useState('react')
 
-  // ✅ Preserves identity until query changes
   const getFetchUrl = useCallback(() => {
-    return "https://hn.algolia.com/api/v1/search?query=" + query;
-  }, [query]); // ✅ Callback deps are OK
+    return 'https://hn.algolia.com/api/v1/search?query=' + query
+  }, [query])
 
   useEffect(() => {
-    const url = getFetchUrl();
-    // ... Fetch data and do something ...
-  }, [getFetchUrl]); // ✅ Effect deps are OK
-
-  // ...
+    const url = getFetchUrl()
+    // ... fetch and do something ...
+  }, [getFetchUrl]) // ✅ Re-runs only when `query` (and thus `getFetchUrl`) changes
 }
 ```
 
-changes to props like props.fetchData can propagate down automatically
+With `useCallback`, the function participates in the data flow: when its inputs change, its identity changes, and downstream effects re-run.
+
+---
+
+## The Big Idea
+
+If I had to compress all of this down to one sentence:
+
+> Stop thinking about _when_ an effect runs. Start thinking about _what it synchronizes_, and let the dependency array tell the truth.
+
+When I follow that, most of the "effect feels weird" bugs disappear on their own — because the design of `useEffect` is _trying_ to point me at a change in the data flow I had not noticed yet.
+
+---
+
+## Further Reading
+
+The mental model in this post is heavily influenced by Dan Abramov's [_A Complete Guide to useEffect_](https://overreacted.io/a-complete-guide-to-useeffect/), which is required reading if you write React effects.

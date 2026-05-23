@@ -140,7 +140,7 @@ s3   |
 
 ## Passing Slices as Function Arguments
 
-In Go, although functions arguments are "pass by copy", we need to pay attention when passing slices to functions because it is actually a copy of the "slice header" that is being passed.
+In Go, although function arguments are "pass by copy", we need to pay attention when passing slices to functions because it is actually a copy of the "slice header" that is being passed.
 
 This means that the copied slice header is still pointing to the same underlying array, and if we modify the slice within the function, we will also modify the original slice.
 

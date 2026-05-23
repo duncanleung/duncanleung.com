@@ -178,7 +178,7 @@ type Point struct{ X, Y int }
 In the above example:
 
 - A `struct` type named `Point` is declared
-- `Point` is represented in memory as two adjacent `int`
+- `Point` is represented in memory as two adjacent `int`s
 
 ```go
 type Point struct{ X, Y int }
@@ -408,7 +408,7 @@ Println(*point)      // {0 0}
 
 In the above example:
 
-- `new(Point)` returns a pointer to the zeroed memory of of a type `Point`
+- `new(Point)` returns a pointer to the zeroed memory of a type `Point`
 - The values are initialized to: `{0 0}`
 
 ```go
@@ -437,7 +437,7 @@ Println(*rect1)      // {{0 0} {0 0}}
 
 In the above example:
 
-- `new(Rect1)` returns a pointer to the zeroed memory of of a type `Rect1`
+- `new(Rect1)` returns a pointer to the zeroed memory of a type `Rect1`
 - The values are initialized to: `{{0 0} {0 0}}`
 
 ```go
@@ -468,7 +468,7 @@ Println(*rect2)      // {<nil> <nil>}
 
 In the above example:
 
-- `new(Rect2)` returns a pointer to the zeroed memory of of a type `Rect2`
+- `new(Rect2)` returns a pointer to the zeroed memory of a type `Rect2`
 - The values are initialized to: `{<nil> <nil>}`
 
 ```go
@@ -532,7 +532,7 @@ Println(makeData)      // []
 
 In the above example:
 
-- `new(Rect2)` returns a pointer to the zeroed memory of of a type `Rect2`
+- `new(Rect2)` returns a pointer to the zeroed memory of a type `Rect2`
 - The values are initialized to: `{<nil> <nil>}`
 
 ```go

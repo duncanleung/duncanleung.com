@@ -14,7 +14,7 @@ A handy trick to reference an AWS Lambda API endpoint is to use [serverless-pseu
 Consider the two lambda functions defined in this `serverless.yml`:
 
 - `get-index`: Returns an HTML page
-- `get-stores`: Return a list of stores
+- `get-stores`: Returns a list of stores
 
 <div class="filename">serverless.yml</div>
 
@@ -71,7 +71,7 @@ The available CloudFormation Pseudo Parameters are:
 
 ### `#{ApiGatewayRestApi}` Resource
 
-Serverless generates a `cloudformation-template-update-stack.json` CloudFormation template that from our `serverless.yml`.
+Serverless generates a `cloudformation-template-update-stack.json` CloudFormation template from our `serverless.yml`.
 
 <div class="filename">cloudformation-template-update-stack.json</div>
 
@@ -104,4 +104,4 @@ We can use `#{ApiGatewayRestApi}` to reference the `ApiGatewayRestApi` resource 
 
 ### `${self:provider.stage}`
 
-`${self:provider.stage}` self-reference the provider stage variable property in our serverless.yml.
+`${self:provider.stage}` self-references the provider stage variable property in our serverless.yml.

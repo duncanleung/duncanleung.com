@@ -2,7 +2,7 @@
 title: 'Using TypeScript Type Guards'
 date: '2020-04-17'
 tags: ['typescript']
-summary: 'A guide to use TypeScript type guards for runtime type checking and type narrowing in your TypeScript applications.'
+summary: 'A guide to using TypeScript type guards for runtime type checking and type narrowing in your TypeScript applications.'
 images: ['/static/thumbnails/typescript.png']
 draft: false
 ---
@@ -13,7 +13,7 @@ Type-guards provide type-safety by performing a runtime check to ensure a variab
 
 ```typescript
 /**
- * Type-Guard: Asserts that the document is a S3 file
+ * Type-Guard: Asserts that the document is an S3 file
  */
 export const isS3Document = (document: Document): document is S3Document => 'url' in document
 ```

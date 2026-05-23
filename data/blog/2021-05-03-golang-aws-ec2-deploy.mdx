@@ -7,7 +7,7 @@ images: ['/static/thumbnails/serverless.png']
 draft: true
 ---
 
-Some useful commmands you will need to build your goloang binary and deploy to aws-ec2
+Some useful commands you will need to build your golang binary and deploy to aws-ec2
 
 ### build golang
 
@@ -17,7 +17,7 @@ $ GOOS=linux GOARCH=amd64 go build -o [binary-name]
 
 - type `go env` to check your environment variables
 - `GOOS` stands for Go OS, depends on what ec2 machine you rent, you might have different os setting
-- `GOARCH` stands for Go Archetecture
+- `GOARCH` stands for Go Architecture
 - `-o` only allowed when compiling a single package, define the name of output file
 
 ### securely copy binary to ssh machine
@@ -30,7 +30,7 @@ $ scp -i /path/to/[your].pem [binary-name] ubuntu@[public-DNS]:/home/ubuntu/[bin
 - `-i` stands for identity
 - `:` for root folder or `:/home/ubuntu/[binary-name]` for more complex routes
 
-### setup services for the machin
+### setup services for the machine
 
 #### ssh login
 
@@ -50,7 +50,7 @@ $ sudo chmod 700 [name-of-binary-file]
 $ sudo nano /etc/systemd/system/[filename].service
 ```
 
-as following
+as follows
 
 ```
   [Unit]

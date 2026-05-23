@@ -309,7 +309,7 @@ export default PersonalInfoForm;
 , `setValues` and `setFieldValues` both use the hook `useEventCallback`. Formik validation is async,
 and so `useEventCallback` returns a `Promise`.
 
-Because our form has validation as defined by the `validationSchema`, the test and `act(...)` needs to `await` on the promise to resolve.
+Because our form has validation as defined by the `validationSchema`, the test and `act(...)` need to `await` on the promise to resolve.
 
 <div class="filename">Formik.tsx - Line: 516-546</div>
 

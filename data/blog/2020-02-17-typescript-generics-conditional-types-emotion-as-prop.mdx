@@ -91,7 +91,7 @@ Also, it would be nice for TypeScript to yell at us when we mix up the props:
 
 ### A quick aside on conditional types
 
-[Conditional Types](https://www.typescriptlang.org/docs/handbook/advanced-types.html#conditional-types) allows you to select one of two possible types based on a type-relationship condition.
+[Conditional Types](https://www.typescriptlang.org/docs/handbook/advanced-types.html#conditional-types) allow you to select one of two possible types based on a type-relationship condition.
 
 ```typescript
 A extends B ? C : D
@@ -102,7 +102,7 @@ The main aspect of the conditional type is in the `extends` keyword.
 `A extends B` checks whether `A` is assignable to `B`. Another way to think of this is whether:
 
 - Does `A` have all of `B`'s properties? (`A` can still include more properties, but it must include all of `B`'s properties)
-- Is `A` is a possibly-more-specific version of `B`
+- Is `A` a possibly-more-specific version of `B`
 
 If `A` is assignable to `B` (`A extends B`), then the type is `C`. Otherwise, the type is `D`
 

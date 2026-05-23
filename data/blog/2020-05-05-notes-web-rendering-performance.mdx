@@ -7,19 +7,19 @@ images: ['/static/thumbnails/serverless.png']
 draft: true
 ---
 
-# jank
+# Jank
 
 ## 60fps
 
-- 1second / 60fps = 16.6ms to do javascript execution work
+- 1 second / 60fps = 16.6ms to do JavaScript execution work
 - 10ms in reality (browser uses resources too)
 
 ## Render Process
 
-Javascript > Style > Layout > Paint > Composite
+JavaScript > Style > Layout > Paint > Composite
 
 - JavaScript
-  JavaScript is used to handle work that result in visual changes (animate, sorting a data set, adding DOM elements)
+  JavaScript is used to handle work that results in visual changes (animate, sorting a data set, adding DOM elements)
 
 (CSS Animations, Transitions, and the Web Animations API also cause visual changes)
 
@@ -63,7 +63,7 @@ a “layout” property change is caused by modifying an element’s geometry:
 - height
 - position with left or top
 
-The browser will check all the other elements layout and “reflow” the page.
+The browser will check all the other elements' layout and “reflow” the page.
 
 Any affected areas of the page will need to be repainted, and the final painted elements will need to be composited back together.
 
@@ -89,7 +89,7 @@ The browser can skip layout, and will do a paint to the screen.
 JS / CSS > Style >        >       > Composite
 ```
 
-a "composite only" change does not requires layout nor paint:
+a "composite only" change does not require layout or paint:
 
 - transform
 - opacity
@@ -131,7 +131,7 @@ Browser must know about all other elements when computing "nth-last-child"
 
 Computed style calculation is the process when the browser recalculates element styles. These often cause a "layout" (reflow) of the page.
 
-Computed style calculations occurs when changes happen to the DOM through:
+Computed style calculations occur when changes happen to the DOM through:
 
 - adding and removing elements
 - changing attributes, classes
@@ -151,7 +151,7 @@ Layout can be optimized by:
 - Reducing the number of elements that require layout.
 - Reducing the complexity of those layouts.
 - Avoiding forced synchronous layouts (reading style values).
-- Avoiding layout thrashing (makeing style changes).
+- Avoiding layout thrashing (making style changes).
 
 ```css
 .box {
@@ -174,7 +174,7 @@ Layout occurs when changes happen to the geometry of DOM elements:
 - changing the size of an element
   - CSS properties
   - the element's contents
-  - The size of it's parent element
+  - The size of its parent element
 - changing the location of an element in the page
 
 Variables affecting Layout Performance

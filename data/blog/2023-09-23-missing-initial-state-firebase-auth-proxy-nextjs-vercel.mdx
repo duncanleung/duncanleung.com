@@ -1,5 +1,5 @@
 ---
-title: 'Proxy Firebase Auth with NextJS on Vercel'
+title: 'Proxy Firebase Auth with Next.js on Vercel'
 date: '2023-09-23'
 tags: ['firebase', 'authentication']
 summary: 'Solving Firebase Auth redirect issues on Vercel by implementing a proxy solution to handle SAML SSO authentication and resolve missing initial state errors.'
@@ -9,7 +9,7 @@ draft: false
 
 ## Problem
 
-I was having issues implementing SAML single sign-on (SSO) authentication with Firebase on our NextJS web app hosted on Vercel.
+I was having issues implementing SAML single sign-on (SSO) authentication with Firebase on our Next.js web app hosted on Vercel.
 
 We wanted to use `signInWithRedirect()` (apparently this happens with `signInWithPopup()` too), however we were running into two issues:
 
@@ -70,7 +70,7 @@ const firebaseConfig = {
 export const firebaseApp = initializeApp(firebaseConfig);
 ```
 
-3. Use a NextJS rewrite to proxy any requests to `myapp.com/__/auth/*` to `<projectId>.firebaseapp.com/__/auth/*`
+3. Use a Next.js rewrite to proxy any requests to `myapp.com/__/auth/*` to `<projectId>.firebaseapp.com/__/auth/*`
 
 <div class="filename">next.config.js</div>
 
@@ -93,13 +93,13 @@ The proxy rewrite masks the destination path of `authDomain`, so although `<proj
 
 1. The web app calls Firebase method `signInWithRedirect()`
 2. `signInWithRedirect()` redirects the user to `myapp.com/__/auth/iframe`
-3. NextJS rewrite reverse-proxies the request
+3. Next.js rewrite reverse-proxies the request
 
    `myapp.com/__/auth/*` -> `<projectId>.firebaseapp.com/__/auth/*`
 
 4. Firebase initiates the authentication flow with the corresponding IdP
 5. On successful IdP login, the IdP redirects the user to the ACS URL with the auth result: `myapp.com/__/auth/handler?apiKey=xxxx`
-6. NextJS rewrite reverse proxies the request
+6. Next.js rewrite reverse proxies the request
 
    `myapp.com/__/auth/*` -> `<projectId>.firebaseapp.com/__/auth/*`
 

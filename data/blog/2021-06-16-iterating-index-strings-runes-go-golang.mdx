@@ -39,7 +39,7 @@ func Distance(a, b string) (int, error) {
 }
 ```
 
-This solution would return a hamming distance value of `1` for the given string inputs `"aaa"` and `"aua"`.
+This solution would return a Hamming distance value of `1` for the given string inputs `"aaa"` and `"aua"`.
 
 However, consider the case of the string inputs `"aua"` and `"aüa"`. This implementation would actually error out since the character `"ü"` is represented by two bytes.
 
@@ -108,7 +108,7 @@ individual bytes (in hexadecimal): 75
 
 ## Runes in Go represent "characters"
 
-In other programming languages, the "characters" in strings are sometimes referred to as "code points". In Go, the term used is a "rune". For example, the character `"ü"` is represented by: the code point U+00fc (with the hexadecimal value 00fc)
+In other programming languages, the "characters" in strings are sometimes referred to as "code points". In Go, the term used is a "rune". For example, the character `"ü"` is represented by: the code point U+00FC (with the hexadecimal value 00fc)
 
 Runes in Go are Unicode characters, which can be up to 4 bytes in size.
 

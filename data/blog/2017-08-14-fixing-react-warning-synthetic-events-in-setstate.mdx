@@ -34,11 +34,11 @@ An example of the code I was attempting to run was: _(Open up the console and tr
 
 ## React Event System: `SyntheticEvent`
 
-It turns out [React has it's own event system](https://facebook.github.io/react/docs/events.html) for event handling, using `SyntheticEvent`.
+It turns out [React has its own event system](https://facebook.github.io/react/docs/events.html) for event handling, using `SyntheticEvent`.
 
 React's `SyntheticEvent` wraps around the browser's native event to provide cross-browser compatibility support. Instead of passing in the native event to React event handlers, an instance of this `SyntheticEvent` is passed in.
 
-The console warning I encountered occurs because React re-uses the `SyntheticEvent` object for performance reasons, by pooling the synthetic events all together. Thus, all the properties on `event.target` are nullified after an event callback is invoked.
+The console warning I encountered occurs because React re-uses the `SyntheticEvent` object for performance reasons, by pooling the synthetic events together. Thus, all the properties on `event.target` are nullified after an event callback is invoked.
 
 Essentially, **`SyntheticEvent` cannot be used asynchronously**, because the event will no longer exist after the event callback has been invoked.
 

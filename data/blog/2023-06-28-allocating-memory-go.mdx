@@ -7,7 +7,7 @@ images: ['/static/thumbnails/go.png']
 draft: false
 ---
 
-It can be helpful to understand how memory is allocated when working in Go, as it will provide some insight into how the Go runtime and garbage collector decides when to deallocate memory.
+It can be helpful to understand how memory is allocated when working in Go, as it will provide some insight into how the Go runtime and garbage collector decide when to deallocate memory.
 
 One interesting situation is when we return a pointer to a local variable in a function: does the local variable get allocated to the stack or the heap?
 

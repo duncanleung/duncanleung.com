@@ -124,7 +124,7 @@ module.exports = {
 
 The `env` property in `.eslintrc` declares which environments your code is expected to run in.
 
-Each environment brings with it a certain set of predefined global variables, and prevents ESLint from throwing an `no-undef` rule error when referencing an expected global variable such as, `window`, or `document`.
+Each environment brings with it a certain set of predefined global variables, and prevents ESLint from throwing a `no-undef` rule error when referencing an expected global variable such as, `window`, or `document`.
 
 ESLint Docs: <a href="https://eslint.org/docs/user-guide/configuring#specifying-environments" target="_blank" rel="noopener noreferrer">Specifying Environments</a>
 
@@ -168,7 +168,7 @@ ESLint Docs: <a href="https://eslint.org/docs/user-guide/configuring#specifying-
 <div class="filename">.eslintrc.js</div>
 
 ```js
-// The example settings below specifies ESLint to enable support for ECMAScript 2018 and JSX.
+// The example settings below specify ESLint to enable support for ECMAScript 2018 and JSX.
 
 module.exports = {
   parserOptions: {
@@ -192,7 +192,7 @@ For this example, let's set up an `.eslintrc` for a **React + TypeScript project
 
 ### 1) Look at the relevant **eslint-plugin-\***
 
-Look for the relevant **eslint-plugin-\*** to add additional rules linting rules that ESLint should check for in a **React + TypeScript project**.
+Look for the relevant **eslint-plugin-\*** to add additional linting rules that ESLint should check for in a **React + TypeScript project**.
 
 A quick internet search brings us to the NPM packages:
 
@@ -269,11 +269,11 @@ module.exports = {
 
 ### 3) Check for any /recommended configurations
 
-It's common for **eslint-plugin-\*** authors to bundle a **recommended** rule configuration inside a plugin to use as starting a point.
+It's common for **eslint-plugin-\*** authors to bundle a **recommended** rule configuration inside a plugin to use as a starting point.
 
 I usually start with these **recommended** configs, and manually configure any overrides in the `rules` property later.
 
-_Note that the bundled configurations itself do not enable any of the plugin's rules by default. These recommended configs should be treated as a stand alone **eslint-config-\***._
+_Note that the bundled configuration itself does not enable any of the plugin's rules by default. These recommended configs should be treated as a standalone **eslint-config-\***._
 
 _The plugin name must still be specified in the `plugins` array in the `.eslintrc`, as well as any rules you want to enable that are part of the plugin._
 
@@ -334,7 +334,7 @@ An alternative to using a **recommended** base configuration is to use Airbnb's 
 
 For our TypeScript example, we'll use <a href="https://github.com/iamturns" target="_blank" rel="noopener noreferrer">Matt Turnbull</a>'s Airbnb config with TypeScript support: <a href="https://www.npmjs.com/package/eslint-config-airbnb-typescript" target="_blank" rel="noopener noreferrer">eslint-config-airbnb-typescript</a>.
 
-✨ Using **eslint-config-airbnb-typescript** is also nice because the installation docs specifies a <a href="https://github.com/iamturns/eslint-config-airbnb-typescript#i-use-eslint-config-airbnb-with-react-support" target="_blank" rel="noopener noreferrer">very simple minimum setup</a>:
+✨ Using **eslint-config-airbnb-typescript** is also nice because the installation docs specify a <a href="https://github.com/iamturns/eslint-config-airbnb-typescript#i-use-eslint-config-airbnb-with-react-support" target="_blank" rel="noopener noreferrer">very simple minimum setup</a>:
 
 <div class="filename">.eslintrc.js</div>
 
@@ -462,6 +462,6 @@ module.exports = {
 
 Enjoy your new ESLint super powers.
 
-Now you'll understand why there are some tutorials and blogs that have certain configs set, while others articles omit those properties.
+Now you'll understand why there are some tutorials and blogs that have certain configs set, while other articles omit those properties.
 
 Just look in the source code 💾.

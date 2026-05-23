@@ -75,7 +75,6 @@ When `setState()` is called it does two main things:
 **2 - Tells React that the component (and children) needs to be re-rendered with the updated state.**
 
 - React's reconciliation process
-
   - Create a new React Element tree (an object representation of the UI).
   - Diffs the new tree against the old tree.
   - Determines what changed, based on the updater passed to `setState()`.
@@ -185,7 +184,7 @@ this.setState(
 
 ### Pitfall 3: Trying to use a previous value of state
 
-`setState()` is **asynchronous**. Consequently, the vales of `this.state` should not be used for calculating the next state.
+`setState()` is **asynchronous**. Consequently, the values of `this.state` should not be used for calculating the next state.
 
 - `this.props` and `this.state` may be updated asynchronously.
 - `this.state` should not be used to calculate the next state.

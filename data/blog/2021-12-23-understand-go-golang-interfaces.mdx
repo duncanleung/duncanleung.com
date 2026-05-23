@@ -65,7 +65,7 @@ Let's codify these statements. In this scenario, we have:
 There also needs to be:
 
 - A common "way" (method) for each electrical device to draw power from the power socket.
-- A common "plug shape" (Go interface) to describe how each electrical device can plug into to a power socket.
+- A common "plug shape" (Go interface) to describe how each electrical device can plug into a power socket.
 
 ### The electrical devices
 
@@ -135,7 +135,7 @@ var wallOutlet PowerSocket
 
 We also need to consider that a wall power socket has a finite power output.
 
-Let's add a property `powerCapacity` to the `PowerSocket` struct to describe the maximum power out that an outlet can support.
+Let's add a property `powerCapacity` to the `PowerSocket` struct to describe the maximum power output that an outlet can support.
 
 ```go {3}
 // Socket has a max power capacity

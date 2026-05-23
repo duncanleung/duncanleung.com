@@ -22,7 +22,7 @@ starting with a dedicated deployed user with admin access in your development ac
 - only copy over the permissions they have actually used to the deployer role in the production account
 - less friction in the process, but it's predicated on the assumption that you have account-level separation between environments, so that those admin assets are never handed out for the production account
 - see what services were accessed by, and I'll stress this, the dedicated deployer user
-  (screenshot in Production Ready Serverless: 1. Intro > Managing persmissions)
+  (screenshot in Production Ready Serverless: 1. Intro > Managing permissions)
 
 ---
 
@@ -33,7 +33,7 @@ starting with a dedicated deployed user with admin access in your development ac
 ## Lambda 101:
 
 - By default there's a limit of 1000 concurrent lambda executions, this can be raised with a support ticket.
-- There are companies that have this limit raised up to tens of thousands concurrent lambda executions.
+- There are companies that have this limit raised up to tens of thousands of concurrent lambda executions.
 - By default you get 75GB of code storage (so up to 10 React apps, lol) which can also be raised
 
 ## Serverless 101:
@@ -66,7 +66,7 @@ starting with a dedicated deployed user with admin access in your development ac
 
 ## AWS Lambda Dashboard
 
-- Looking at `Throttles` graph is useful, we don't want our functions to be throttled. Most likely exhaused available concurrent executions
+- Looking at `Throttles` graph is useful, we don't want our functions to be throttled. Most likely exhausted available concurrent executions
 - `ConcurrentExecutions` graph is useful as well - to understand if we're not approaching a limit
 - When using dead letter queues or lambda destinations: `async delivery` monitors when lambda service is unable to send failed events to DLQ or lambda destination
 - When you have lambdas processing events from Kinesis streams: `iteratorAge` - age of those records - time between hitting the stream, to being picked up by the function - when your function is falling behind
@@ -148,13 +148,13 @@ starting with a dedicated deployed user with admin access in your development ac
 - Offline (only when needing to render HTML from lambda)
 - Pseudo parameters
 - step functions
-- split stacks (for larger stacks - help with 200 recources limit)
+- split stacks (for larger stacks - help with 200 resources limit)
 - dotenv
 - IAM Roles per Func
 
 ## Destinations
 
-- for asnc invocations and streaming based traffic - processing events from kinesis or DynamoDB streams
+- for async invocations and streaming based traffic - processing events from kinesis or DynamoDB streams
 - When it errors - can capture those failed events to SNS, SQS, Lambda, EventBridge
 - When it succeeds - can set up one-hop workflows (multi-hop using step functions is better)
 - to create simple lambda -> lambda workflows, for something more complicated you should use Step Functions
@@ -191,7 +191,7 @@ starting with a dedicated deployed user with admin access in your development ac
 - cfn-lint: https://formulae.brew.sh/formula/cfn-lint
 
 - Commitizen: https://github.com/commitizen/cz-cli
-- SEmantic RElease
+- Semantic Release
 
 ## How to structure functions in bigger products ?
 
@@ -200,7 +200,7 @@ starting with a dedicated deployed user with admin access in your development ac
 - That repo has one serverless.yml
 - Can still share code within that service
 - Different endpoint for same API - shared logic
-- Put into shared mo9dule in same project
+- Put into shared module in same project
 - reference by relative path
 - Shared utils, libs, across projects
   - Extract to util repo

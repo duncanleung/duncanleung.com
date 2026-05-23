@@ -85,7 +85,7 @@ func main() {
 
 ## Passing pointers to indicate optional values
 
-In addition to allowing modifying the original value in a calling function, passing a pointer is also used to indicate that a function parameter is optional.
+In addition to allowing modification of the original value in a calling function, passing a pointer is also used to indicate that a function parameter is optional.
 
 By accepting a pointer, `nil` can be passed as a function argument to indicate the absence of a value.
 
@@ -156,7 +156,7 @@ func main() {
 }
 ```
 
-It should be noted, that it is more idiomatic in Go to return the updated slice from the function rather than modifying it in place through a pointer:
+It should be noted that it is more idiomatic in Go to return the updated slice from the function rather than modifying it in place through a pointer:
 
 ```go
 func modifySlice(s []int) []int {
@@ -188,7 +188,7 @@ Go also uses a data structure called a "string descriptor" when dealing with str
 
 When a string is passed as an argument into a function, the string descriptor is passed by value (copied), but the underlying array of bytes is not.
 
-This makes passing strings efficient, as the actual sequence of bytes that make up the string are not copied.
+This makes passing strings efficient, as the actual sequence of bytes that make up the string is not copied.
 
 In this example, a copy of the string descriptor for `s` is passed to `printStr`, but the array of bytes that contains the characters "hello" is not copied.
 
@@ -223,7 +223,7 @@ func main() {
 }
 ```
 
-Again, it should be noted, that it is more idiomatic in Go to return the new string from the function rather than changing it in place through a pointer.
+Again, it should be noted that it is more idiomatic in Go to return the new string from the function rather than changing it in place through a pointer.
 
 ## Passing structs into a function
 

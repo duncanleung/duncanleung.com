@@ -27,7 +27,7 @@ import { ReactComponent as SVGIcon } from "~/icons/icon.svg";
 Cannot find module '~/icons/icon.svg'.ts(2307)
 ```
 
-## Create a index.d.ts Module Declaration File
+## Create an index.d.ts Module Declaration File
 
 The solution was to create a `./src/@types/assets/index.d.ts` TypeScript module declaration file for media assets.
 
@@ -37,7 +37,7 @@ One main gotcha about TypeScript module declaration files is in how they are inc
 
 We were incorrectly trying to place the `.svg` module declarations under `./src/@types/index.d.ts`.
 
-Moving the `index.d.ts` for `.svg` files to it's own `./src/@types/assets` subfolder allowed TypeScript to correctly recognize the `.svg` module declarations.
+Moving the `index.d.ts` for `.svg` files to its own `./src/@types/assets` subfolder allowed TypeScript to correctly recognize the `.svg` module declarations.
 
 <div class="filename">./src/@types/assets/index.d.ts</div>
 

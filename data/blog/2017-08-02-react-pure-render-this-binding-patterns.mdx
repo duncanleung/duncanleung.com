@@ -15,7 +15,7 @@ Let's take a look, specifically relating to patterns on binding the `this` conte
 
 The motivation behind keeping the `render()` method pure is to [avoid issues when using `shouldComponentUpdate()`](https://facebook.github.io/react/docs/react-component.html#shouldcomponentupdate), and `React.PureComponent`, which work by [performing shallow comparison checks](https://facebook.github.io/react/docs/react-api.html#react.purecomponent).
 
-The guidelines of a pure `render()` is:
+The guidelines of a pure `render()` are:
 
 - The contents of the `render()` method **should not create new arrays, objects, or functions.**
   - A new array, object, or function instance within `render()` will cause the shallow comparison to always fail. The Component will always re-render.
@@ -120,7 +120,7 @@ The following two non-pure patterns, using `.bind` and arrow functions, **return
 
 ### 1. Calling `bind()` in `render()` - Non Pure `render()` Pattern
 
-A common solution to resolve `this` binding context is <a href='https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind' target='_blank'>to use `bind()`</a>. This Javascript native method _creates a new function_ that has its `this` keyword set to the provided context.
+A common solution to resolve `this` binding context is <a href='https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind' target='_blank'>to use `bind()`</a>. This JavaScript native method _creates a new function_ that has its `this` keyword set to the provided context.
 
 ```js {12,18}
 class Form extends React.Component {
@@ -265,7 +265,7 @@ class Form extends React.Component {
 
 ### 3. Autobinding with `React.createClass` - Pure `render()` Pattern
 
-ES6 Class syntax is the current standard for writing React (the React docs have also switched over to use ES6 Class syntax). However, when using the traditional syntax of `React.createClass`, the `this` context of methods in the Component are actually automatically bound.
+ES6 Class syntax is the current standard for writing React (the React docs have also switched over to use ES6 Class syntax). However, when using the traditional syntax of `React.createClass`, the `this` context of methods in the Component is actually automatically bound.
 
 ```js {10}
 var Form = React.createClass({

@@ -192,7 +192,7 @@ func main() {
 
 ## Real Examples
 
-In the Kubernetes codebase, we can see this idiom used in many places. For example, the `store` package defines a `Store` interface that has methods for writing, and reading. It also defines a `FileStore` type that implements the `Store` interface:
+In the Kubernetes codebase, we can see this idiom used in many places. For example, the `store` package defines a `Store` interface that has methods for writing and reading. It also defines a `FileStore` type that implements the `Store` interface:
 
 ```go
 // Store provides the interface for storing keyed data.

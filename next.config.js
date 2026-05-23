@@ -9,9 +9,9 @@ const ContentSecurityPolicy = `
   default-src 'self';
   script-src 'self' 'unsafe-eval' 'unsafe-inline' www.googletagmanager.com www.google-analytics.com;
   style-src 'self' 'unsafe-inline' *.googleapis.com cdn.jsdelivr.net;
-  frame-src youtube.com www.youtube.com timlrx.shinyapps.io;
+  frame-src youtube.com www.youtube.com;
   img-src * blob: data:;
-  media-src *.s3.amazonaws.com github.com raw.githubusercontent.com *.timlrx.com;
+  media-src *.s3.amazonaws.com github.com raw.githubusercontent.com;
   connect-src *;
   font-src 'self' fonts.gstatic.com cdn.jsdelivr.net
 `

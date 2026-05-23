@@ -1,0 +1,391 @@
+---
+title: 'JavaScript Prototypal Inheritance: The Prototype Chain, `new`, and Class Syntax'
+date: '2020-05-05'
+tags: ['javascript', 'interview-prep']
+summary: "How JavaScript actually shares methods between objects - the prototype chain, what `new` really does, and how ES6 class syntax maps onto the same underlying machinery."
+images: ['/static/thumbnails/programming.png']
+draft: false
+---
+
+JavaScript's `class` keyword looks like classical inheritance from Java or C#, but underneath it's the same prototype-based machinery that has always existed in the language. ES6 classes are syntactic sugar - useful sugar, but if you don't understand what's underneath, you'll be confused the first time you read someone else's pre-ES6 code, or run `Object.getPrototypeOf` in a debugger.
+
+This post walks through how method sharing actually works in JavaScript: the prototype chain, the `new` operator, and how the modern `class` syntax desugars to the same function-constructor pattern that came before it.
+
+## The Mental Model: Property Lookup Walks Up a Chain
+
+Prototypal inheritance is the mechanism JavaScript's OOP construct uses to share methods among instances.
+
+When you access a property on an object, JavaScript walks a chain looking for it:
+
+1. Look on the object itself
+2. If not found, look on the object's `[[Prototype]]`
+3. If not found, look on _that_ object's `[[Prototype]]`
+4. Continue until you hit the end of the chain - `Object.prototype`, then `null`
+
+That chain is built when the object is created. The most direct way to construct it is `Object.create(prototypeObject)`, which returns a new object whose `[[Prototype]]` points to `prototypeObject`.
+
+Everything else - function constructors, `new`, `class` - is a more convenient way of wiring up this same chain.
+
+## Two Ways to Write the Same Thing
+
+Let's start with two equivalent implementations of an `Animal` type. The first uses the pre-ES6 pattern - a function constructor with methods attached to its `prototype` object.
+
+### Pseudoclassical OOP (Function Constructors)
+
+```javascript
+function Animal(name) {
+  this.speed = 0
+  this.name = name
+}
+
+Animal.prototype = {
+  // Recreate the constructor property manually
+  constructor: Animal,
+
+  run(speed) {
+    this.speed = speed
+    console.log(`${this.name} runs with speed ${this.speed}`)
+  },
+
+  stop() {
+    this.speed = 0
+    console.log(`${this.name} is standing still`)
+  },
+}
+
+const dog = new Animal('Ned')
+const cat = new Animal('Fifi')
+
+dog.run(10) // Ned runs with speed 10
+dog.stop() // Ned is standing still
+```
+
+### Classical OOP (Class Syntax)
+
+The ES6 `class` syntax is sugar over the function-constructor pattern above:
+
+```javascript
+class Animal {
+  constructor(name) {
+    this.speed = 0
+    this.name = name
+  }
+
+  run(speed) {
+    this.speed = speed
+    console.log(`${this.name} runs with speed ${this.speed}`)
+  }
+
+  stop() {
+    this.speed = 0
+    console.log(`${this.name} is standing still`)
+  }
+}
+
+const dog = new Animal('Ned')
+const cat = new Animal('Fifi')
+
+dog.run(10) // Ned runs with speed 10
+dog.stop() // Ned is standing still
+```
+
+Both versions produce the same runtime structure. Each `dog` and `cat` instance holds its own `name` and `speed`, but `run` and `stop` live on `Animal.prototype` - shared across all instances and looked up via the prototype chain.
+
+## `prototype` vs `__proto__` vs `[[Prototype]]`
+
+These three names get conflated constantly. They refer to related but distinct things:
+
+- **`prototype`** is a property of a _function_ (specifically, a constructor). It is the object that will become the `[[Prototype]]` of any instances created with `new`.
+- **`[[Prototype]]`** is an internal property on every _object instance_. It is what the engine actually walks during property lookup.
+- **`__proto__`** is the legacy, non-standard way to read or write `[[Prototype]]` directly. It still works in browsers but is considered deprecated.
+
+In modern code, prefer the standard APIs:
+
+- `Object.create(proto[, descriptors])` - creates an empty object with `proto` as its `[[Prototype]]`
+- `Object.getPrototypeOf(obj)` - returns the `[[Prototype]]` of `obj`
+- `Object.setPrototypeOf(obj, proto)` - sets the `[[Prototype]]` of `obj` to `proto`
+
+The short version: `prototype` is on the constructor function. `[[Prototype]]` is on instances. `new` is what connects the two.
+
+## What the `new` Operator Actually Does
+
+When you write `new Animal("Ned")`, four things happen behind the scenes:
+
+1. A new empty object is created
+2. That object's `[[Prototype]]` is set to `Animal.prototype`
+3. The constructor function runs with `this` bound to the new object
+4. The new object is returned (unless the constructor explicitly returns a different object)
+
+It's roughly equivalent to writing this by hand:
+
+```javascript
+// When an instance `dog` is created from `new Animal()`:
+const dog = new Animal('Ned')
+
+function Animal(name) {
+  // const this = Object.create(Animal.prototype)
+
+  // 1. Create a new object `this`
+  // 2. Set `this.__proto__` to Animal.prototype
+
+  this.speed = 0
+  this.name = name
+
+  // return this
+}
+
+// "Assign `dog`'s [[Prototype]] to this object":
+Animal.prototype = {
+  constructor: Animal,
+
+  run(speed) {
+    // ...
+  },
+
+  stop() {
+    // ...
+  },
+}
+```
+
+This is why all instances of `Animal` share the same `run` and `stop` functions - they all have the same `[[Prototype]]` pointer, and that one object holds the methods.
+
+## The Prototype Chain: Visualizing Inheritance
+
+It's worth seeing the chain laid out. Here's what the structure looks like for our `Animal` constructor and two instances:
+
+```text
+                      null
+                       ▲
+                       |
+                       |
+          Object.prototype
+          (Object)
+          ┌─────────────────────────┐
+          | constructor: Object     |
+          | toString: function      |
+          | ...                     |
+          └─────────────────────────┘
+                      |
+    ┌─────────────────┴──────────────────┐
+    |                                    |
+Function.prototype                       |
+(Object)                                 |
+┌──────────────────┐                     |
+| call: function   |                     |
+| apply: function  |                     |
+| ...              |                     |
+└──────────────────┘                     |
+     ▲                                   |
+     |  [[Prototype]]                    |  [[Prototype]]
+     |                                   |
+
+Animal(name)                        Animal.prototype
+(Function Constructor)              (Object)
+┌──────────────────┐               ┌───────────────────────┐
+│ this.name = name;│   prototype   │  constructor: Animal  │
+│                  | ------------► |  run: function        |
+└──────────────────┘               |  stop: function       |
+                                   └───────────────────────┘
+                                         ▲
+                                         |
+                                         | [[Prototype]]
+                                         |
+    ┌────────────────────────────────────┴──┐
+
+const dog = new Animal("Ned")      const cat = new Animal("Fifi")
+dog                                cat
+(Object)                           (Object)
+┌───────────────┐                 ┌───────────────┐
+| name: "Ned"   |                 | name: "Fifi"  |
+|               |                 |               |
+└───────────────┘                 └───────────────┘
+```
+
+When you call `dog.run(10)`:
+
+1. JavaScript looks for `run` on `dog` - not there
+2. Walks up to `dog.[[Prototype]]` (which is `Animal.prototype`) - finds it
+3. Calls it with `this` bound to `dog`
+
+That's the entire mechanism.
+
+## Subclass Inheritance: Extending the Chain
+
+To extend a type, you insert another link in the chain. A `Dog` subtype's instances should look up methods on `Dog.prototype` first, then fall back to `Animal.prototype`:
+
+```text
+Animal(name)                        Animal.prototype
+(Constructor)                       (Object)
+┌──────────────────┐               ┌───────────────────────┐
+│ this.name = name;│   prototype   │  constructor: Animal  │
+│                  | ------------► |  run: function        |
+└──────────────────┘               |  stop: function       |
+                                   └───────────────────────┘
+       ▲                                 ▲
+       | [[Prototype]]                   | [[Prototype]]
+       | (extends Animal)                | (extends Animal)
+       |                                 |
+Dog(name)                           Dog.prototype
+(Constructor)                       (Object)
+┌───────────────────┐              ┌───────────────────────┐
+│ callDogs: function│   prototype  │  constructor: Dog     │
+│                   | -----------► |  bark: function       |
+└───────────────────┘              |  slowDown: function   |
+                                   └───────────────────────┘
+                                         ▲
+                                         | [[Prototype]]
+                                         |
+
+                                    const dog = new Dog("Ned")
+                                    dog
+                                    (Object)
+                                    ┌───────────────┐
+                                    | name: "Ned"   |
+                                    |               |
+                                    └───────────────┘
+```
+
+Notice there are _two_ chains being set up:
+
+- **The instance chain**: `dog` → `Dog.prototype` → `Animal.prototype` → `Object.prototype` → `null`. This is what method lookup walks.
+- **The constructor chain**: `Dog` → `Animal` → `Function.prototype` → `Object.prototype` → `null`. This is what makes static method inheritance work.
+
+## Extending Functionality with `super`
+
+When you subclass with `class ... extends`, `super` does two jobs:
+
+1. Inside the subclass `constructor`, `super(...)` calls the parent constructor. A derived constructor _must_ call `super` before using `this` - otherwise the object for `this` won't be created.
+2. Inside any subclass method, `super.method(...)` calls the parent's version of that method.
+
+```javascript
+class Animal {
+  constructor(name) {
+    this.speed = 0
+    this.name = name
+  }
+
+  static type = 'Mammal'
+
+  run(speed) {
+    this.speed = speed
+    console.log(`${this.name} runs with speed ${this.speed}`)
+  }
+
+  stop() {
+    this.speed = 0
+    console.log(`${this.name} is standing still`)
+  }
+}
+
+class Dog extends Animal {
+  constructor(name) {
+    super(name)
+  }
+
+  static callDogs(...args) {
+    if (args.length > 0) {
+      args.forEach((dog) => {
+        console.log(`Come home, ${dog.name}... `)
+      })
+    }
+  }
+
+  bark() {
+    super.stop()
+    console.log(`${this.name} says "woof woof"`)
+  }
+
+  slowDown() {
+    setTimeout(() => super.stop(), 1000)
+  }
+}
+
+let dog = new Dog('Ned')
+
+dog.bark() // Ned is standing still. Ned says "woof woof"
+
+// The inherited methods are still available
+dog.run(10) // Ned runs with speed 10
+dog.stop() // Ned is standing still
+```
+
+### The Same Thing, Written by Hand
+
+Here's what `class ... extends` actually compiles down to under the prototype-based model. This is what you'd have to write to set up the same chains manually:
+
+```javascript
+function Animal(name) {
+  this.speed = 0
+  this.name = name
+}
+
+Animal.prototype = {
+  // Recreate the constructor property manually
+  constructor: Animal,
+
+  run(speed) {
+    this.speed = speed
+    console.log(`${this.name} runs with speed ${this.speed}`)
+  },
+
+  stop() {
+    this.speed = 0
+    console.log(`${this.name} is standing still`)
+  },
+}
+
+function Dog(name) {
+  // The equivalent of calling `super(name)` -
+  // run the parent constructor with `this` bound to the new instance
+  Animal.call(this, name)
+}
+
+// Inherit static properties (constructor chain)
+Dog.__proto__ = Animal
+
+// Inherit instance methods (prototype chain)
+Dog.prototype = Object.create(Animal.prototype)
+
+Dog.prototype.constructor = Dog
+Dog.prototype.bark = function () {
+  // The equivalent of `super.stop()`
+  Animal.prototype.stop.call(this)
+  console.log(`${this.name} says "woof woof"`)
+}
+Dog.prototype.slowDown = function () {
+  setTimeout(() => Animal.prototype.stop.call(this), 1000)
+}
+
+Dog.callDogs = function (...args) {
+  if (args.length > 0) {
+    args.forEach((dog) => {
+      console.log(`Come home, ${dog.name}... `)
+    })
+  }
+}
+
+let dog = new Dog('Ned')
+dog.bark() // Ned is standing still. Ned says "woof woof"
+
+// The inherited methods are still available
+dog.run(10) // Ned runs with speed 10
+dog.stop() // Ned is standing still
+
+Dog.callDogs(dog)
+```
+
+A few things worth pointing out in the desugared version:
+
+- **`Animal.call(this, name)`** runs the parent constructor against the new instance - this is what `super(name)` does in a class.
+- **`Dog.__proto__ = Animal`** sets up _static_ method inheritance. This is why `Dog.callDogs` works as a static method, and why `Dog` can see static properties defined on `Animal`.
+- **`Dog.prototype = Object.create(Animal.prototype)`** sets up _instance_ method inheritance - the chain that property lookup walks for any `Dog` instance.
+- **`Animal.prototype.stop.call(this)`** is `super.stop()` - reach up to the parent's method and call it with the current instance's `this`.
+
+## Takeaways
+
+- JavaScript's "inheritance" is property lookup walking a chain. Every object has a `[[Prototype]]`; lookup follows it until the value is found or the chain ends at `null`.
+- `prototype` (on constructors) becomes the `[[Prototype]]` (on instances) of any object created with `new`.
+- `new` does four things: creates an object, links its `[[Prototype]]` to the constructor's `prototype`, runs the constructor with `this` bound, and returns the new object.
+- `class` is sugar. Subclassing wires up two chains - the instance chain (`Dog.prototype` → `Animal.prototype`) for methods, and the constructor chain (`Dog.__proto__` → `Animal`) for static methods.
+- `super` is the explicit reach-up to the parent's constructor or method. In desugared form, it's `Animal.call(this, ...)` for constructors and `Animal.prototype.method.call(this, ...)` for methods.

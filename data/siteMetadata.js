@@ -20,10 +20,6 @@ const siteMetadata = {
       googleAnalyticsId: 'G-73S0L1HL79', // GA4 — Universal Analytics (UA-) was sunset 2023-07-01
     },
   },
-  newsletter: {
-    // Please add your .env file and modify it according to your selection
-    provider: 'emailoctopus',
-  },
   comment: {
     provider: '', // supported providers: giscus, utterances, disqus
     giscusConfig: {

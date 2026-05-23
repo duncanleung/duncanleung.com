@@ -3,7 +3,7 @@ import Tag from '@/components/Tag'
 import Image from '@/components/Image'
 import siteMetadata from '@/data/siteMetadata'
 import { formatDate } from 'pliny/utils/formatDate'
-import NewsletterForm from 'pliny/ui/NewsletterForm'
+import SubstackEmbed from '@/components/SubstackEmbed'
 import { ArrowRight } from 'lucide-react'
 
 const MAX_DISPLAY = 5
@@ -149,7 +149,7 @@ export default function Home({ posts }) {
           <h2 className="mb-8 font-mono text-sm tracking-wider text-gray-500 uppercase dark:text-gray-400">
             Newsletter
           </h2>
-          <NewsletterForm title="Stay updated, receive the latest post straight to your mailbox" />
+          <SubstackEmbed title="Stay updated, receive the latest post straight to your mailbox" />
         </div>
       </div>
     </>

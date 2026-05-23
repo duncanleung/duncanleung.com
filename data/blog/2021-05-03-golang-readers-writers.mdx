@@ -1,20 +1,19 @@
 ---
-title: 'Switch the AWS Profile for Serverless CLI'
-date: '2020-05-05'
-tags: ['serverless', 'aws-cli']
-summary: 'DRAFT: Switch the AWS Profile for Serverless CLI'
-images: ['/static/thumbnails/serverless.png']
-draft: true
+title: 'The io.Reader and io.Writer Interfaces in Go'
+date: '2021-05-03'
+tags: ['backend', 'go']
+summary: 'Understanding the io.Reader and io.Writer interfaces in Go, and how accepting an io.Writer parameter makes your code flexible across files, HTTP responses, stdout, and in-memory buffers.'
+images: ['/static/thumbnails/go.png']
+draft: false
 ---
 
-# ReadWriter Interface
+One of the patterns I appreciate most about Go is how much of the standard library is built on top of two tiny interfaces: `io.Reader` and `io.Writer`.
 
-two interfaces:
+Once you understand these two interfaces, a surprising amount of the standard library "just composes" — `os.File`, `bytes.Buffer`, `http.ResponseWriter`, `net.Conn`, `gzip.Writer`, all of them speak the same language.
 
-- Reader reads some bytes, and returns the number of bytes read.
-- Writer does the same, but writes those bytes
+## The Interfaces
 
-Many other packages in the standard library implement either of these such as `http.Response.Body`, `net.Conn`, `os.File`, `bytes.Buffer`, etc...
+Both interfaces are intentionally minimal. They each define a single method:
 
 ```go
 type Reader interface {
@@ -26,19 +25,50 @@ type Writer interface {
 }
 ```
 
-Implementation that is similar to JS
+- A `Reader` reads some bytes into the buffer `p`, and returns the number of bytes read.
+- A `Writer` writes the bytes from `p` to its underlying destination, and returns the number of bytes written.
+
+Many of the most common types in the standard library implement one or both of these:
+
+- `os.File`
+- `bytes.Buffer`
+- `strings.Reader`
+- `http.Response.Body` (Reader)
+- `http.ResponseWriter` (Writer)
+- `net.Conn` (both)
+
+## Why Pass a Buffer Instead of Returning a Slice?
+
+The `Read` signature can look strange the first time you see it. Why pass in `p []byte` instead of returning a new slice?
+
+```go
+Read(p []byte) (n int, err error)
+```
+
+The reason is allocation. If `Read` returned a new `[]byte` on every call, every read would allocate. By passing the same buffer back in, the caller can reuse memory across reads — which matters a lot when you are streaming bytes off a network connection or a large file.
+
+A few subtle rules to keep in mind:
+
+- `io.EOF` is returned as part of _normal_ usage when the stream is done. It is not an "error" in the failure sense.
+- The buffer is **not guaranteed** to be filled on each call. Always check `n` to see how many bytes were actually read.
+
+---
+
+## Example: Writing a Struct to a File
+
+Let's start with an implementation that gets the job done, but does not yet use the interfaces idiomatically.
 
 ```go
 package main
 
 import (
-    "os"
     "encoding/json"
+    "os"
 )
 
 type Person struct {
-    Name string
-    Age uint
+    Name       string
+    Age        uint
     Occupation []string
 }
 
@@ -49,145 +79,169 @@ func MakeBytes(p Person) []byte {
 
 func main() {
     gandalf := Person{
-        "Gandalf",
-        56,
-        []string{"sourcerer", "foo fighter"},
+        Name:       "Gandalf",
+        Age:        56,
+        Occupation: []string{"sorcerer", "foo fighter"},
     }
 
     myFile, err := os.Create("output1.json")
     if err != nil {
         panic(err)
     }
+
     myBytes := MakeBytes(gandalf)
     myFile.Write(myBytes)
 }
 ```
 
-- create a write method for a simple struct
-- we want to provide a read and write method, that the data can be stored or loaded
-- this way we implement the reader and the writer interface.
+This works — `gandalf` is serialized to JSON and written to a file. But the struct itself has no idea how to write itself, and the code is locked to `*os.File` as the destination.
+
+What if I wanted to write the JSON to an HTTP response instead? Or to `os.Stdout` for debugging? Or to a `bytes.Buffer` in a test?
+
+I would have to rewrite `main`. That is the smell we want to fix.
+
+---
+
+## Wrong: A `Write` Method With the Wrong Signature
+
+A first instinct might be to give `Person` a `Write` method that accepts an `io.Writer`:
 
 ```go
-type Person struct {
- Id int
- Name string
- Age int
-}
-```
-
-Reader interface
-
-- The basic construct for reading bytes from a stream is the Reader interface:
-- This interface is implemented throughout the standard library by everything from [network connections](https://golang.org/pkg/net/#Conn) to [files](https://golang.org/pkg/os#File) to [wrappers for in-memory slices](https://golang.org/pkg/bytes/#Reader) .
-- works by passing a buffer, p, to the Read() method so that we can reuse the same bytes
-- instead of returning a byte slice instead of accepting one as an argument - the reader avoids allocating a new byte slice on every Read() call
-
-* Subtle rules - returns an io.EOF error as a normal part of usage when the stream is done - buffer isn’t guaranteed to be filled
-
-```go
-
-type Reader interface {
-        Read(p []byte) (n int, err error)
-}
-
-```
-
-- take a look at the defenition of the io.Writer interface:
-- takes slice of byte as input and return the number of bytes written and an error variable.
-- To implement the writer interface we just use the Write method
-- use that method we need to transform our struct into a slice of byte
-- There are many different formats to store such data. - say that we want to store our data as JSON. - So we need to encode our struct to that format.
-- abstration is powerfull, because you can use every package which creates an io.Writer with your package
-- your code you don’t have to decide how or where you write your data
-
-```go
-type Writer interface {
-    Write(p []byte) (n int, err error)
-}
-```
-
-- usage of io.Writer is the Go-way
-- Step 1: transform the struc into slice of byte by using json.Marshal
-
-* Step 2: use the Write method of the io.Writer interface
-
-THIS IS WRONG - DOESNT IMPLEMENT THE SAME SIGNATURE
-
-```go
+// 🚨 This does NOT implement the io.Writer interface
 func (p *Person) Write(w io.Writer) {
- b, _ := json.Marshal(*p)
- w.Write(b)
+    b, _ := json.Marshal(*p)
+    w.Write(b)
 }
 ```
 
-- benefit of passing a Writer interface, you can pass _anything_ which implements Write — that is not only a file but a http.ResponseWriter, for example, or stdout os.Stdout, without changing the struct methods.
-
-* passing as parameter readers and writers makes your code more flexible, in part because so many functions use the Reader and Writer interface.
+This is misleading. By naming the method `Write`, we are implying that `*Person` implements `io.Writer` — but the signature does not match the interface:
 
 ```go
-// writes json representation of Person to Writer
+// io.Writer
+Write(p []byte) (n int, err error)
+
+// Our method
+Write(w io.Writer)
+```
+
+Two problems:
+
+1. The method takes an `io.Writer` instead of `[]byte`, so it does not satisfy the interface.
+2. The method does not return `(int, error)`, so callers have no way to handle write failures.
+
+Naming a method `Write` that does not satisfy `io.Writer` will confuse anyone reading the code.
+
+---
+
+## Correct: Accept an `io.Writer`, Return an Error
+
+The fix is to give the method a more descriptive name (`WriteJson`) and have it accept an `io.Writer` _as a parameter_, returning an error:
+
+```go
+// WriteJson writes the JSON representation of Person to w.
 func (p *Person) WriteJson(w io.Writer) error {
     b, err := json.Marshal(*p)
     if err != nil {
         return err
     }
+
     _, err = w.Write(b)
     if err != nil {
         return err
     }
-    return err
+
+    return nil
 }
 ```
+
+Now the full program looks like this:
 
 ```go
 package main
 
 import (
+    "encoding/json"
     "io"
     "os"
-    "encoding/json"
 )
 
 type Person struct {
-    Name string
-    Age uint
+    Name       string
+    Age        uint
     Occupation []string
 }
-
 
 func (p *Person) WriteJson(w io.Writer) error {
     b, err := json.Marshal(*p)
     if err != nil {
         return err
     }
+
     _, err = w.Write(b)
     if err != nil {
         return err
     }
-    return err
+
+    return nil
 }
 
 func main() {
     gandalf := Person{
-        "Gandalf",
-        56,
-        []string{"sourcerer", "foo fighter"},
+        Name:       "Gandalf",
+        Age:        56,
+        Occupation: []string{"sorcerer", "foo fighter"},
     }
 
     myFile, err := os.Create("output2.json")
     if err != nil {
         panic(err)
     }
-    gandalf.WriteJson(myFile)
-}
 
+    if err := gandalf.WriteJson(myFile); err != nil {
+        panic(err)
+    }
+}
 ```
 
-- Would write to a **File**, http **Response**, a user’s **Stdout**, or even a simple **byte Buffer**; making testing a bit simpler.
+This is the same behavior as before, but the struct no longer knows or cares _what_ it is writing to.
 
-* Writer is an interface -
-* is a behavior of a data type,
-* a predefined method that a type implements.
-* Anything that implements the Write() method, then, is considered a writer.
+---
 
-#golang
+## Why This Pattern Pays Off
+
+Because `WriteJson` accepts an `io.Writer`, the same method now works against anything that implements the interface:
+
+```go
+// Write to a file
+gandalf.WriteJson(myFile)
+
+// Write to an HTTP response body
+func handler(w http.ResponseWriter, r *http.Request) {
+    gandalf.WriteJson(w)
+}
+
+// Write to stdout for debugging
+gandalf.WriteJson(os.Stdout)
+
+// Write to an in-memory buffer in a test
+var buf bytes.Buffer
+gandalf.WriteJson(&buf)
+
+fmt.Println(buf.String())
+```
+
+That last one is especially useful. Testing the JSON output no longer requires touching the filesystem — you just write into a `bytes.Buffer` and assert on its contents.
+
+This is the [Go idiom of accepting interfaces and returning concrete types](/go-idiom-accept-interfaces-return-types/) in action. The struct's behavior — "I know how to encode myself as JSON and write the bytes somewhere" — is fully decoupled from the destination.
+
+---
+
+## The Bigger Idea
+
+`io.Writer` is not a class to inherit from. It is a _behavior_ — a single method that a type either implements or it doesn't.
+
+> Anything that implements `Write(p []byte) (n int, err error)` is a `Writer`.
+
+The same goes for `io.Reader`. Once your code speaks in `io.Reader` and `io.Writer` instead of concrete types, you can compose your code freely with files, network connections, in-memory buffers, compression streams, and HTTP request/response bodies — without changing a line of the code that does the actual work.
+
+That is the payoff: a small interface that you find _everywhere_, and code that becomes trivially reusable because it accepts the interface instead of a concrete type.

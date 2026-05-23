@@ -116,7 +116,9 @@ In our case, we want TypeScript to check if the `as` prop is assignable to eithe
 <div class="filename">type-utils.tsx</div>
 
 ```typescript
-type GetRenderComponentProps<T> = T extends React.ComponentType | typeof Link
+type GetRenderComponentProps<T, P = {}> = T extends
+  | React.ComponentType<React.PropsWithChildren<P>>
+  | typeof Link
   ? React.ComponentProps<T>
   : T extends 'a'
     ? React.HTMLProps<T>
@@ -131,9 +133,9 @@ The `<Button />` component type annotation takes a Generic type `T` (this coinci
 
 The return type of the `<Button />` component also depends on the Generic type `T`.
 
-```typescript {4,7,8}type RenderComponent = React.ComponentType | typeof Link | "a";
+```typescript {4,7,8}type RenderComponent<P = {}> = React.ComponentType<React.PropsWithChildren<P>> | typeof Link | "a";
 
-type Props<E extends RenderComponent> = {
+type Props<E extends RenderComponent, P = {}> = {
   as?: E;
 };
 
@@ -151,9 +153,9 @@ Using the conditional type `GetRenderComponentProps`, we can now correctly creat
 
 This intersection now correctly resolves to the type depending on the type of element, `E`, passed into the `as` prop.
 
-```typescript {3}type Props<E extends RenderComponent> = {
+```typescript {3}type Props<E extends RenderComponent, P = {}> = {
   as?: E;
-} & GetRenderComponentProps<E>;
+} & GetRenderComponentProps<E, P>;
 ```
 
 ## Solution:
@@ -169,11 +171,11 @@ const StyledButton = styled.button`
   // ...
 `;
 
-type RenderComponent = React.ComponentType | typeof Link | "a";
+type RenderComponent<P = {}> = React.ComponentType<React.PropsWithChildren<P>> | typeof Link | "a";
 
-type Props<E extends RenderComponent> = {
+type Props<E extends RenderComponent, P = {}> = {
   as?: E;
-} & GetRenderComponentProps<E>;
+} & GetRenderComponentProps<E, P>;
 
 const Button = <T extends RenderComponent>({
   as,

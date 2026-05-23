@@ -17,7 +17,7 @@ const siteMetadata = {
   stickyNav: true,
   analytics: {
     googleAnalytics: {
-      googleAnalyticsId: 'UA-100201704-1', // e.g. G-XXXXXXX
+      googleAnalyticsId: 'G-73S0L1HL79', // GA4 — Universal Analytics (UA-) was sunset 2023-07-01
     },
   },
   newsletter: {

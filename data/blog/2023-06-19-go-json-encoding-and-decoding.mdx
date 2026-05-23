@@ -75,8 +75,8 @@ func main() {
 }
 
 func githubInfo(login string) (string, int, error) {
-	url := fmt.Sprintf("https://api.github.com/users/%s", url.PathEscape(login))
-	resp, err := http.Get(url)
+	reqURL := fmt.Sprintf("https://api.github.com/users/%s", url.PathEscape(login))
+	resp, err := http.Get(reqURL)
 }
 ```
 
@@ -170,8 +170,8 @@ In our example, we have an `io.Reader` (`resp.Body`) and we want to decode JSON 
 
 ```go
 func githubInfo(login string) (string, int, error) {
-	url := fmt.Sprintf("https://api.github.com/users/%s", url.PathEscape(login))
-	resp, err := http.Get(url)
+	reqURL := fmt.Sprintf("https://api.github.com/users/%s", url.PathEscape(login))
+	resp, err := http.Get(reqURL)
 	if err != nil {
 		return "", 0, err
 	}
@@ -209,8 +209,8 @@ Putting this all together:
 
 ```go
 func githubInfo(login string) (string, int, error) {
-	url := fmt.Sprintf("https://api.github.com/users/%s", url.PathEscape(login))
-	resp, err := http.Get(url)
+	reqURL := fmt.Sprintf("https://api.github.com/users/%s", url.PathEscape(login))
+	resp, err := http.Get(reqURL)
 	if err != nil {
 		return "", 0, err
 	}

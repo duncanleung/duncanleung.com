@@ -70,16 +70,16 @@ func main() {
 ```
 
 ```text
-   Main function                      modifyIntPointer function
-------------------                        ---------------
-|                 |                       |              |
-| num := 10       | -- address of num --> |  i := &num   |
-|                 |                       |  *i = 5      |
-| modifyInt(&num) |                       |              |
-|                 |                       ---------------
-| fmt.Println(num)|
-|                 |
-------------------
+   Main function                              modifyIntPointer function
+------------------------                          ---------------
+|                       |                         |              |
+| num := 10             | -- address of num -->   |  i := &num   |
+|                       |                         |  *i = 5      |
+| modifyIntPointer(&num)|                         |              |
+|                       |                         ---------------
+| fmt.Println(num)      |
+|                       |
+------------------------
 
 ```
 

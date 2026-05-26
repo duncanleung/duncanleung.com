@@ -1,21 +1,164 @@
 ---
-title: 'Export Serverless Environment Variables into .env'
+title: 'Export Serverless Framework Environment Variables to a Local .env File'
 date: '2020-05-10'
-tags: ['serverless', 'aws-lambda']
-summary: 'DRAFT: Export Serverless Environment Variables into .env'
+tags: ['serverless', 'aws-lambda', 'aws-cloudformation']
+summary: 'Bridging CloudFormation-generated runtime values - DynamoDB table names, API Gateway URLs, ARNs that do not exist until deployment - into a local .env file using the serverless-export-env plugin.'
 images: ['/static/thumbnails/serverless.png']
-draft: true
+draft: false
 ---
 
-There are Serverless resources that have randomly generated ARNs, such as DynamoDB table names.
+When you declare a DynamoDB table in `serverless.yml`, the actual table name does not exist until CloudFormation deploys the stack. The deployed name is something like `my-service-dev-RestaurantsTable-1Y097GF7QLUIX` - a unique value per deployment that you cannot know ahead of time.
 
-## Export environment variables from serverless.yml
+Your deployed Lambda gets that value through the `environment:` block in `serverless.yml`. Your _local_ code doesn't - it's running outside the deployed environment with no visibility into what CloudFormation generated.
 
-```yml
+This post walks through bridging that gap. The deployed Lambda already has the value at runtime via `process.env.restaurants_table`; we want the same thing locally so the same code can talk to the same deployed table without hardcoding ARNs.
+
+## The Problem: Runtime-Generated Resource Names
+
+Consider a DynamoDB table declared in `serverless.yml`:
+
+```yaml
+resources:
+  Resources:
+    RestaurantsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: name
+            AttributeType: S
+        KeySchema:
+          - AttributeName: name
+            KeyType: HASH
+```
+
+When CloudFormation deploys this stack, it generates a unique table name. You can't refer to `RestaurantsTable` by a static string in your Lambda code - the real name only exists after the deploy.
+
+You also can't hardcode the resolved name, because:
+
+- It's different in every stage (`dev`, `staging`, `prod`)
+- It changes if you ever rename or recreate the resource
+- New developers cloning the repo wouldn't have it
+
+The same applies to API Gateway URLs, SQS queue ARNs, SNS topic ARNs, and any other CloudFormation-generated resource.
+
+## Step 1: Declare Environment Variables in `serverless.yml`
+
+In the `environment:` block of a function, you can reference CloudFormation resources using the standard intrinsic functions `!Ref` and `!GetAtt`:
+
+```yaml
+functions:
+  get-restaurants:
+    handler: functions/get-restaurants.handler
+    events:
+      - http:
+          path: /restaurants
+          method: get
+    environment:
+      restaurants_table: !Ref RestaurantsTable
+```
+
+At deploy time, CloudFormation resolves `!Ref RestaurantsTable` to the generated table name and bakes it into the Lambda's runtime environment. The Lambda code reads it through `process.env.restaurants_table`.
+
+For more complex composed strings - for example, building the deployed API Gateway URL out of multiple CloudFormation pseudo-parameters - the [`serverless-pseudo-parameters`](https://www.npmjs.com/package/serverless-pseudo-parameters) plugin lets you use a `#{...}` substitution syntax inline:
+
+```yaml
+functions:
+  get-index:
+    handler: functions/get-index.handler
+    events:
+      - http:
+          path: /
+          method: get
+    environment:
+      restaurants_api: https://#{ApiGatewayRestApi}.execute-api.#{AWS::Region}.amazonaws.com/${self:provider.stage}/restaurants
+
+plugins:
+  - serverless-pseudo-parameters
+```
+
+```bash
+$ yarn add -D serverless-pseudo-parameters
+```
+
+`#{ApiGatewayRestApi}` resolves to the deployed REST API's id; `#{AWS::Region}` to the deploy region. Without this plugin you'd have to use verbose `Fn::Sub` or `Fn::Join` blocks to compose the same string.
+
+That covers the deployed Lambda. Now the local case.
+
+## Step 2: Install `serverless-export-env`
+
+The [`serverless-export-env`](https://www.npmjs.com/package/serverless-export-env) plugin reads the deployed stack's CloudFormation outputs, resolves all the references in your `environment:` block to their real values, and writes them to a local `.env` file.
+
+```bash
+$ yarn add -D serverless-export-env
+```
+
+Add it to your plugins:
+
+```yaml
+plugins:
+  - serverless-pseudo-parameters
+  - serverless-export-env
+```
+
+## Step 3: Export the `.env` File
+
+Run the plugin's command:
+
+```bash
+$ serverless export-env
+```
+
+It generates a `.env` file in the project root containing the resolved values:
+
+```text
+restaurants_table=my-service-dev-RestaurantsTable-1Y097GF7QLUIX
+restaurants_api=https://abc123def4.execute-api.us-east-1.amazonaws.com/dev/restaurants
+```
+
+Each entry is a Lambda environment variable name from `serverless.yml`, paired with the value that CloudFormation actually resolved at deploy time. The `!Ref` and `#{...}` references that were unresolved in the YAML are now real strings.
+
+**Important caveat:** the stack must be deployed first. The plugin reads CloudFormation outputs from the live stack - it cannot resolve references against an undeployed template. Re-run `serverless export-env` after every deploy that changes resource references.
+
+## Step 4: Load the `.env` in Your Local Code
+
+First, add `.env` to `.gitignore`. The file contains real production-account ARNs and resource names - those should never be committed:
+
+```bash
+# .gitignore
+.env
+.env.*
+```
+
+Then install `dotenv` and load it at the top of your local entry point:
+
+```bash
+$ yarn add -D dotenv
+```
+
+```javascript
+require('dotenv').config()
+
+// Now process.env has the same values your deployed Lambda has
+const RESTAURANTS_TABLE = process.env.restaurants_table
+const RESTAURANTS_API = process.env.restaurants_api
+```
+
+Your deployed Lambda needs no `dotenv` call - AWS injects the variables directly into `process.env`. The `require('dotenv').config()` line is a local-only concern, and a no-op in the Lambda environment because no `.env` file is bundled into the deployment artifact (assuming `.env` is in `.gitignore` and your bundler isn't packaging it).
+
+## The Full `serverless.yml`
+
+Putting it all together:
+
+```yaml
+service: restaurants-api
+
 provider:
+  name: aws
+  runtime: nodejs12.x
   iamRoleStatements:
     - Effect: Allow
-      Action: dynamodb:scan
+      Action: dynamodb:Scan
       Resource: !GetAtt RestaurantsTable.Arn
 
 functions:
@@ -35,8 +178,6 @@ functions:
           path: /restaurants
           method: get
     environment:
-      # CloudFormation pseudo function !Ref
-      # resource called RestaurantsTable
       restaurants_table: !Ref RestaurantsTable
 
 resources:
@@ -57,51 +198,44 @@ resources:
       Value: !Ref RestaurantsTable
 
 plugins:
-  - serverless-export-env
   - serverless-pseudo-parameters
-```
-
-Use the `serverless-export-env` plugin to export the environment variables to a `.env` file.
-
-```
-$ yarn add -D serverless-export-env
-```
-
-Add to end of serverless.yml
-
-```yml
-plugins:
   - serverless-export-env
 ```
 
+## Common Gotchas
+
+- **Stack must be deployed first.** `serverless-export-env` reads CloudFormation outputs from the live stack. If the stack isn't deployed, references can't be resolved.
+- **Re-export after each deploy that changes resources.** Renaming or recreating a CloudFormation resource generates a new physical name. The old `.env` will silently point at a resource that no longer exists.
+- **Never commit `.env`.** The values are real ARNs and resource identifiers. Treat them as production credentials even if the resources themselves are dev-only.
+- **The deployed Lambda does not need `dotenv`.** It already has the variables in `process.env` from the `environment:` block. The `dotenv` call only does work locally.
+- **IAM permissions on the deployer.** The plugin needs `cloudformation:DescribeStacks` to read outputs. Most deploy users have this through the broader `cloudformation:*` permission - if you've followed a least-privilege scoping (see [A Least-Privilege IAM Strategy for Serverless Framework Deployments](/blog/serverless-framework-least-privilege-iam-deployment-strategy)), make sure it's included.
+
+## Note: Stage-Specific Exports
+
+For multi-stage projects, pass `--stage` to target a specific deployed stack and `--filename` to write to a stage-specific file:
+
+```bash
+$ serverless export-env --stage dev --filename .env.development
+$ serverless export-env --stage staging --filename .env.staging
+$ serverless export-env --stage prod --filename .env.production
 ```
-$ serverless export-env
-```
 
----
-
-Will generate a .env file in your project root, and the file content should look something like this:
-
-```
-restaurants_table=workshop-yancui-dev-RestaurantsTable-1Y097GF7QLUIX
-```
-
-`get-restaurants` function has an environment variable called `restaurants_table`.
-
-The `serverless-export-env` plugin has resolved the `!Ref RestaurantTable` reference
-added the resolved table name to the .env file.
-
-## Import environment variables .env
-
-- Add .env to your .gitignore file
-
-```
-$ yarn add -D dotenv
-```
+Pair this with environment-aware loading on the local side:
 
 ```javascript
-require("dotenv").config();
-
-// ... your code
-let RESTAURANTS_TABLE = process.env.restaurants_table;
+require('dotenv').config({
+  path: `.env.${process.env.NODE_ENV || 'development'}`,
+})
 ```
+
+Add `.env.*` to `.gitignore` (the pattern above already covers this) so no stage's resolved values end up in version control.
+
+## Takeaways
+
+- CloudFormation-generated resource names (DynamoDB tables, API Gateway URLs, etc.) only exist after deploy. You can't hardcode them locally.
+- Declare them in `serverless.yml` under `provider.environment` or per-function `environment:` using `!Ref` and `!GetAtt`. The deployed Lambda gets them automatically.
+- `serverless-export-env` resolves those references against the deployed CloudFormation outputs and writes them to a local `.env` file. Your local code reads them via `dotenv`.
+- `serverless-pseudo-parameters` lets you compose CloudFormation values into arbitrary strings (like API Gateway URLs) using `#{...}` syntax - useful when `!Ref` alone isn't enough.
+- The stack must be deployed before `serverless export-env` works, and you should re-export after every deploy that changes resource references.
+- `.env` must be in `.gitignore` - the resolved values are real ARNs.
+- For multi-stage projects, use `--stage` and `--filename` to keep per-environment `.env` files separate.

@@ -1,6 +1,6 @@
 ---
 title: 'Understanding JavaScript Promises: Chaining, Error Handling, and async/await'
-date: '2020-05-05'
+date: '2021-05-05'
 tags: ['javascript', 'async']
 summary: 'A practical guide to working with JavaScript Promises - from basic chaining and resolve/reject behavior to .catch, Promise.all fail-fast handling, and async/await error patterns.'
 images: ['/static/thumbnails/programming.png']
@@ -498,6 +498,73 @@ Promise.race([delay(500), delay(100)]).then(function (data) {
 
 This is useful for timeouts - race the real work against a `setTimeout` that rejects, and you get a deadline on the operation.
 
+## Promise.any
+
+`Promise.any` is the rejection-tolerant complement to `Promise.race`. Where `Promise.race` settles as soon as the first promise _settles_ - fulfilled or rejected - `Promise.any` waits for the first promise to _fulfill_, ignoring rejections until every promise has rejected.
+
+It is useful when you have several sources for the same value - mirrors, replicas, fallback endpoints - and want the fastest one that actually succeeds.
+
+```javascript
+let p1 = new Promise(function (resolve, reject) {
+  setTimeout(reject, 100, 'p1 failed')
+})
+
+let p2 = new Promise(function (resolve, reject) {
+  setTimeout(resolve, 200, 'p2 succeeded')
+})
+
+let p3 = new Promise(function (resolve, reject) {
+  setTimeout(resolve, 300, 'p3 succeeded')
+})
+
+Promise.any([p1, p2, p3]).then(function (value) {
+  console.log(value)
+})
+
+// Output:
+// p2 succeeded
+```
+
+`p1`'s rejection at 100ms is ignored. `p2` fulfills at 200ms and wins. `p3` is ignored because the resulting promise already settled.
+
+Compare to `Promise.race` with the same inputs - `p1`'s rejection at 100ms would have made the entire race reject, even though `p2` was about to succeed:
+
+```javascript
+Promise.race([p1, p2, p3]).catch(function (error) {
+  console.log(error)
+})
+
+// Output:
+// p1 failed
+```
+
+### When Every Promise Rejects: `AggregateError`
+
+If every promise in the array rejects, `Promise.any` rejects with a single `AggregateError` that bundles all the individual rejection reasons in its `.errors` array.
+
+```javascript
+let r1 = Promise.reject('network down')
+let r2 = Promise.reject('timeout')
+let r3 = Promise.reject('403 forbidden')
+
+Promise.any([r1, r2, r3]).catch(function (error) {
+  console.log(error.name)
+  console.log(error.message)
+  error.errors.forEach(function (e) {
+    console.log('-', e)
+  })
+})
+
+// Output:
+// AggregateError
+// All promises were rejected
+// - network down
+// - timeout
+// - 403 forbidden
+```
+
+`AggregateError` is also new in ES2021. It is a subclass of `Error` whose `.errors` property holds the array of individual rejection reasons in the same order as the input promises.
+
 ## Checking If an Object Is a Promise
 
 ```javascript
@@ -683,4 +750,5 @@ The rule of thumb: if two `await`s don't depend on each other's results, they pr
 - Every `.then` returns a new promise. The `.catch` you attach catches errors from the promise it's chained to - not the original one.
 - A `.then` with no error callback passes rejections through. Errors thrown inside a `then` callback also propagate down the chain.
 - `Promise.all` is fail-fast. To keep going past a failure, attach a `.catch` to each promise before passing them in, or use `Promise.allSettled` to get a structured result for every promise without ever rejecting.
+- `Promise.race` settles on the first input to settle - fulfilled or rejected. `Promise.any` settles on the first input to _fulfill_, and only rejects if every input rejects - with an `AggregateError` that carries every individual rejection reason.
 - `async / await` is the same model dressed up with synchronous-looking syntax. Use `try / catch` for errors, and `Promise.all` to run independent awaits in parallel.

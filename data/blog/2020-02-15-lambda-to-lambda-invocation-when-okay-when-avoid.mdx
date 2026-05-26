@@ -1,0 +1,597 @@
+---
+title: 'When Direct Lambda-to-Lambda Invocation Is OK'
+date: '2020-02-15'
+tags: ['serverless', 'aws-lambda']
+summary: 'AWS docs call Lambda-to-Lambda invocation an anti-pattern, but there are specific cases where direct invoke is the right call. A walkthrough of the real costs, the cases where they apply, the cases where they do not, and the alternatives.'
+images: ['/static/thumbnails/serverless.png']
+draft: false
+---
+
+In AWS Lambda, one function can directly invoke another using the AWS SDK:
+
+```typescript
+import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda'
+
+const lambda = new LambdaClient({})
+
+const response = await lambda.send(
+  new InvokeCommand({
+    FunctionName: 'process-order',
+    InvocationType: 'RequestResponse',
+    Payload: Buffer.from(JSON.stringify({ orderId: '123' })),
+  })
+)
+```
+
+AWS's own docs call this an anti-pattern, and most blog posts repeat the same warning: tight coupling, double billing, hard to debug. Those concerns are real, but they are not universal. There are specific cases where direct Lambda-to-Lambda invocation is fine, and a few where it is the right call.
+
+This post walks through the real costs of direct invocation, the cases where they apply, the cases where they do not, and the alternatives.
+
+## Two Invocation Modes
+
+In AWS Lambda, there are two invocation modes. Most of the anti-pattern arguments apply to one of them.
+
+### Synchronous: `RequestResponse`
+
+The caller waits for the invoked function to finish and gets its response back.
+
+```typescript
+// Caller waits for the response
+const response = await lambda.send(
+  new InvokeCommand({
+    FunctionName: 'process-order',
+    InvocationType: 'RequestResponse',
+    Payload: Buffer.from(JSON.stringify({ orderId: '123' })),
+  })
+)
+
+const result = JSON.parse(Buffer.from(response.Payload!).toString())
+```
+
+This is the mode the anti-pattern warnings are mostly about. The caller is idle while the callee runs.
+
+### Asynchronous: `Event`
+
+The caller fires the invocation and returns immediately. AWS handles delivery and retries on failure.
+
+```typescript
+// Fire-and-forget; AWS handles retries
+await lambda.send(
+  new InvokeCommand({
+    FunctionName: 'process-order',
+    InvocationType: 'Event',
+    Payload: Buffer.from(JSON.stringify({ orderId: '123' })),
+  })
+)
+```
+
+Async direct invoke is less of a problem than sync, but it is still rarely the best choice. SQS, SNS, or EventBridge usually give you more control over retries and failure handling.
+
+The rest of this section is about the sync case.
+
+## Why Sync Direct Invoke Is Usually Bad
+
+### 1. You're Billed for Both Functions at the Same Time
+
+Lambda bills you for the entire duration a function is running, including any time it spends idle waiting on an `await`. If Lambda A synchronously invokes Lambda B, you pay for both during the entire span B is running.
+
+```text
+Lambda A timeline:
+[ 50ms processing ][ 500ms idle waiting on B ][ 50ms processing ]
+                   └─── billed ────────────────┘
+
+Lambda B timeline:
+                   [ 500ms processing ]
+                   └─── billed ───────┘
+
+Total billed time: 600ms (A) + 500ms (B) = 1100ms
+Useful work time: 600ms
+```
+
+You're paying ~83% extra for the idle wait. Stack a few of these in a chain and the math gets worse.
+
+```text
+A → B → C → D, each taking 500ms
+
+A: 1500ms (50ms work + 1450ms waiting)
+B: 1000ms (50ms work + 950ms waiting)
+C:  500ms (50ms work + 450ms waiting)
+D:  500ms (work)
+─────────────────────
+Total: 3500ms billed for 200ms of useful work
+```
+
+This is why function chains get expensive quickly.
+
+### 2. Tight Coupling on an Undocumented Contract
+
+When Lambda A invokes Lambda B by name, A has baked in:
+
+- B's exact function name (e.g. `process-order-prod`)
+- B's payload shape
+- B's response shape
+- B's error format
+
+There's no schema, no versioning, no API gateway in between. If B's owner changes any of those, A breaks at runtime - and there's no compile-time signal.
+
+This is fine when both functions are owned by the same team and live in the same service. It becomes a problem the moment another team owns B.
+
+### 3. Timeout Cascades
+
+API Gateway has a hard 29-second timeout. A Lambda's max execution time is 15 minutes.
+
+When A synchronously invokes B, A's remaining timeout budget shrinks while it waits. If A has a 30-second timeout and B takes 25 seconds, A only has 5 seconds left to do anything with B's response.
+
+```text
+A timeout: 30s
+├── 25s waiting on B ──┤
+                       └── 5s left for everything else
+```
+
+If anything downstream of B also runs slowly, you can blow the budget without a clear way to detect or recover.
+
+### 4. You Have to Write Your Own Retry Logic
+
+When you use SQS or EventBridge, AWS handles retries for you. When you invoke directly, you don't get that.
+
+```typescript
+async function invokeWithRetry(
+  functionName: string,
+  payload: object,
+  maxAttempts = 3
+) {
+  let lastError: unknown
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await lambda.send(
+        new InvokeCommand({
+          FunctionName: functionName,
+          InvocationType: 'RequestResponse',
+          Payload: Buffer.from(JSON.stringify(payload)),
+        })
+      )
+    } catch (error) {
+      lastError = error
+
+      // Exponential backoff with jitter
+      const delay = Math.min(1000 * 2 ** attempt, 10_000) + Math.random() * 200
+      await new Promise((resolve) => setTimeout(resolve, delay))
+    }
+  }
+
+  throw lastError
+}
+```
+
+That's boilerplate you'd otherwise get for free.
+
+### 5. Distributed Tracing Gets Messier
+
+X-Ray can trace direct Lambda invocations, but you have to be deliberate about propagating trace context. With SQS, SNS, and EventBridge, AWS injects and propagates the trace headers for you. With `Invoke`, you're on the hook for serializing the trace ID into the payload, reading it on the other side, and re-binding it to the segment.
+
+This is a small cost on its own but compounds with the others.
+
+## When Sync Direct Invoke IS OK
+
+Here are the cases where direct invoke is fine.
+
+### 1. Intra-Microservice Helpers Owned by the Same Team
+
+If both Lambdas are owned by you, live in the same `serverless.yml`, and the contract between them is internal, most of the coupling argument disappears.
+
+```yaml
+# serverless.yml - both functions in the same service
+service: order-processing
+
+functions:
+  createOrder:
+    handler: src/handlers/createOrder.handler
+    iamRoleStatementsInherit: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action: lambda:InvokeFunction
+        Resource: !GetAtt ValidateOrderLambdaFunction.Arn
+
+  validateOrder:
+    handler: src/handlers/validateOrder.handler
+```
+
+```typescript
+// src/handlers/createOrder.ts
+import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda'
+
+const lambda = new LambdaClient({})
+
+export const handler = async (event: CreateOrderEvent) => {
+  const validationResponse = await lambda.send(
+    new InvokeCommand({
+      FunctionName: process.env.VALIDATE_ORDER_FN_NAME,
+      InvocationType: 'RequestResponse',
+      Payload: Buffer.from(JSON.stringify({ order: event.order })),
+    })
+  )
+
+  // ... rest of createOrder logic
+}
+```
+
+You still pay the double-billing cost, but you avoid the coupling problem because the contract is internal. If you change `validateOrder`'s payload, you update the caller in the same PR.
+
+That said: if `validateOrder` is pure logic with no AWS dependencies, you're usually better off making it a shared library inside the same function. More on that below.
+
+### 2. The VPC Proxy Pattern
+
+This is the one case where direct invoke is better than the alternatives.
+
+Lambdas inside a VPC have longer cold starts because attaching an Elastic Network Interface is slow. A common workaround is to keep the public-facing Lambda outside the VPC, and have it synchronously invoke a worker Lambda inside the VPC only when it needs to hit a VPC-only resource (like RDS or ElastiCache).
+
+```text
+Client → API Gateway → outerLambda (no VPC, fast cold start)
+                            │
+                            │ Invoke (sync)
+                            ▼
+                       innerLambda (inside VPC, talks to RDS)
+                            │
+                            ▼
+                          RDS
+```
+
+```yaml
+# serverless.yml
+functions:
+  outerLambda:
+    handler: src/handlers/outer.handler
+    # No VPC config - keeps cold start fast
+
+  innerLambda:
+    handler: src/handlers/inner.handler
+    vpc:
+      securityGroupIds:
+        - sg-xxxxxxxx
+      subnetIds:
+        - subnet-xxxxxxxx
+```
+
+```typescript
+// src/handlers/outer.ts
+export const handler = async (event: APIGatewayEvent) => {
+  // Fast path: no VPC, no cold start hit
+  if (!event.queryStringParameters?.id) {
+    return { statusCode: 400, body: 'Missing id' }
+  }
+
+  // Slow path: invoke the VPC-bound Lambda
+  const response = await lambda.send(
+    new InvokeCommand({
+      FunctionName: process.env.INNER_LAMBDA_FN_NAME,
+      InvocationType: 'RequestResponse',
+      Payload: Buffer.from(JSON.stringify({ id: event.queryStringParameters.id })),
+    })
+  )
+
+  return {
+    statusCode: 200,
+    body: Buffer.from(response.Payload!).toString(),
+  }
+}
+```
+
+You're trading double billing for faster cold starts on the public path. For latency-sensitive APIs, that's often the right trade.
+
+### 3. One-Off Admin or Bootstrapping Operations
+
+A one-time backfill that calls the production handler doesn't justify wiring up an SQS queue. The architecture overhead isn't worth it for code that runs once.
+
+```typescript
+// scripts/backfill-old-orders.ts
+import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda'
+import { getOldOrderIds } from './db'
+
+const lambda = new LambdaClient({})
+
+async function backfill() {
+  const orderIds = await getOldOrderIds()
+
+  for (const orderId of orderIds) {
+    await lambda.send(
+      new InvokeCommand({
+        FunctionName: 'process-order-prod',
+        InvocationType: 'RequestResponse',
+        Payload: Buffer.from(JSON.stringify({ orderId })),
+      })
+    )
+  }
+}
+```
+
+If the script ever becomes "the way we do backfills", _then_ refactor it to a queue. Until then, direct invoke is the cheapest thing that works.
+
+## The Alternatives, and When Each Fits
+
+When direct invoke isn't the right answer, here are the alternatives - and when each one fits.
+
+### SQS - Async, Decoupled, Durable
+
+Use when the caller doesn't need the response back, and you want AWS-managed retries with a dead letter queue.
+
+```yaml
+# serverless.yml
+resources:
+  Resources:
+    OrderQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: order-queue
+        VisibilityTimeout: 60
+        RedrivePolicy:
+          deadLetterTargetArn: !GetAtt OrderDLQ.Arn
+          maxReceiveCount: 3
+
+functions:
+  createOrder:
+    handler: src/handlers/createOrder.handler
+    iamRoleStatements:
+      - Effect: Allow
+        Action: sqs:SendMessage
+        Resource: !GetAtt OrderQueue.Arn
+
+  processOrder:
+    handler: src/handlers/processOrder.handler
+    events:
+      - sqs:
+          arn: !GetAtt OrderQueue.Arn
+          batchSize: 10
+```
+
+```typescript
+// src/handlers/createOrder.ts
+import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs'
+
+const sqs = new SQSClient({})
+
+export const handler = async (event: CreateOrderEvent) => {
+  await sqs.send(
+    new SendMessageCommand({
+      QueueUrl: process.env.ORDER_QUEUE_URL,
+      MessageBody: JSON.stringify(event.order),
+    })
+  )
+
+  return { statusCode: 202, body: 'Order accepted' }
+}
+```
+
+`createOrder` returns in milliseconds. `processOrder` runs on its own time. If it fails three times, the message goes to the DLQ.
+
+### SNS - Fan-Out to Multiple Consumers
+
+Use when one event should trigger multiple downstream Lambdas.
+
+```yaml
+# serverless.yml
+resources:
+  Resources:
+    OrderCreatedTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: order-created
+
+functions:
+  createOrder:
+    handler: src/handlers/createOrder.handler
+
+  notifyWarehouse:
+    handler: src/handlers/notifyWarehouse.handler
+    events:
+      - sns:
+          arn: !Ref OrderCreatedTopic
+
+  sendConfirmationEmail:
+    handler: src/handlers/sendConfirmationEmail.handler
+    events:
+      - sns:
+          arn: !Ref OrderCreatedTopic
+```
+
+Both `notifyWarehouse` and `sendConfirmationEmail` are invoked in parallel whenever `createOrder` publishes to the topic.
+
+### EventBridge - Cross-Service Event Routing
+
+Use when events cross microservice boundaries, or when you want filtering, schemas, and event archives.
+
+```yaml
+# serverless.yml
+functions:
+  processOrder:
+    handler: src/handlers/processOrder.handler
+    events:
+      - eventBridge:
+          pattern:
+            source:
+              - order-service
+            detail-type:
+              - OrderCreated
+            detail:
+              orderType:
+                - paid
+```
+
+```typescript
+// Publishing to EventBridge
+import { EventBridgeClient, PutEventsCommand } from '@aws-sdk/client-eventbridge'
+
+const eventBridge = new EventBridgeClient({})
+
+await eventBridge.send(
+  new PutEventsCommand({
+    Entries: [
+      {
+        Source: 'order-service',
+        DetailType: 'OrderCreated',
+        Detail: JSON.stringify({ orderId: '123', orderType: 'paid' }),
+      },
+    ],
+  })
+)
+```
+
+EventBridge gives you schema enforcement and pattern-based routing - useful when multiple teams produce and consume events.
+
+### Step Functions - Multi-Step Workflows With Explicit Retries
+
+Use when you have a sequence of Lambdas that need to coordinate, with retry policies and error handling baked in.
+
+```yaml
+# serverless.yml
+stepFunctions:
+  stateMachines:
+    OrderWorkflow:
+      definition:
+        StartAt: ValidateOrder
+        States:
+          ValidateOrder:
+            Type: Task
+            Resource: !GetAtt ValidateOrderLambdaFunction.Arn
+            Next: ChargePayment
+            Retry:
+              - ErrorEquals: [States.TaskFailed]
+                MaxAttempts: 3
+                BackoffRate: 2
+
+          ChargePayment:
+            Type: Task
+            Resource: !GetAtt ChargePaymentLambdaFunction.Arn
+            Next: FulfillOrder
+            Catch:
+              - ErrorEquals: [PaymentFailed]
+                Next: NotifyCustomerOfFailure
+
+          FulfillOrder:
+            Type: Task
+            Resource: !GetAtt FulfillOrderLambdaFunction.Arn
+            End: true
+
+          NotifyCustomerOfFailure:
+            Type: Task
+            Resource: !GetAtt NotifyCustomerLambdaFunction.Arn
+            End: true
+```
+
+The state machine handles the orchestration. Each Lambda just does its one job. No Lambda invokes another - Step Functions does it.
+
+### Shared Library - When You Just Want Code Reuse
+
+If the only reason you'd split logic into a separate Lambda is "this code is reusable", you don't want a Lambda. You want a shared module.
+
+```typescript
+// src/lib/validate-order.ts
+export function validateOrder(order: Order): ValidationResult {
+  // ... validation logic
+}
+```
+
+```typescript
+// src/handlers/createOrder.ts
+import { validateOrder } from '../lib/validate-order'
+
+export const handler = async (event: CreateOrderEvent) => {
+  const validation = validateOrder(event.order)
+  // ...
+}
+```
+
+No `lambda:InvokeFunction` permission. No cold start. No double billing. No payload serialization. Just a function call.
+
+## Sometimes Two Lambdas Should Be One Lambda
+
+Before reaching for SQS or Step Functions, ask whether the second Lambda needs to exist at all.
+
+Here's the "before" - two Lambdas, one invoking the other for no real reason:
+
+```typescript
+// src/handlers/createOrder.ts
+export const handler = async (event: CreateOrderEvent) => {
+  const validationResponse = await lambda.send(
+    new InvokeCommand({
+      FunctionName: process.env.VALIDATE_ORDER_FN_NAME,
+      InvocationType: 'RequestResponse',
+      Payload: Buffer.from(JSON.stringify({ order: event.order })),
+    })
+  )
+
+  const validation = JSON.parse(Buffer.from(validationResponse.Payload!).toString())
+
+  if (!validation.isValid) {
+    return { statusCode: 400, body: validation.error }
+  }
+
+  // ... save order
+}
+```
+
+```typescript
+// src/handlers/validateOrder.ts
+export const handler = async (event: { order: Order }) => {
+  // Pure validation logic with no AWS dependencies
+  if (!event.order.items?.length) {
+    return { isValid: false, error: 'Order has no items' }
+  }
+  return { isValid: true }
+}
+```
+
+And the "after" - the same logic, inlined:
+
+```typescript
+// src/handlers/createOrder.ts
+import { validateOrder } from '../lib/validate-order'
+
+export const handler = async (event: CreateOrderEvent) => {
+  const validation = validateOrder(event.order)
+
+  if (!validation.isValid) {
+    return { statusCode: 400, body: validation.error }
+  }
+
+  // ... save order
+}
+```
+
+Half the cost. Half the cold-start surface. No IAM permission needed. No tracing complexity. The original version was a distributed system without a reason to be one.
+
+The test: if Lambda B has no AWS dependencies of its own - no S3 reads, no DynamoDB writes, no calls to external APIs - it probably does not need to be a Lambda. Inline it.
+
+## Decision Summary
+
+```text
+Does the caller need the response back synchronously?
+├── Yes
+│   ├── Is the callee in the same microservice / same team?
+│   │   ├── Yes → Direct invoke is OK
+│   │   └── No → Use API Gateway between them (proper API contract)
+│   │
+│   └── Is this the VPC proxy pattern (cold-start optimization)?
+│       └── Yes → Direct invoke is the right call
+│
+└── No (async is acceptable)
+    ├── Multi-step workflow with retries / error states?
+    │   └── Use Step Functions
+    │
+    ├── One event, multiple consumers?
+    │   └── Use SNS or EventBridge
+    │
+    ├── One producer, one consumer, durable delivery?
+    │   └── Use SQS
+    │
+    └── Pure code reuse, no AWS dependencies?
+        └── Shared library, not a separate Lambda
+```
+
+## Takeaways
+
+- Direct Lambda-to-Lambda invocation is an anti-pattern _most_ of the time, not always. The arguments against it - double billing, coupling, timeout cascades, manual retries - all have specific costs you can compute and weigh.
+- Sync direct invoke is fine when both functions are owned by the same team and live in the same service. The internal contract is yours to manage.
+- The VPC Proxy Pattern is the one case where direct invoke is _better_ than the alternatives - keeping the public-facing function outside the VPC saves cold-start time.
+- For everything else, pick the right alternative: SQS for async durable delivery, SNS for fan-out, EventBridge for cross-service routing, Step Functions for multi-step workflows.
+- Before reaching for any of the above, check whether the second Lambda needs to exist. If it has no AWS dependencies of its own, it's probably a library function in disguise.

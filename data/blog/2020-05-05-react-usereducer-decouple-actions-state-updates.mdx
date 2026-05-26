@@ -1,0 +1,274 @@
+---
+title: 'useReducer: A Mental Model for Decoupling Actions from State Updates'
+date: '2020-05-05'
+tags: ['react', 'hooks']
+summary: 'When to reach for useReducer over useState, and why. The Dan Abramov framing: dispatch tells the reducer what happened, the reducer decides how state changes - so the component never needs to know the update logic.'
+images: ['/static/thumbnails/react.png']
+draft: false
+---
+
+When I first started using React Hooks, I reached for `useState` for everything. It's the default mental model for state in a function component, and it works well for independent pieces of state.
+
+But I kept running into two recurring problems:
+
+1. When multiple state fields had to update together, my call sites kept embedding update logic that should have lived somewhere else.
+2. When effects needed to compute new state from old state, the dependency arrays accumulated more state than the effect was actually "using."
+
+Both problems point at the same root cause. `useState` couples _describing what happened_ with _deciding how state changes_. `useReducer` separates them.
+
+This post is the mental model that helped me figure out when to reach for `useReducer`, and why.
+
+---
+
+## TL;DR
+
+- `useReducer` decouples **what happened** (the action) from **how state changes** (the reducer).
+- The component dispatches actions; the reducer centralizes the update logic.
+- Reach for it when the state shape is non-trivial, multiple fields update together, or effects pick up too many state dependencies.
+- `dispatch`'s identity is **stable across renders**, so it never needs to be listed in an effect's dependency array.
+
+---
+
+## The Problem `useReducer` Solves
+
+Consider a counter that tracks both `count` and `step`. With `useState`, you end up with two state slots and update logic spread across every call site:
+
+```jsx
+function Counter() {
+  const [count, setCount] = useState(0)
+  const [step, setStep] = useState(1)
+
+  function handleTick() {
+    setCount((c) => c + step)
+  }
+
+  function handleStepChange(e) {
+    setStep(Number(e.target.value))
+  }
+
+  function handleReset() {
+    setCount(0)
+    setStep(1)
+  }
+
+  return (
+    <div>
+      <p>
+        Count: {count} (step: {step})
+      </p>
+      <button onClick={handleTick}>Tick</button>
+      <button onClick={handleReset}>Reset</button>
+      <input value={step} onChange={handleStepChange} />
+    </div>
+  )
+}
+```
+
+Two things are worth noticing:
+
+1. **`handleTick` reads `step` from the render scope** to compute the next count. If "tick" later moves into an effect, the effect needs `step` as a dependency.
+2. **`handleReset` calls two setters in sequence.** That's two re-renders, and the two updates are conceptually one - "reset to initial state" - but the relationship is hidden in the call site.
+
+Both issues compound as the state shape grows.
+
+---
+
+## The Shape of `useReducer`
+
+`useReducer` has three pieces:
+
+```jsx
+const [state, dispatch] = useReducer(reducer, initialState)
+```
+
+- **`state`** is the current state value - whatever shape you want, usually an object.
+- **`dispatch`** is a function you call with an action: `dispatch({ type: 'tick' })`.
+- **`reducer`** is a pure function with the signature `(state, action) => newState`. React passes the current state and the dispatched action, and uses the return value as the next state.
+
+The reducer is just a plain function. It usually lives outside the component:
+
+```jsx
+const initialState = { count: 0, step: 1 }
+
+function reducer(state, action) {
+  switch (action.type) {
+    case 'tick':
+      return { ...state, count: state.count + state.step }
+    case 'setStep':
+      return { ...state, step: action.step }
+    case 'reset':
+      return initialState
+    default:
+      throw new Error(`Unknown action: ${action.type}`)
+  }
+}
+```
+
+The Counter from above, rewritten:
+
+```jsx
+function Counter() {
+  const [state, dispatch] = useReducer(reducer, initialState)
+  const { count, step } = state
+
+  return (
+    <div>
+      <p>
+        Count: {count} (step: {step})
+      </p>
+      <button onClick={() => dispatch({ type: 'tick' })}>Tick</button>
+      <button onClick={() => dispatch({ type: 'reset' })}>Reset</button>
+      <input
+        value={step}
+        onChange={(e) => dispatch({ type: 'setStep', step: Number(e.target.value) })}
+      />
+    </div>
+  )
+}
+```
+
+The call sites are no longer doing arithmetic or composition. They just say _what happened_.
+
+---
+
+## Actions Are an Abstraction Boundary
+
+This is the part of the model that took me the longest to internalize.
+
+When the component dispatches `{ type: 'tick' }`, it has said _what happened_ in the UI - the user wanted to advance the counter by one step. The component does not need to know:
+
+- That a tick means `count + step`
+- That `step` exists at all
+- That `reset` involves restoring two fields
+
+All of that lives inside the reducer.
+
+This means you can change how state updates without touching any call site. If "tick" later means "advance by `step * 2`" or "advance only if `count < 100`", you change the reducer - and only the reducer. The call sites are unchanged.
+
+It also means you can read the reducer in isolation and see _every way_ state can change. With scattered `setState` calls, that knowledge is distributed across the component.
+
+---
+
+## `useReducer` and Effects: The Decoupling Benefit
+
+The second motivation for reaching for `useReducer` is effects. When an effect needs to update state based on the current state, you end up with two bad options:
+
+- **Read the current state inside the effect** and list it as a dependency - the effect tears down and re-runs on every change.
+- **Lie about the dependencies** - stale state, bugs.
+
+`useReducer` is the third option. The effect doesn't read state at all - it dispatches an action, and the reducer reads the current state on its own.
+
+```jsx
+function Counter() {
+  const [state, dispatch] = useReducer(reducer, initialState)
+  const { count, step } = state
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      dispatch({ type: 'tick' })
+    }, 1000)
+    return () => clearInterval(id)
+  }, [dispatch]) // dispatch's identity is stable - this never re-runs
+
+  return <h1>{count}</h1>
+}
+```
+
+The effect has no state dependencies. It calls `dispatch({ type: 'tick' })` once a second; the reducer reads `state.step` and computes the next `state.count`. The interval is set up once and torn down at unmount.
+
+React guarantees `dispatch`'s identity is stable across renders, so it can either be listed in the dependency array (with no churn) or safely omitted.
+
+For the broader mental model around effects and dependencies, see [Understanding useEffect: Each Render Has Its Own Props, State, and Effects](/blog/react-state-rerender-useeffect).
+
+---
+
+## When to Use `useReducer` vs `useState`
+
+`useState` is the right default. Reach for `useReducer` when one or more of these are true:
+
+- **The state shape has multiple related fields** that frequently update together - `{ count, step }`, `{ user, loading, error }`, form state with many inputs.
+- **The next state depends on current state in non-trivial ways.** A single `setCount(c => c + 1)` is fine for `useState`. Computing the next state from three current fields with branching logic is reducer territory.
+- **The same state is updated from many call sites.** Centralizing the logic in a reducer means future changes happen in one place.
+- **Effects are accumulating too many state dependencies.** If your dependency array keeps growing because the effect needs to read state, dispatch-an-action lets the effect stay free of state.
+- **You want to be able to read all the ways state can change in one place.** A reducer is that place.
+
+The flip side: if your state is one or two independent values that don't interact, `useState` is simpler. Don't reach for `useReducer` just because the codebase has reducers elsewhere.
+
+---
+
+## Common Patterns
+
+### Lazy Initial State
+
+`useReducer` takes an optional third argument - a function that computes the initial state from an `initialArg`. The function only runs on the first render, which matters when computing initial state is expensive.
+
+```jsx
+function init(initialCount) {
+  return { count: initialCount, step: 1 }
+}
+
+function Counter({ initialCount }) {
+  const [state, dispatch] = useReducer(reducer, initialCount, init)
+  // ...
+}
+```
+
+### Throw on Unknown Actions
+
+Always handle the default case in the reducer:
+
+```jsx
+function reducer(state, action) {
+  switch (action.type) {
+    case 'tick':
+      return { ...state, count: state.count + state.step }
+    default:
+      throw new Error(`Unknown action: ${action.type}`)
+  }
+}
+```
+
+Throwing surfaces typos and stale dispatch calls at the moment they happen, instead of silently returning the existing state and leaving you to debug why the UI didn't update.
+
+### Discriminated Union Actions (TypeScript)
+
+When you type the action with a discriminated union, TypeScript narrows `action` inside each `case` of the reducer's switch. `action.step` is only available in the `setStep` branch; the others can't accidentally read it. Typos in `type` strings become compile errors:
+
+```ts
+type Action =
+  | { type: 'tick' }
+  | { type: 'setStep'; step: number }
+  | { type: 'reset' }
+
+type State = { count: number; step: number }
+
+function reducer(state: State, action: Action): State {
+  switch (action.type) {
+    case 'tick':
+      return { ...state, count: state.count + state.step }
+    case 'setStep':
+      return { ...state, step: action.step } // action.step is `number` here
+    case 'reset':
+      return initialState
+  }
+}
+```
+
+The exhaustiveness check is also free - if you add a new action variant and forget to handle it, TypeScript complains about the missing case.
+
+---
+
+## The Big Idea
+
+If I had to compress all of this down to one sentence:
+
+> Dispatch tells the reducer _what happened_. The reducer decides _how state changes_. The component never needs to know the update logic.
+
+When I follow that, the call sites get simpler, effects stop accumulating dependencies, and changes to state behavior happen in one place instead of scattered across the component.
+
+---
+
+## Further Reading
+
+- [Understanding useEffect: Each Render Has Its Own Props, State, and Effects](/blog/react-state-rerender-useeffect) - the sibling mental model for effects, which the dispatch-an-action pattern in this post complements.
+- [Dan Abramov - A Complete Guide to useEffect](https://overreacted.io/a-complete-guide-to-useeffect/) - the article that originally shaped the framing here.

@@ -295,6 +295,8 @@ The effect no longer needs to read `count` or `step`. It just dispatches an _act
 
 This decouples "what happened" from "how state changes," which is what lets the effect stay free of state dependencies.
 
+For a deeper treatment of when and why to use `useReducer`, see [useReducer: A Mental Model for Decoupling Actions from State Updates](/blog/react-usereducer-decouple-actions-state-updates).
+
 ### Strategy 3: Move the Function Into the Effect
 
 If a helper function is only used inside an effect, move it _into_ the effect. That removes it from the render scope and from the dependency list:

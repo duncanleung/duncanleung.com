@@ -1,0 +1,334 @@
+---
+title: 'Understanding the Browser Rendering Pipeline: Layout vs Paint vs Composite'
+date: '2020-05-05'
+tags: ['performance', 'css', 'DOM']
+summary: 'How the browser turns CSS changes into pixels - the five stages of the render pipeline, why some CSS properties trigger the full pipeline and others skip most of it, and how to avoid jank by understanding which path your changes take.'
+images: ['/static/thumbnails/programming.png']
+draft: false
+---
+
+Animating an element's `left` property is janky. Animating its `transform: translateX(...)` is smooth. The two look like they do the same thing, but they hit very different paths through the browser's render pipeline.
+
+This post walks through that pipeline - the five stages between a CSS change and a pixel on screen - and explains which CSS properties trigger the full pipeline, which ones skip most of it, and how to write code that stays in the cheap path.
+
+## The 60fps Budget
+
+To render at 60 frames per second, the browser has:
+
+```text
+1000ms / 60fps = 16.6ms per frame
+```
+
+The browser itself uses some of that budget for its own work, which leaves roughly **10ms** of headroom for JavaScript and rendering. If a single frame's work exceeds that budget, the browser misses the next vsync and drops a frame. Strung together, dropped frames are what users perceive as jank.
+
+The point of understanding the render pipeline is to keep each frame's work under that budget.
+
+## The Render Pipeline
+
+When something changes on the page, the browser walks through up to five stages to get from the change to the screen:
+
+```text
+JavaScript > Style > Layout > Paint > Composite
+```
+
+- **JavaScript** - the script that triggered the visual change (animating an element, adding a node, mutating a class). CSS animations and transitions can also initiate this stage without any JS.
+- **Style calculations** - the browser figures out which CSS rules apply to which elements (matching selectors like `.headline` or `.nav > .nav__item`), then resolves the final styles for each element.
+- **Layout** - the browser calculates how much space each element takes up and where it sits on screen. One element can affect many: changing the width of `<body>` cascades down to children.
+- **Paint** - the browser fills in pixels for each visual property (text, colors, images, borders, shadows). It paints onto multiple layers.
+- **Composite** - the browser combines those layers onto the screen in the correct order so overlapping elements render correctly.
+
+Every visual change goes through some prefix of these stages. The shorter the prefix, the cheaper the change.
+
+## Three Pipeline Paths
+
+Which stages run depends on which CSS property you change. There are three paths.
+
+### Path 1: Layout Properties (Full Pipeline)
+
+Changing a property that affects an element's geometry forces the browser to re-run layout, then paint, then composite.
+
+```text
+JS / CSS > Style > Layout > Paint > Composite
+```
+
+Layout-triggering properties include:
+
+- `width`, `height`
+- `top`, `left`, `right`, `bottom`
+- `padding`, `margin`, `border`
+- `font-size`
+- `display`
+
+```css
+.box {
+  width: 20px;
+  height: 20px;
+}
+
+/* Triggers Layout - the box's geometry changed */
+.box--expanded {
+  width: 200px;
+  height: 350px;
+}
+```
+
+Layout is the expensive stage. The browser may have to re-flow many other elements whose positions depend on this one.
+
+### Path 2: Paint Properties (Skip Layout)
+
+A property that changes how something looks but not where it sits skips layout entirely.
+
+```text
+JS / CSS > Style >        > Paint > Composite
+```
+
+Paint-only properties include:
+
+- `color`
+- `background-image`, `background-color`
+- `box-shadow`
+- `border-radius`
+
+```css
+.box {
+  background: #fff;
+}
+
+/* Triggers Paint but not Layout */
+.box--highlighted {
+  background: #ffeb3b;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+}
+```
+
+Cheaper than layout, but the browser still has to repaint the affected pixels.
+
+### Path 3: Composite Properties (Skip Layout and Paint)
+
+A few properties can be handled entirely by the GPU at the composite stage. The browser doesn't need to recalculate geometry or repaint pixels - it just transforms the existing layer.
+
+```text
+JS / CSS > Style >        >       > Composite
+```
+
+Composite-only properties:
+
+- `transform` (`translate`, `scale`, `rotate`, `skew`, `matrix`)
+- `opacity`
+
+```css
+.box {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+/* Triggers Composite only - cheapest path */
+.box--moved {
+  transform: translateX(100px);
+  opacity: 0.5;
+}
+```
+
+This is the cheapest and most desirable path for animations and scroll-driven effects.
+
+## Why `transform` Beats `left` / `top`
+
+The two snippets below look like they do the same thing - move a box 100px to the right. They hit very different pipeline paths.
+
+```css
+/* Triggers Layout > Paint > Composite every frame */
+.move-with-left {
+  position: relative;
+  left: 0;
+  transition: left 300ms;
+}
+.move-with-left:hover {
+  left: 100px;
+}
+
+/* Triggers Composite only - smooth */
+.move-with-transform {
+  transform: translateX(0);
+  transition: transform 300ms;
+}
+.move-with-transform:hover {
+  transform: translateX(100px);
+}
+```
+
+Animating `left` forces the browser to:
+
+1. Recalculate the element's position
+2. Re-flow any siblings whose position might depend on it
+3. Repaint the affected pixels
+4. Composite the final layers
+
+Every frame. At 60fps, that's 60 layout passes per second.
+
+Animating `transform` lets the browser:
+
+1. Skip layout (the element's box hasn't moved in the layout tree)
+2. Skip paint (the painted pixels are the same)
+3. Just composite the existing layer at a new position on the GPU
+
+This is the single most important pipeline optimization to internalize. Anywhere you have a choice between a layout-triggering property and a composite-only one, pick the composite-only version.
+
+## Optimizing Style Calculations
+
+Style calculation cost is driven by two things: how complex your selectors are, and how many elements they apply to.
+
+```css
+/* BAD: Complex selector
+   Browser must know about all siblings to compute :nth-last-child */
+.box:nth-last-child(-n + 1) .title {
+  color: red;
+}
+
+/* BETTER: Class-centric */
+.final-box-title {
+  color: red;
+}
+```
+
+The fix is to use class-centric naming methodologies like [BEM](http://getbem.com/) and keep selectors shallow. The browser can match `.final-box-title` with a single lookup. Matching `:nth-last-child` requires traversing the element's siblings.
+
+Style calculations get triggered whenever the DOM changes:
+
+- Adding or removing elements
+- Changing attributes or classes
+- Animations that update class lists
+
+## Optimizing Layout
+
+Layout is the most expensive stage. Avoid triggering it when you can, and make it cheap when you can't.
+
+The high-level rules:
+
+- Reduce the number of elements that need layout. The more elements in the layout tree, the more work each layout pass does.
+- Use modern layout models. Flexbox and Grid are typically faster than float-based layouts because the browser can reason about them more directly.
+- Avoid **forced synchronous layout** (covered next).
+- Avoid **layout thrashing** (covered after that).
+
+## Forced Synchronous Layout
+
+The browser batches style changes and runs layout once per frame. Reading a layout property in JavaScript breaks that batching - the browser is forced to run layout immediately so it can give you an accurate value.
+
+```javascript
+// Bad - forces an immediate layout
+box.style.width = '200px' // write (queued)
+const width = box.offsetWidth // read (forces layout flush NOW)
+```
+
+The `offsetWidth` read can't return a stale value, so the browser has to flush the pending write and recompute layout before answering. You just turned a batched layout into a synchronous one.
+
+The fix is to **read first, then write**:
+
+```javascript
+// Good - read before write
+const width = box.offsetWidth // read (uses last frame's layout)
+box.style.width = width + 10 + 'px' // write (queued, runs in next frame)
+```
+
+The properties and methods that force layout include:
+
+- `offsetTop`, `offsetLeft`, `offsetWidth`, `offsetHeight`
+- `clientTop`, `clientLeft`, `clientWidth`, `clientHeight`
+- `scrollTop`, `scrollLeft`, `scrollWidth`, `scrollHeight`
+- `getBoundingClientRect()`
+- `getComputedStyle()`
+
+If you're reading any of these after a style write, you've forced a synchronous layout.
+
+## Layout Thrashing
+
+Layout thrashing is forced synchronous layout in a loop. Each iteration of the loop reads a layout property and writes a style change, forcing layout on every iteration.
+
+```javascript
+// Bad - layout thrashing
+// Each iteration: write -> forced layout -> read -> write -> forced layout ...
+for (const el of elements) {
+  el.style.width = el.offsetWidth + 10 + 'px'
+}
+```
+
+If `elements` has 100 entries, you've just run 100 synchronous layouts in a single frame.
+
+The fix is to batch all reads first, then run all writes:
+
+```javascript
+// Good - batched
+// Single layout pass for all reads, then a batch of writes
+const widths = elements.map((el) => el.offsetWidth)
+elements.forEach((el, i) => {
+  el.style.width = widths[i] + 10 + 'px'
+})
+```
+
+The reads happen against the last frame's layout (cheap). The writes are queued and the browser handles them as one layout pass at the end of the frame.
+
+## Layer Promotion with `will-change`
+
+Composite-only properties are cheap because the element has its own GPU layer that can be transformed independently. By default, the browser decides which elements get their own layer. You can hint that an element will change so the browser promotes it ahead of time.
+
+```css
+.animated-box {
+  will-change: transform;
+}
+```
+
+This tells the browser "I'm about to animate `transform` on this element - put it on its own layer now so the first frame of the animation isn't expensive".
+
+The older equivalent of this hint is `transform: translateZ(0)`. It works because `translateZ` forces the element onto a 3D rendering context, which requires its own layer. `will-change` is the modern, explicit way to do the same thing.
+
+```css
+/* Old promotion hack */
+.animated-box {
+  transform: translateZ(0);
+}
+
+/* Modern equivalent */
+.animated-box {
+  will-change: transform;
+}
+```
+
+### When NOT to Use `will-change`
+
+`will-change` is not free. Each promoted layer costs GPU memory, and too many layers can hurt performance more than they help.
+
+A few rules of thumb:
+
+- Apply `will-change` to elements that **will actually change soon**, not to everything that might change someday.
+- Remove `will-change` after the animation completes - don't leave it on permanently.
+- Don't apply it to large numbers of elements at once. Promoting hundreds of elements eats memory.
+
+```javascript
+// Add the hint before the animation
+box.style.willChange = 'transform'
+
+box.addEventListener(
+  'transitionend',
+  () => {
+    // Remove it after - free the layer back up
+    box.style.willChange = 'auto'
+  },
+  { once: true }
+)
+```
+
+The mental model: `will-change` is a hint to the browser, not a command. Use it sparingly and only where you can demonstrate it helps.
+
+## Takeaways
+
+- The browser has roughly **10ms per frame** to do all rendering work. Stay under that budget or drop frames.
+- The render pipeline is **JavaScript > Style > Layout > Paint > Composite**. The earlier you can stop, the cheaper the change.
+- Layout-triggering properties (`width`, `top`, `left`, etc.) run the full pipeline. Paint-only properties (`color`, `background`, `box-shadow`) skip layout. Composite-only properties (`transform`, `opacity`) skip layout and paint.
+- For animations, prefer `transform` and `opacity` over `left`/`top`/`width`. The pipeline difference is the difference between smooth and janky.
+- **Forced synchronous layout** happens when you read a layout property after writing a style. Read first, then write.
+- **Layout thrashing** is forced synchronous layout in a loop. Batch all reads, then batch all writes.
+- `will-change` promotes an element to its own GPU layer ahead of time. Use it where it demonstrably helps, then remove it after the animation finishes.
+
+## Further Reading
+
+- [CSS Triggers](https://csstriggers.com/) - reference for which CSS properties trigger which pipeline stages
+- [Measuring Style Recalculation Cost](https://developers.google.com/web/fundamentals/performance/rendering/reduce-the-scope-and-complexity-of-style-calculations#measure_your_style_recalculation_cost)

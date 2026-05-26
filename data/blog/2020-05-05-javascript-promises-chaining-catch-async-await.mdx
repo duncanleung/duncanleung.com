@@ -415,6 +415,68 @@ promise
 // Success: p4
 ```
 
+## Promise.allSettled
+
+The "Opting Out of Fail-Fast" pattern above - wrapping each promise in a `.catch` so `Promise.all` always succeeds - is so common that ES2020 added a built-in for it: `Promise.allSettled`.
+
+`Promise.allSettled` takes an array of promises and resolves once every promise has settled - whether it fulfilled or rejected. It never rejects.
+
+The resolved value is an array of result objects, one per input promise. Each object describes how that promise settled:
+
+- `{ status: 'fulfilled', value: <the resolved value> }`
+- `{ status: 'rejected', reason: <the rejection reason> }`
+
+```javascript
+let p1 = new Promise(function (resolve, reject) {
+  setTimeout(resolve, 500, 'p1')
+})
+
+let p2 = new Promise(function (resolve, reject) {
+  setTimeout(reject, 300, 'p2 failed')
+})
+
+let p3 = new Promise(function (resolve, reject) {
+  setTimeout(resolve, 1000, 'p3')
+})
+
+Promise.allSettled([p1, p2, p3]).then(function (results) {
+  results.forEach(function (result) {
+    console.log(result)
+  })
+})
+
+// Output:
+// { status: 'fulfilled', value: 'p1' }
+// { status: 'rejected', reason: 'p2 failed' }
+// { status: 'fulfilled', value: 'p3' }
+```
+
+Because the array preserves input order, separating successes from failures is straightforward:
+
+```javascript
+Promise.allSettled([p1, p2, p3]).then(function (results) {
+  let fulfilled = results.filter((r) => r.status === 'fulfilled')
+  let rejected = results.filter((r) => r.status === 'rejected')
+
+  console.log('Successes:', fulfilled.map((r) => r.value))
+  console.log('Failures:', rejected.map((r) => r.reason))
+})
+
+// Output:
+// Successes: [ 'p1', 'p3' ]
+// Failures: [ 'p2 failed' ]
+```
+
+### When the Manual `.catch` Pattern Is Still Useful
+
+`Promise.allSettled` cleanly replaces the manual fail-fast workaround for most cases. The manual `.catch` pattern still has its uses:
+
+- **Custom recovery values per promise** - `p.catch(() => defaultUser)` lets downstream code treat failures as a benign fallback without inspecting a `{ status, value | reason }` discriminated object.
+- **Per-promise error transformation** - logging or normalizing the error at the point of failure rather than at the aggregation site.
+- **Flat result arrays** - when downstream code expects `Array<T>` instead of `Array<{ status, value | reason }>`.
+
+The rule of thumb: if you only need to know which calls succeeded and which failed, use `Promise.allSettled`. If you need to substitute a different value per failed promise, the manual `.catch` pattern is still the cleaner tool.
+
 ## Promise.race
 
 `Promise.race` returns a new promise that settles - resolved or rejected - as soon as the first promise in the array settles. The rest are ignored.
@@ -620,5 +682,5 @@ The rule of thumb: if two `await`s don't depend on each other's results, they pr
 - A function that can return a promise should _always_ return a promise. Use `Promise.resolve` / `Promise.reject` to wrap synchronous branches.
 - Every `.then` returns a new promise. The `.catch` you attach catches errors from the promise it's chained to - not the original one.
 - A `.then` with no error callback passes rejections through. Errors thrown inside a `then` callback also propagate down the chain.
-- `Promise.all` is fail-fast. To keep going past a failure, attach a `.catch` to each promise before passing them in.
+- `Promise.all` is fail-fast. To keep going past a failure, attach a `.catch` to each promise before passing them in, or use `Promise.allSettled` to get a structured result for every promise without ever rejecting.
 - `async / await` is the same model dressed up with synchronous-looking syntax. Use `try / catch` for errors, and `Promise.all` to run independent awaits in parallel.

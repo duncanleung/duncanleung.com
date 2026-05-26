@@ -7,34 +7,96 @@ images: ['/static/thumbnails/serverless.png']
 draft: false
 ---
 
-Almost every Serverless Framework tutorial starts the same way: create an IAM user, give it `AdministratorAccess`, plug the access keys into `~/.aws/credentials`, and run `serverless deploy`. That works, and most projects never move beyond it.
+When you first set up a project with Serverless Framework, most tutorials tell you to create an IAM user with `AdministratorAccess` and plug the access keys into `~/.aws/credentials`:
 
-For production, it's a problem. The IAM user that the Serverless Framework CLI uses to deploy can - if compromised - do anything in your AWS account. The principle of least privilege says that user should only have the permissions it actually needs to deploy your specific service. The hard part is figuring out what those permissions are.
+```bash
+$ aws configure --profile serverless-deployer
+AWS Access Key ID: AKIA...
+AWS Secret Access Key: ...
+```
 
-There are two practical approaches I've used: a **bottom-up** approach where you start with nothing and add permissions when deploys fail, and a **top-down** approach where you start with admin in a dev account and scope down based on what was actually used. The second is the one that gets glossed over in most write-ups, so I want to walk through both.
+```yaml
+# serverless.yml
+provider:
+  name: aws
+  profile: serverless-deployer
+```
+
+This works, but the IAM user used to run `sls deploy` - if compromised - can do anything in your AWS account. For a production account, that's a problem.
+
+The principle of least privilege says this user should only have the permissions it actually needs to deploy your service. The hard part is figuring out what those permissions are.
+
+There are two practical approaches I've used:
+
+1. **Bottom-up** - start with no permissions, deploy, read the error, add the missing permission, repeat
+2. **Top-down** - start with admin in an isolated dev account, then derive a scoped policy from observed CloudTrail activity
+
+The second is the one that gets glossed over in most write-ups, so I want to walk through both.
 
 ## Two IAM Contexts You're Juggling
 
-Before getting into either approach, it helps to be precise about which IAM principal we're talking about. With Serverless Framework there are two:
+Before either approach, it helps to be precise about which IAM principal we're talking about. With Serverless Framework there are two:
 
-- **The Framework user** - the IAM user (or role) whose credentials the Serverless Framework CLI uses to run `sls deploy`, `sls remove`, `sls logs`, etc. This is the one referenced by the `profile` property in the `provider` block of your `serverless.yml`, or by the default profile in `~/.aws/credentials`.
-- **The Function execution role** - the IAM role attached to each Lambda function at runtime, which controls what _the function itself_ can access (DynamoDB tables, S3 buckets, other AWS services).
+```yaml
+# serverless.yml
+provider:
+  name: aws
+  profile: serverless-deployer # <-- The Framework user (deploy time)
+  iamRoleStatements: # <-- The function execution role (runtime)
+    - Effect: Allow
+      Action:
+        - dynamodb:GetItem
+      Resource: !GetAtt OrdersTable.Arn
+```
 
-These two are commonly conflated, but they're solving different problems. This post is about the **Framework user** - the deploy-time permissions. I'll mention the execution role at the end since it's a related but separate concern.
+- **The Framework user** is the IAM user (or role) whose credentials the Serverless Framework CLI uses to run `sls deploy`, `sls remove`, `sls logs`, etc. It's the user referenced by the `profile` property, or by the `default` profile in `~/.aws/credentials`.
+- **The function execution role** is the IAM role attached to each Lambda function at runtime, which controls what _the function itself_ can access (DynamoDB tables, S3 buckets, other AWS services).
+
+These two are commonly conflated, but they're solving different problems. This post is about the **Framework user** - the deploy-time permissions. I'll cover the execution role briefly at the end since it's the natural complement.
 
 ## Why the Deploy Footprint Is So Wide
 
-It might seem like the Framework user only needs Lambda permissions. It doesn't. To deploy a typical service, the Framework needs to interact with a surprising number of AWS services:
+It might seem like the Framework user only needs Lambda permissions. It doesn't. To deploy a typical service, the Framework needs to interact with a surprising number of AWS services.
 
-- **CloudFormation** - to create, update, and delete the stack that represents your service
-- **S3** - to create the deployment bucket and upload your function `.zip` artifacts
-- **CloudWatch Logs** - to create the log group for each Lambda function
-- **Lambda** - to create the functions themselves, versions, aliases, and event source mappings
-- **IAM** - to create the function execution role(s)
+The minimum permissions for a basic Serverless Framework deploy look something like this:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:*",
+        "s3:*",
+        "logs:*",
+        "iam:*",
+        "apigateway:*",
+        "lambda:*",
+        "ec2:DescribeSecurityGroups",
+        "ec2:DescribeSubnets",
+        "ec2:DescribeVpcs",
+        "events:*"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+This is what most "narrow IAM policy" tutorials give you. It's narrower than `AdministratorAccess`, but it still uses wildcards everywhere and grants full access to seven AWS services.
+
+The reason is that the deploy footprint really is that wide:
+
+- **CloudFormation** - create, update, delete the stack that represents your service
+- **S3** - create the deployment bucket, upload your function `.zip` artifacts
+- **CloudWatch Logs** - create the log group for each Lambda function
+- **Lambda** - create the functions, versions, aliases, event source mappings
+- **IAM** - create the function execution role(s)
 - **API Gateway** - if you have any HTTP events
-- **Whatever else you declared** - DynamoDB tables, SNS topics, SQS queues, EventBridge rules, etc.
-- **The reverse of all of the above** - to handle rollbacks and `sls remove`. If your user can create a DynamoDB table but not delete it, a failed deploy will leave you with an orphaned table and a stuck stack.
-- **Every plugin** - extensibility is one of the Framework's strengths, and each plugin you install adds its own permission requirements.
+- **Whatever else you declared** - DynamoDB tables, SNS topics, SQS queues, EventBridge rules
+- **The reverse of all of the above** - to handle rollbacks and `sls remove`. If your user can create a DynamoDB table but not delete it, a failed deploy leaves you with an orphaned table and a stuck stack.
+- **Every plugin** - each plugin you install adds its own permission requirements.
 
 That's why most tutorials default to `AdministratorAccess`. It's wide, but it works on the first try.
 
@@ -42,18 +104,43 @@ That's why most tutorials default to `AdministratorAccess`. It's wide, but it wo
 
 The most rigorous approach is to start with a Framework user that has no permissions, attempt to deploy, read the error, add the missing permission, and repeat. Each permission added is one you have demonstrably needed.
 
-The procedure looks like this:
+Start with an IAM user that has no inline or attached policies:
 
-1. Create a dedicated IAM user with no inline or attached policies.
-2. Configure your AWS CLI profile with that user's credentials.
-3. Run `sls deploy`.
-4. Read the error message. It will name the action and resource that was denied.
-5. Add an `Allow` for that exact action (and ideally a scoped resource ARN) to a custom policy on the user.
-6. Re-run `sls deploy`.
-7. Repeat until the deploy succeeds.
-8. Run `sls remove` against a throwaway stack to capture the delete-side permissions too. Otherwise you'll discover them painfully later when a rollback fails.
+```bash
+$ aws iam create-user --user-name serverless-deployer-strict
+$ aws iam create-access-key --user-name serverless-deployer-strict
+```
 
-The output is a policy document that mentions only the actions your service actually needs.
+Configure that user's credentials in `~/.aws/credentials` and run `sls deploy`. You'll get an error like:
+
+```text
+Serverless Error ---------------------------------------
+
+User: arn:aws:iam::123456789012:user/serverless-deployer-strict
+is not authorized to perform: cloudformation:DescribeStacks
+on resource: arn:aws:cloudformation:us-east-1:123456789012:stack/my-service-dev/*
+```
+
+Read the action and resource from the error, then add an `Allow` for that exact action to a custom policy on the user:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["cloudformation:DescribeStacks"],
+      "Resource": "arn:aws:cloudformation:us-east-1:123456789012:stack/my-service-*/*"
+    }
+  ]
+}
+```
+
+Re-run `sls deploy`. Read the next error. Add the next permission. Repeat until the deploy succeeds.
+
+Then run `sls remove` against a throwaway stack to capture the delete-side permissions too. Otherwise you'll discover them painfully later when a rollback fails halfway through.
+
+The output is a policy document that only mentions the actions your service actually needed.
 
 ### Why It Works
 
@@ -63,7 +150,7 @@ You never have to guess. Every permission in the final policy is one you saw the
 
 It's slow and painful. A few things to know going in:
 
-- **Error messages don't always cleanly map to the missing permission.** CloudFormation in particular tends to roll up underlying authorization failures into generic stack errors. You may need to dig into the CloudFormation events tab to find the actual denied action.
+- **Error messages don't always cleanly map to the missing permission.** CloudFormation in particular tends to roll up underlying authorization failures into generic stack errors. You may need to dig into the CloudFormation stack's Events tab to find the actual denied action.
 - **Rollback permissions are easy to miss.** A first-time deploy only exercises the create actions. You also need the `Delete*` and `Update*` variants for the same resources.
 - **Plugins compound the work.** Every plugin adds its own permission set, often undocumented.
 - **It doesn't scale across services.** Each new service likely needs a new round of trial-and-error unless you generalize the policy.
@@ -74,38 +161,178 @@ This approach is the most defensible, but the most expensive in engineer time.
 
 The pattern I've found more practical comes from Yan Cui's _Production Ready Serverless_ material. The idea: instead of starting with nothing and adding, start with admin _in an isolated dev account_ and observe what actually gets used.
 
-The procedure:
+### Step 1: Set Up Account-Level Separation
 
-1. **Set up account-level separation.** You need at least two AWS accounts - typically a dev account and a prod account. AWS Organizations makes this manageable. This is a hard prerequisite. The pattern only works if compromise of the dev deployer cannot affect prod.
-2. **Create a dedicated deployer IAM user in the dev account.** Give it `AdministratorAccess`. Do _not_ use this user for anything other than running `sls deploy` and `sls remove`.
-3. **Have developers also use admin in the dev account**, but with their own personal users. They can freely experiment - the dev account is the sandbox.
-4. **Run real deploys with the dedicated deployer.** Over a representative period (days to weeks, depending on how often you deploy), exercise the full lifecycle: initial deploys, updates, plugin additions, removals.
-5. **Use CloudTrail Event History to extract the actually-used actions.** Filter Event History by the dedicated deployer's user name. CloudTrail will show every AWS API action that user made - with the service, the action name, and the resource ARN. Aggregate this into a policy document.
-6. **Apply the resulting policy to a separate deployer user in the prod account.** That user only has the permissions you observed the deployer needing - nothing more.
+You need at least two AWS accounts - typically a dev account and a prod account. AWS Organizations makes this manageable. This is a hard prerequisite. The pattern only works if compromise of the dev deployer cannot affect prod.
+
+### Step 2: Create a Dedicated Deployer User in the Dev Account
+
+Create a dedicated IAM user in the dev account whose _only_ purpose is to run `sls deploy` and `sls remove`. Give it `AdministratorAccess`:
+
+```bash
+$ aws iam create-user --user-name serverless-deployer
+$ aws iam attach-user-policy \
+    --user-name serverless-deployer \
+    --policy-arn arn:aws:iam::aws:policy/AdministratorAccess
+```
+
+Do _not_ use this user for anything else. Developers should use their own personal IAM users when poking around in the dev account via the Console or CLI - we want the deployer's CloudTrail history to stay clean.
+
+### Step 3: Run Real Deploys With the Dedicated Deployer
+
+Configure CI (or your local profile) to use this user when running Serverless Framework commands:
+
+```yaml
+# serverless.yml
+provider:
+  name: aws
+  profile: serverless-deployer
+```
+
+Over a representative period - days to weeks, depending on how often you deploy - exercise the full lifecycle: initial deploys, updates, plugin additions, rollbacks, `sls remove`.
+
+### Step 4: Extract Actually-Used Actions From CloudTrail
+
+CloudTrail logs every AWS API action against your account. Filter Event History by the dedicated deployer's user name:
+
+```bash
+$ aws cloudtrail lookup-events \
+    --lookup-attributes AttributeKey=Username,AttributeValue=serverless-deployer \
+    --max-results 50
+```
+
+Each event in the result names the service, the action, and the resource ARN that was touched. Aggregate these into a deduplicated list of `<service>:<Action>` pairs:
+
+```text
+cloudformation:CreateChangeSet
+cloudformation:DescribeChangeSet
+cloudformation:DescribeStackEvents
+cloudformation:DescribeStacks
+cloudformation:ExecuteChangeSet
+cloudformation:GetTemplate
+cloudformation:UpdateStack
+cloudformation:ValidateTemplate
+iam:CreateRole
+iam:DeleteRole
+iam:GetRole
+iam:PassRole
+iam:PutRolePolicy
+lambda:CreateFunction
+lambda:DeleteFunction
+lambda:GetFunction
+lambda:GetFunctionConfiguration
+lambda:UpdateFunctionCode
+lambda:UpdateFunctionConfiguration
+logs:CreateLogGroup
+logs:DeleteLogGroup
+logs:DescribeLogGroups
+s3:CreateBucket
+s3:DeleteBucket
+s3:DeleteObject
+s3:GetBucketLocation
+s3:GetObject
+s3:ListBucket
+s3:PutObject
+...
+```
+
+Build that list into a policy document, scoped to the resource ARNs of your service:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:CreateChangeSet",
+        "cloudformation:DescribeChangeSet",
+        "cloudformation:DescribeStackEvents",
+        "cloudformation:DescribeStacks",
+        "cloudformation:ExecuteChangeSet",
+        "cloudformation:GetTemplate",
+        "cloudformation:UpdateStack",
+        "cloudformation:ValidateTemplate"
+      ],
+      "Resource": "arn:aws:cloudformation:*:123456789012:stack/my-service-*/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "lambda:CreateFunction",
+        "lambda:DeleteFunction",
+        "lambda:GetFunction",
+        "lambda:GetFunctionConfiguration",
+        "lambda:UpdateFunctionCode",
+        "lambda:UpdateFunctionConfiguration"
+      ],
+      "Resource": "arn:aws:lambda:*:123456789012:function:my-service-*"
+    }
+    // ... and so on
+  ]
+}
+```
+
+### Step 5: Apply the Derived Policy to the Prod Deployer
+
+Create a separate deployer user in the prod account, and attach the policy you derived from the dev observations:
+
+```bash
+$ aws iam create-user \
+    --user-name serverless-deployer-prod \
+    --profile prod-admin
+$ aws iam put-user-policy \
+    --user-name serverless-deployer-prod \
+    --policy-name ServerlessDeployerPolicy \
+    --policy-document file://serverless-deployer-policy.json \
+    --profile prod-admin
+```
+
+That prod user now has only the permissions you observed the deployer needing - nothing more.
 
 ### Why It Works
 
-You're not guessing what permissions are needed - you're observing what got used. And by isolating the "developer freely experimenting" persona from the "this user makes deployments" persona in the dev account, the deployer's CloudTrail history stays clean. The actions that show up under the deployer user really are the deploy-time actions, not the developers running ad-hoc CLI commands or testing things in the Console.
+You're not guessing what permissions are needed - you're observing what got used. And by isolating the "developer freely experimenting" persona from the "this user makes deployments" persona in the dev account, the deployer's CloudTrail history stays clean. The actions that show up under the deployer user really are the deploy-time actions, not the developers running ad-hoc CLI commands or testing in the Console.
 
 ### Trade-offs
 
-- **You need multi-account separation.** Without it, this entire pattern collapses - you'd be granting admin to the user who'll eventually have access to prod resources. AWS Organizations + Control Tower makes this easier than it used to be, but it's still infrastructure to set up.
+- **You need multi-account separation.** Without it, the entire pattern collapses - you'd be granting admin to the user who'll eventually have access to prod resources.
 - **You're over-permissive in dev.** Anyone with the deployer's credentials in the dev account has admin there. This is acceptable because the dev account holds no production data, but it has to be a real boundary - no cross-account roles that bridge dev and prod for that user.
 - **You might still miss some actions.** A short observation window only captures the actions that happened during that window. Build the policy after you've exercised the full lifecycle, including a `sls remove`, plugin installs, and at least one rollback scenario.
 
-### Why This Is Usually the Right Trade-off
+## Note: Per-Function Execution Roles
 
-It compromises a little security in the dev account (where the blast radius is contained) to remove most of the friction of figuring out the right policy. The prod deployer ends up with a real least-privilege policy, derived from observed behavior rather than guesswork. The dev account doesn't store production data, so admin there is acceptable in a way that admin in prod never is.
+Scoping the Framework user is half the story. Even with a perfectly tight deployer, your functions still run at runtime with whatever IAM role the Framework creates for them.
 
-## The Other Half: Per-Function Execution Roles
-
-Scoping the Framework user is half the story. Even with a perfectly tight deployer, your functions are still running at runtime with whatever IAM role the Framework creates for them.
-
-By default, Serverless Framework creates **one shared role** for all functions in a `serverless.yml`. That role gets the union of permissions declared in `provider.iamRoleStatements`. So if function A needs to write to S3 and function B needs to read from DynamoDB, both get both.
-
-That violates least privilege at runtime. The fix is the [`serverless-iam-roles-per-function`](https://www.npmjs.com/package/serverless-iam-roles-per-function) plugin, which lets you scope IAM statements to individual functions:
+By default, Serverless Framework creates **one shared role** for all functions in a `serverless.yml`. That role gets the union of permissions declared in `provider.iamRoleStatements`:
 
 ```yaml
+# serverless.yml - shared role (default)
+provider:
+  name: aws
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:PutItem
+        - dynamodb:GetItem
+      Resource: !GetAtt OrdersTable.Arn
+
+functions:
+  createOrder:
+    handler: handlers/createOrder.handler
+  readOrder:
+    handler: handlers/readOrder.handler
+```
+
+Here, both `createOrder` and `readOrder` get _both_ `PutItem` and `GetItem`. That violates least privilege at runtime.
+
+The fix is the [`serverless-iam-roles-per-function`](https://www.npmjs.com/package/serverless-iam-roles-per-function) plugin, which lets you scope IAM statements to individual functions:
+
+```yaml
+# serverless.yml - per-function roles
+plugins:
+  - serverless-iam-roles-per-function
+
 functions:
   createOrder:
     handler: handlers/createOrder.handler
@@ -113,8 +340,7 @@ functions:
       - Effect: Allow
         Action:
           - dynamodb:PutItem
-        Resource:
-          - !GetAtt OrdersTable.Arn
+        Resource: !GetAtt OrdersTable.Arn
 
   readOrder:
     handler: handlers/readOrder.handler
@@ -122,19 +348,19 @@ functions:
       - Effect: Allow
         Action:
           - dynamodb:GetItem
-        Resource:
-          - !GetAtt OrdersTable.Arn
+        Resource: !GetAtt OrdersTable.Arn
 ```
 
 `createOrder` gets only `PutItem`. `readOrder` gets only `GetItem`. Neither can do anything else.
 
-This is a runtime concern, not a deploy concern - it's about what a compromised function can do, not what a compromised deployer can do. But it's the natural complement to a tight Framework user policy. Both are necessary for a truly least-privilege serverless setup.
+This is a runtime concern, not a deploy concern - it's about what a compromised function can do, not what a compromised deployer can do. But it's the natural complement to a tight Framework user policy.
 
-## Optional: A Separate CloudFormation Deploy Role
+## Note: A Separate CloudFormation Deploy Role with `cfnRole`
 
 For an additional layer, you can tell the Framework to pass a dedicated CloudFormation role for the stack itself:
 
 ```yaml
+# serverless.yml
 provider:
   name: aws
   cfnRole: arn:aws:iam::123456789012:role/ServerlessCfnDeployRole
@@ -142,19 +368,49 @@ provider:
 
 When `cfnRole` is set, the Framework user only needs:
 
-- Permissions to submit the CloudFormation template (`cloudformation:*` scoped to the stack)
-- `iam:PassRole` for the CloudFormation role
-- S3 access to upload artifacts
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:CreateChangeSet",
+        "cloudformation:DescribeChangeSet",
+        "cloudformation:DescribeStackEvents",
+        "cloudformation:DescribeStacks",
+        "cloudformation:ExecuteChangeSet",
+        "cloudformation:UpdateStack",
+        "cloudformation:ValidateTemplate"
+      ],
+      "Resource": "arn:aws:cloudformation:*:123456789012:stack/my-service-*/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": "arn:aws:iam::123456789012:role/ServerlessCfnDeployRole"
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["s3:PutObject", "s3:GetObject", "s3:ListBucket"],
+      "Resource": [
+        "arn:aws:s3:::my-service-deployment-bucket",
+        "arn:aws:s3:::my-service-deployment-bucket/*"
+      ]
+    }
+  ]
+}
+```
 
 The CloudFormation role does the actual heavy lifting of creating the Lambda functions, IAM roles, API Gateway, etc.
 
-This is useful for shared deploy pipelines - multiple teams' deployers can each have minimal direct permissions, and the actual resource creation goes through scoped CloudFormation roles per project or per team. It combines well with attribute-based access control (ABAC) - for example, team A's CloudFormation role can be restricted to creating resources tagged `Team=A`.
+This is useful for shared deploy pipelines - multiple teams' deployers can each have minimal direct permissions, and the actual resource creation goes through scoped CloudFormation roles per project or per team. It combines well with attribute-based access control (ABAC) - team A's CloudFormation role can be restricted to creating resources tagged `Team=A`.
 
 ## Takeaways
 
 - The Framework user (deploy-time) and the function execution role (runtime) are two different IAM contexts. Both need to be scoped down independently.
 - The Framework's deploy footprint is wide: CloudFormation, S3, CloudWatch Logs, Lambda, IAM, API Gateway, plus whatever your `serverless.yml` declares, plus the delete-side of all of it for rollbacks.
 - **Bottom-up** scoping (start with nothing, add on deploy failures) is the most rigorous but slowest. Best when you have a single small service and unlimited patience.
-- **Top-down** scoping (admin deployer in an isolated dev account, then extract from CloudTrail Event History) is the more practical pattern at any real scale. It trades a little dev-account permissiveness for a real least-privilege prod deployer.
+- **Top-down** scoping (admin deployer in an isolated dev account, then extract actions from CloudTrail) is the more practical pattern at any real scale. It trades a little dev-account permissiveness for a real least-privilege prod deployer.
 - Pair a tight Framework user with `serverless-iam-roles-per-function` so each Lambda also runs with the minimum it needs.
 - For pipeline-style deploys, `cfnRole` lets you push the heavy permissions onto a dedicated CloudFormation role and keep the Framework user lean.

@@ -75,6 +75,8 @@ The rest of this section is about the sync case.
 
 Lambda bills you for the entire duration a function is running, including any time it spends idle waiting on an `await`. If Lambda A synchronously invokes Lambda B, you pay for both during the entire span B is running.
 
+Lambda duration is rounded up to the nearest 100ms - the billing granularity in effect at this date. The numbers below are picked as multiples of 100ms so the rounding stays invisible and the math reads cleanly. (AWS moved to 1ms billing in December 2020; the relative cost of sync chaining is unchanged under either rule.)
+
 ```text
 Lambda A timeline:
 [ 50ms processing ][ 500ms idle waiting on B ][ 50ms processing ]

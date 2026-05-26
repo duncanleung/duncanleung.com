@@ -236,6 +236,13 @@ s3:PutObject
 ...
 ```
 
+**A few CloudTrail caveats worth knowing before you rely on the output:**
+
+- **90-day retention.** Event History only keeps the last 90 days of management events. For a longer observation window, configure a trail that delivers events to S3.
+- **API limits.** `lookup-events` is throttled to 2 requests per second with a max of 50 results per page. Paginate with `--next-token`.
+- **S3 object operations are data events.** Serverless Framework uploads your function `.zip` to the deployment bucket via `s3:PutObject` - and that is a data event that will not appear in Event History unless you have configured a trail with S3 data events enabled. You may need to add `s3:PutObject`, `s3:GetObject`, and `s3:DeleteObject` on the deployment bucket by hand.
+- **The `cfnRole` option breaks this workflow.** This approach works because by default CloudFormation makes nested API calls (creating Lambda functions, IAM roles, log groups) under your user's credentials, so they show up under the deployer's username. If you configure `provider.cfnRole` in `serverless.yml` (covered later in this post), those nested calls are attributed to that role instead - CloudTrail filtered by the deployer's username will only show `cloudformation:*` calls.
+
 Build that list into a policy document, scoped to the resource ARNs of your service:
 
 ```json
@@ -405,6 +412,8 @@ When `cfnRole` is set, the Framework user only needs:
 The CloudFormation role does the actual heavy lifting of creating the Lambda functions, IAM roles, API Gateway, etc.
 
 This is useful for shared deploy pipelines - multiple teams' deployers can each have minimal direct permissions, and the actual resource creation goes through scoped CloudFormation roles per project or per team. It combines well with attribute-based access control (ABAC) - team A's CloudFormation role can be restricted to creating resources tagged `Team=A`.
+
+One caveat: using `cfnRole` is incompatible with the CloudTrail-based extraction workflow described above. With a service role configured, the nested resource-creation calls happen under the role's identity rather than the deployer's user, so filtering Event History by the deployer's username will only surface `cloudformation:*` calls. If you go this route, the deployer's policy is small and obvious enough to write directly without needing CloudTrail at all - it is the CloudFormation role itself that needs the wide set of resource permissions.
 
 ## Takeaways
 

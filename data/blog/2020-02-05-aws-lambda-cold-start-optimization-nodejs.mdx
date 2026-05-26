@@ -1,0 +1,330 @@
+---
+title: 'Reducing AWS Lambda Cold Start Latency in Node.js'
+date: '2020-02-05'
+tags: ['serverless', 'aws-lambda', 'performance']
+summary: 'A practical guide to reducing AWS Lambda cold start latency in Node.js - the anatomy of a cold start, six concrete optimizations from SDK tree-shaking to HTTP keep-alive, common myths (VPC and Layers), and when to reach for Provisioned Concurrency.'
+images: ['/static/thumbnails/serverless.png']
+draft: false
+---
+
+Cold starts are the most common Lambda performance complaint, and most "optimize your cold starts" posts dump techniques without explaining why each one helps. The result is a list of optimizations that all sound equally important - leaving you to guess which ones are worth the engineering time.
+
+This post takes a different approach. It walks through the anatomy of a cold start first - the four phases between request arrival and your handler running - then anchors each optimization technique to the specific phase it targets. The framing makes it obvious which optimizations are high-leverage and which are squeezing diminishing returns.
+
+## Anatomy of a Cold Start
+
+When a Lambda invocation arrives and no warm container is available, AWS goes through four phases before your code runs:
+
+```text
+1. Lambda service finds capacity
+   ├── locates a worker with enough headroom
+   └── pulls your deployment package if not cached
+
+2. Container initialization
+   ├── creates the firecracker microVM
+   └── sets up the execution environment
+
+3. Runtime initialization
+   ├── starts Node.js
+   └── loads the Lambda runtime bootstrap
+
+4. Handler module initialization
+   ├── parses your handler file
+   ├── runs all module-scope code
+   └── resolves all your `require()` calls
+```
+
+On a **warm start** - a second invocation arriving while the container is still alive - all four phases are skipped. The handler just runs.
+
+Most of your optimization power lives in **Phase 4**. Phases 1-3 are largely AWS's responsibility; you can influence them indirectly (deployment package size, runtime choice) but you don't have direct control. Phase 4 is your code running, which means it's yours to optimize.
+
+## What You Can and Can't Optimize
+
+Quick breakdown of leverage per phase:
+
+| Phase                  | Who controls it      | Your leverage                            |
+| ---------------------- | -------------------- | ---------------------------------------- |
+| 1. Find capacity       | AWS                  | Indirect (smaller package = faster pull) |
+| 2. Container init      | AWS                  | None                                     |
+| 3. Runtime init        | AWS + runtime choice | Choose Node.js (fast) over Java/.NET     |
+| 4. Handler module init | You                  | Direct - this is where the wins are      |
+
+The rest of this post focuses on Phase 4 optimizations, then covers the few Phase 1 levers that actually matter.
+
+## Optimization 1: Tree-Shake the AWS SDK
+
+The single most-common cold-start mistake is loading the entire `aws-sdk` package when your function only needs one service. Compare:
+
+```javascript
+// Loads the entire AWS SDK - every service, every operation
+const AWS = require('aws-sdk')
+
+const dynamodb = new AWS.DynamoDB.DocumentClient()
+
+module.exports.handler = async (event) => {
+  // ... DynamoDB code
+}
+```
+
+vs:
+
+```javascript
+// Loads only the DynamoDB client
+const DynamoDB = require('aws-sdk/clients/dynamodb')
+
+const dynamodb = new DynamoDB.DocumentClient()
+
+module.exports.handler = async (event) => {
+  // ... DynamoDB code
+}
+```
+
+The second version typically saves **100-300ms** of cold-start init time and cuts the bundle size from ~1.3MB to ~400KB. Each `aws-sdk/clients/<service>` path follows the same pattern - `aws-sdk/clients/s3`, `aws-sdk/clients/sqs`, `aws-sdk/clients/sns`, and so on.
+
+One detail worth knowing: the AWS Lambda Node.js runtime ships with `aws-sdk` v2 preinstalled. You don't have to bundle your own copy unless you want to pin a specific version - which you generally should for production, since AWS may quietly update the preinstalled version on you.
+
+## Optimization 2: Initialize Outside the Handler
+
+The Lambda container persists across invocations. Code in the **module scope** runs once when the container starts (cold start). Code in the **handler function** runs on every invocation (cold and warm).
+
+Move expensive initialization out of the handler:
+
+```javascript
+// ❌ Bad - creates a new client and reads SSM on every invocation
+module.exports.handler = async (event) => {
+  const DynamoDB = require('aws-sdk/clients/dynamodb')
+  const SSM = require('aws-sdk/clients/ssm')
+
+  const dynamodb = new DynamoDB.DocumentClient()
+  const ssm = new SSM()
+
+  const { Parameter } = await ssm.getParameter({ Name: '/app/config' }).promise()
+  const config = JSON.parse(Parameter.Value)
+
+  // ...
+}
+```
+
+```javascript
+// ✅ Good - clients and config fetched once per container
+const DynamoDB = require('aws-sdk/clients/dynamodb')
+const SSM = require('aws-sdk/clients/ssm')
+
+const dynamodb = new DynamoDB.DocumentClient()
+const ssm = new SSM()
+
+// This Promise resolves once per cold start and is reused on every warm invocation
+const configPromise = ssm
+  .getParameter({ Name: '/app/config' })
+  .promise()
+  .then((r) => JSON.parse(r.Parameter.Value))
+
+module.exports.handler = async (event) => {
+  const config = await configPromise
+  // ...
+}
+```
+
+The cold start pays the SSM cost once. Every subsequent warm invocation gets the cached `configPromise` for free.
+
+This applies to anything you do once per process - database connection pools, secret loading, JWT verification keys, SDK clients, parsed config files. If it's the same on every invocation, it belongs in module scope.
+
+## Optimization 3: Enable HTTP Keep-Alive
+
+This is the single most-overlooked Node.js Lambda optimization.
+
+By default, the AWS SDK v2 creates a new TCP connection for every API call. Each new connection costs a TLS handshake, which adds 10-50ms per warm invocation that talks to AWS. With keep-alive enabled, the SDK reuses connections across calls.
+
+Since AWS SDK v2.463.0 (June 2019), enabling keep-alive is a one-line environment variable:
+
+```yaml
+# serverless.yml
+provider:
+  name: aws
+  runtime: nodejs12.x
+  environment:
+    AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1'
+```
+
+Set that and your DynamoDB, S3, and other AWS calls share connections within a warm container. Per-call latency drops noticeably, especially for high-frequency DynamoDB workloads.
+
+This optimization affects warm invocations more than cold starts (the first call still pays the handshake), but it's the cheapest performance fix you can make and it costs nothing.
+
+## Optimization 4: Bundle With Webpack
+
+`serverless-webpack` runs Webpack over your function code as part of the deploy. The result is a bundled `.zip` artifact containing only the code paths your handler actually reaches:
+
+```bash
+$ yarn add -D serverless-webpack webpack
+```
+
+```yaml
+# serverless.yml
+plugins:
+  - serverless-webpack
+
+custom:
+  webpack:
+    webpackConfig: ./webpack.config.js
+    includeModules: true
+```
+
+```javascript
+// webpack.config.js
+const path = require('path')
+const slsw = require('serverless-webpack')
+
+module.exports = {
+  entry: slsw.lib.entries,
+  target: 'node',
+  mode: 'production',
+  resolve: { extensions: ['.js', '.json'] },
+  output: {
+    libraryTarget: 'commonjs',
+    path: path.join(__dirname, '.webpack'),
+    filename: '[name].js',
+  },
+}
+```
+
+Tree-shaking removes unused exports from your dependencies. The deployment package shrinks, Phase 1 (capacity / package pull) gets faster, and Phase 4 (module init) does less work because fewer files need to be parsed.
+
+The trade-off is deploy time. Webpack adds 10-30 seconds per function for any non-trivial project, and CI builds slow down across the board. Worth it for production, sometimes overkill for prototyping.
+
+## Optimization 5: Tune Memory Allocation
+
+Lambda allocates CPU proportionally to memory. A 128MB function gets a fraction of a core; a 1769MB function gets a full vCPU; larger sizes split work across cores. Counterintuitively, **higher memory is often cheaper** because the function finishes faster - and duration billing dwarfs the marginal cost of extra memory.
+
+Cold start init is especially CPU-bound, so bumping memory often cuts cold-start latency in half. The challenge is finding the sweet spot - too high and you're overpaying; too low and you're slow.
+
+Alex Casalboni's [`aws-lambda-power-tuning`](https://github.com/alexcasalboni/aws-lambda-power-tuning) is the right tool for this. It runs your function at multiple memory sizes, measures duration and cost, and reports the optimum:
+
+```text
+128 MB  →  3200ms  →  $0.00000067 per invocation
+256 MB  →  1600ms  →  $0.00000067 per invocation
+512 MB  →   800ms  →  $0.00000067 per invocation
+1024 MB →   400ms  →  $0.00000067 per invocation  ← sweet spot
+1536 MB →   320ms  →  $0.00000080 per invocation
+```
+
+For most CPU-bound functions, the sweet spot lands at 1024-1536MB. Memory tuning is one of the easiest perf wins with zero code changes.
+
+## Optimization 6: Reduce Dependency Count
+
+Every module in your dependency tree adds to Phase 4 init time. A few classic offenders:
+
+- **`moment`** (~66KB minified) - replace with `date-fns` or `dayjs`, both tree-shakeable
+- **`lodash`** (~70KB) - import the specific sub-package you need: `require('lodash.debounce')`, not `require('lodash').debounce`
+- **`aws-sdk`** (the whole thing) - already covered above; use the sub-client path
+
+A useful rule: if you find yourself adding a 100KB+ dependency to use one function from it, copy the function inline instead. Lambda init time is more valuable than DRY in module-scope code.
+
+---
+
+## Note: VPC Cold Starts Used to Be Worse
+
+The old advice was simple: avoid putting Lambdas in VPCs because the cold start added 10+ seconds for ENI attachment. That advice is now outdated.
+
+In September 2019, AWS rolled out Hyperplane ENIs - shared network interfaces created at function-configure time rather than at invoke time. By the end of 2019, the rollout was complete across all commercial regions, and VPC cold starts effectively matched non-VPC cold starts.
+
+If you're reading older articles that recommend avoiding VPCs for cold-start reasons, treat them as historical. As of late 2019, the penalty is gone.
+
+The [VPC Proxy Pattern](/blog/lambda-to-lambda-invocation-when-okay-when-avoid#2-the-vpc-proxy-pattern) - keeping a public-facing Lambda outside the VPC and having it invoke a worker Lambda inside the VPC - was a workaround for the _old_ penalty. It still has narrow uses (e.g., separating concerns or limiting blast radius), but it's no longer a generic cold-start optimization.
+
+## Note: Layers Don't Speed Up Cold Starts
+
+There's a persistent claim that putting dependencies in Lambda Layers speeds up cold starts compared to bundling them with the function. This is a misconception.
+
+Module init time is determined by **what gets `require`d** and how much parsing/initialization that code does. It is not meaningfully affected by **where the file lives on disk** - whether in `node_modules/` inside your deployment artifact or under `/opt/nodejs/` from a layer mount. Both paths are local SSD reads.
+
+Layers are useful for:
+
+- **Shared binary dependencies** (Chromium for headless browser Lambdas, custom ImageMagick builds)
+- **Shared application code across many functions** in the same project (though publishing an internal npm package is usually a better answer)
+- **Reducing deployment artifact size** when many functions share the same large deps
+
+They are not useful for cold-start optimization. If you want a smaller, faster cold start, use Optimization 4 (bundle with Webpack) and Optimization 6 (reduce dependencies) instead.
+
+---
+
+## Two Kinds of Cold Starts
+
+It's worth being precise about what counts as a "cold start", because the optimizations have different impact depending on which kind:
+
+- **Cold start on a fresh worker.** AWS routed your request to a worker that has never run this version of your code. The deployment package must be pulled from S3, the container created, the runtime initialized, and the handler module loaded. This is the slow path.
+- **Cold start on a worker with cached code.** A worker that has run your code recently still has the deployment package in its local cache. The S3 pull is skipped; only container/runtime/handler init runs. This is the faster cold start.
+
+Filesize matters most on the first kind. Reducing dependencies (Optimizations 4 and 6) cuts both the S3 pull time _and_ the module init time, so it wins twice on fresh-worker cold starts and once on cached-worker cold starts.
+
+What triggers fresh-worker cold starts:
+
+- A new deployment evicts every worker's cache for your function
+- Scale-out under load can land on workers that have never run your code
+- Workers eventually get recycled, dropping their cache
+
+You can't fully avoid fresh-worker cold starts. You can only make them faster.
+
+## When Optimization Isn't Enough: Provisioned Concurrency
+
+When your function's cold start latency is unacceptable even after all of the above, AWS Provisioned Concurrency (announced December 2019) lets you pay for a pool of pre-warmed containers that are kept ready to invoke without ever cold-starting.
+
+Configure it via `serverless.yml`:
+
+```yaml
+functions:
+  api:
+    handler: handler.api
+    provisionedConcurrency: 5
+    events:
+      - http:
+          path: /
+          method: get
+```
+
+Five containers are kept warm at all times. As long as your concurrent request count stays below five, every invocation runs warm.
+
+A few caveats worth knowing:
+
+- **Pay for provisioned capacity whether you use it or not.** Provisioned Concurrency bills a flat GB-second rate for reserved capacity _plus_ a (discounted) duration rate when invoked. If your traffic is bursty, the reserved capacity sits idle most of the time and bills the whole time. Easy to overspend.
+- **Cannot point at `$LATEST`.** Provisioned Concurrency requires a published version or alias. If you deploy frequently and don't manage aliases explicitly, this becomes painful.
+- **Auto-scaling needs extra setup.** AWS Application Auto Scaling can scale Provisioned Concurrency based on utilization, but you have to configure it - it's not on by default. The community [`serverless-provisioned-concurrency-autoscaling`](https://www.npmjs.com/package/serverless-provisioned-concurrency-autoscaling) plugin wraps this.
+
+The right time to reach for Provisioned Concurrency: you've applied Optimizations 1-6, the cold start is as fast as it's going to get, and the residual cold-start latency is still hurting users on a latency-sensitive endpoint.
+
+## Note: The Old Warmer-Plugin Hack
+
+Before Provisioned Concurrency existed, the standard workaround was the "warmer" pattern - schedule a CloudWatch Events rule to ping your function every few minutes, keeping at least one container alive. The [`serverless-plugin-warmup`](https://www.npmjs.com/package/serverless-plugin-warmup) plugin packaged this neatly:
+
+```yaml
+plugins:
+  - serverless-plugin-warmup
+
+custom:
+  warmup:
+    enabled: true
+    events:
+      - schedule: rate(5 minutes)
+    concurrency: 1
+
+functions:
+  api:
+    handler: handler.api
+    warmup:
+      enabled: true
+```
+
+Warmer plugins are cheaper than Provisioned Concurrency but less reliable - they only keep one container warm per ping, and scale-out under sudden load still hits cold starts. They're worth knowing about for cost-sensitive workloads where occasional cold starts are tolerable but baseline cold starts are not.
+
+For a latency-sensitive production API, Provisioned Concurrency is the right answer. For a low-traffic background job that occasionally needs to respond quickly, a warmer plugin is often enough.
+
+## Takeaways
+
+- **Cold starts have four phases:** AWS finds capacity → container init → runtime init → **handler module init**. Almost all your optimization power lives in Phase 4.
+- **Tree-shake the AWS SDK** - `require('aws-sdk/clients/dynamodb')` instead of `require('aws-sdk')`. Typically saves 100-300ms.
+- **Initialize SDK clients, config, and secrets in module scope**, not inside the handler. They run once per container instead of once per invocation.
+- **Enable HTTP keep-alive** with `AWS_NODEJS_CONNECTION_REUSE_ENABLED=1`. Single most-overlooked optimization; saves 10-50ms per AWS API call.
+- **Bundle with `serverless-webpack`** for production. Tree-shakes unused dependency code; shrinks both the deployment artifact and the module init time.
+- **Tune memory with `aws-lambda-power-tuning`.** More memory means more CPU, which cuts init time. The sweet spot is often 1024-1536MB.
+- **Audit your dependencies.** `moment` → `date-fns`, `lodash` → sub-packages, `aws-sdk` → sub-client paths.
+- **VPC cold starts are no longer a major penalty** as of late 2019 (Hyperplane ENIs). Layers do not speed up cold starts - they're for shared binary deps, not performance.
+- **Provisioned Concurrency** is the answer when optimization isn't enough. Watch the pricing trap - you pay for reserved capacity whether invoked or not, and it requires a published version or alias.

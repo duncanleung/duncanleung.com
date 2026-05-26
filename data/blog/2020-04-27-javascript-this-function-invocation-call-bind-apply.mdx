@@ -1,0 +1,351 @@
+---
+title: 'How JavaScript `this` Works: Function Invocation and the `.call` Primitive'
+date: '2020-04-27'
+tags: ['interview-prep', 'javascript']
+summary: "A single-rule mental model for JavaScript's `this` - everything desugars to `Function.prototype.call(thisValue, ...args)`. Walks through bare calls, method calls, detachment, `.call` / `.apply` / `.bind`, the `new` operator, arrow functions, strict mode, and how to implement `.bind` from scratch."
+images: ['/static/thumbnails/programming.png']
+draft: false
+---
+
+JavaScript's `this` keyword has a reputation for being confusing. Most explainers introduce it as a set of four or five rules - default binding, implicit binding, explicit binding, `new` binding, and lexical binding for arrow functions. Each rule has its own situations and exceptions to remember.
+
+There is a simpler mental model. There is exactly one rule for `this` - **`Function.prototype.call(thisValue, ...args)` sets `this` inside the function to `thisValue`**. Every other way of invoking a function is sugar that desugars to that primitive.
+
+This post walks through the one rule, then shows how every other invocation style - bare calls, method calls, `.bind`, `new`, arrow functions - fits inside it. The framing is from [Yehuda Katz's 2011 article](https://yehudakatz.com/2011/08/11/understanding-javascript-function-invocation-and-this/); the examples are mine.
+
+## The Core Primitive: `Function.prototype.call`
+
+Every function in JavaScript has a `.call` method. When you invoke a function through `.call`, you provide an explicit value for `this`:
+
+```javascript
+function hello(thing) {
+  console.log(this + ' says hello ' + thing)
+}
+
+hello.call({ name: 'Brendan' }, 'world')
+// "[object Object] says hello world"
+```
+
+The first argument to `.call` becomes the function's `this`. The rest become its normal arguments.
+
+That is the rule. Everything else is sugar.
+
+## Bare Function Calls
+
+When you call a function the normal way - `hello("world")` - the engine quietly inserts a default for `this`:
+
+```javascript
+function hello(thing) {
+  console.log(this + ' says hello ' + thing)
+}
+
+hello('world')
+// desugars to:
+hello.call(window, 'world')
+// "[object Window] says hello world"
+```
+
+In non-strict mode, the default `thisValue` for a bare call is the global object - `window` in the browser, `global` in Node. This is why `this` inside a top-level function refers to the global object.
+
+We will see in a moment that strict mode changes this default to `undefined` - safer, because reading a property of `undefined` throws immediately instead of silently mutating globals.
+
+## Method Calls
+
+When you call a function through an object - `person.hello()` - the engine uses the object as `thisValue`:
+
+```javascript
+const person = {
+  name: 'Brendan',
+  hello: function (thing) {
+    console.log(this.name + ' says hello ' + thing)
+  },
+}
+
+person.hello('world')
+// desugars to:
+person.hello.call(person, 'world')
+// "Brendan says hello world"
+```
+
+This is why `this` inside a method refers to the object. There is no special "method" mechanism - the engine sees the dotted access, and uses the receiver as `thisValue`.
+
+The function itself does not belong to the object. The same function can be a method of two different objects:
+
+```javascript
+function hello(thing) {
+  console.log(this.name + ' says hello ' + thing)
+}
+
+const alice = { name: 'Alice', hello: hello }
+const bob = { name: 'Bob', hello: hello }
+
+alice.hello('world') // "Alice says hello world"
+bob.hello('world') // "Bob says hello world"
+```
+
+Each call sets `this` to whatever is to the left of the dot.
+
+## Method Detachment: Losing `this`
+
+Because methods are just functions with a particular invocation pattern, you can detach them. The moment you do, the `this` binding is lost:
+
+```javascript
+const person = {
+  name: 'Brendan',
+  hello: function () {
+    console.log(this.name + ' says hello')
+  },
+}
+
+const greet = person.hello
+
+greet()
+// desugars to:
+greet.call(window)
+// "undefined says hello" - this.name reads window.name, which is undefined
+```
+
+Detachment happens any time a method is pulled off its object - assigned to a variable, passed as a callback, used as an event handler. The classic case:
+
+```javascript
+const person = {
+  name: 'Brendan',
+  hello: function () {
+    console.log(this.name + ' says hello')
+  },
+}
+
+setTimeout(person.hello, 1000)
+// after 1 second: "undefined says hello"
+```
+
+`setTimeout` receives a reference to `person.hello`, then invokes it later with no receiver. The desugared call is `personHello.call(window)`, not `person.hello.call(person)`. `this.name` is undefined.
+
+## Explicit Binding: `.call`, `.apply`, `.bind`
+
+When you want to control `this` explicitly, JavaScript gives you three tools. All three are built directly on the `.call` primitive.
+
+### `.call(thisValue, arg1, arg2, ...)`
+
+Invokes the function immediately with `this` set to `thisValue`. Arguments are passed individually.
+
+```javascript
+function greet(greeting, punctuation) {
+  console.log(greeting + ', ' + this.name + punctuation)
+}
+
+const person = { name: 'Brendan' }
+
+greet.call(person, 'Hello', '!')
+// "Hello, Brendan!"
+```
+
+### `.apply(thisValue, [args])`
+
+Same as `.call`, but takes the arguments as a single array. Useful when you already have an array of arguments to spread - especially before ES6 spread syntax existed:
+
+```javascript
+function greet(greeting, punctuation) {
+  console.log(greeting + ', ' + this.name + punctuation)
+}
+
+const person = { name: 'Brendan' }
+
+greet.apply(person, ['Hello', '!'])
+// "Hello, Brendan!"
+```
+
+In modern code, `.apply` is mostly replaced by `.call` plus `...args`. It still shows up frequently in older code.
+
+### `.bind(thisValue, arg1, ...)`
+
+Unlike `.call` and `.apply`, `.bind` does _not_ invoke the function. It returns a new function with `this` permanently bound to `thisValue`:
+
+```javascript
+function greet(greeting) {
+  console.log(greeting + ', ' + this.name)
+}
+
+const person = { name: 'Brendan' }
+
+const greetBrendan = greet.bind(person)
+
+greetBrendan('Hello') // "Hello, Brendan"
+greetBrendan('Howdy') // "Howdy, Brendan"
+```
+
+The bound function carries `person` around with it. No matter how it is invoked - as a bare function, as a callback, even via `.call` with a different `thisValue` - the `this` inside the original `greet` is fixed to `person`.
+
+`.bind` is the fix for the detachment problem:
+
+```javascript
+const person = {
+  name: 'Brendan',
+  hello: function () {
+    console.log(this.name + ' says hello')
+  },
+}
+
+// Bind ahead of time, then hand the bound function to setTimeout
+setTimeout(person.hello.bind(person), 1000)
+// after 1 second: "Brendan says hello"
+```
+
+## The `new` Operator
+
+When you call a function with `new`, the engine creates a new object and uses it as the `thisValue`:
+
+```javascript
+function Animal(name) {
+  this.name = name
+}
+
+const dog = new Animal('Ned')
+// desugars to roughly:
+//   const newObject = Object.create(Animal.prototype)
+//   Animal.call(newObject, 'Ned')
+//   return newObject
+
+console.log(dog.name) // "Ned"
+```
+
+`new` is sugar for "create a fresh object, set its prototype, run the function with `this` bound to that object, return the object". The mechanism is the same `.call` primitive - the engine just supplies the receiver for you.
+
+For the prototype-chain details of what `new` actually does, see [Understanding JavaScript Prototypal Inheritance](/blog/javascript-prototypal-inheritance-prototype-chain-class-new).
+
+## Arrow Functions: Lexical `this`
+
+Arrow functions are the one invocation style that does not follow the `.call` rule. Arrow functions do not have their own `this` - they capture `this` from the enclosing scope at the moment they are defined.
+
+```javascript
+const person = {
+  name: 'Brendan',
+  hello: () => {
+    console.log(this.name + ' says hello')
+  },
+}
+
+person.hello()
+// "undefined says hello"
+// `this` is the outer scope's `this` (window in the browser),
+// NOT the person object.
+```
+
+The arrow function's `this` was captured at the time the object literal was evaluated. At the top level, that is `window`. The dotted method call does not change it.
+
+This is a gotcha when arrow functions are used as object methods - they do not bind `this` to the object, and the method effectively cannot use `this` meaningfully.
+
+But it is a win when arrow functions are used as callbacks inside another method:
+
+```javascript
+function Timer() {
+  this.seconds = 0
+
+  setInterval(() => {
+    this.seconds++
+    console.log(this.seconds)
+  }, 1000)
+}
+
+new Timer()
+// 1, 2, 3, ...  (works correctly)
+```
+
+The arrow function captures the `this` of the surrounding `Timer` constructor (the new instance). Without the arrow, the `setInterval` callback would lose `this` to whatever the timer chooses to pass - which is the global object.
+
+In pre-arrow code, the workaround was capturing `const self = this` before the callback, or calling `.bind(this)` on the callback. Arrow functions made these patterns obsolete.
+
+## Strict Mode
+
+In strict mode (`'use strict'` at the top of a file or function, or implicitly in ES modules and class bodies), the default `thisValue` for a bare function call is `undefined` instead of the global object:
+
+```javascript
+'use strict'
+
+function hello() {
+  console.log(this)
+}
+
+hello()
+// undefined
+// desugars to: hello.call(undefined)
+```
+
+This is intentionally less forgiving. In non-strict mode, a bare call that does `this.something = ...` would silently write a property onto `window`. In strict mode, it throws:
+
+```javascript
+'use strict'
+
+function setName(name) {
+  this.name = name
+}
+
+setName('Brendan')
+// TypeError: Cannot set properties of undefined
+```
+
+The strict-mode behavior surfaces detachment bugs immediately. ES modules and class bodies are strict by default, so most modern code already runs under these rules.
+
+## Implementing `Function.prototype.bind` From Scratch
+
+`.bind` sounds magical until you write it yourself. It is just a closure over `.call`.
+
+A simple implementation:
+
+```javascript
+Function.prototype.myBind = function (thisValue) {
+  // `this` here refers to the function `myBind` was called on.
+  // For `greet.myBind(person)`, `this` is `greet`.
+  const fn = this
+
+  return function () {
+    return fn.call(thisValue)
+  }
+}
+
+function greet() {
+  console.log('Hello, ' + this.name)
+}
+
+const greetBrendan = greet.myBind({ name: 'Brendan' })
+greetBrendan() // "Hello, Brendan"
+```
+
+The real `.bind` also lets you partially apply leading arguments, which compose with the runtime arguments at invocation:
+
+```javascript
+Function.prototype.myBind = function (thisValue, ...boundArgs) {
+  const fn = this
+
+  return function (...callArgs) {
+    return fn.call(thisValue, ...boundArgs, ...callArgs)
+  }
+}
+
+function greet(greeting, name) {
+  console.log(greeting + ', ' + name + ' (from ' + this.from + ')')
+}
+
+const sayHi = greet.myBind({ from: 'Alice' }, 'Hi')
+sayHi('Bob')
+// "Hi, Bob (from Alice)"
+```
+
+The bound function spreads `boundArgs` first, then the `callArgs` from the actual invocation. That is all `.bind` is - a wrapper that pre-supplies `thisValue` and leading args, and forwards the rest through to the real `.call`.
+
+(Production-quality `Function.prototype.bind` has one more wrinkle: if the bound function is itself called with `new`, the bound `thisValue` is ignored and `new`'s receiver wins. Most implementations also handle that case.)
+
+## Takeaways
+
+- **There is one rule.** `Function.prototype.call(thisValue, ...args)` sets `this` inside the function to `thisValue`. Everything else is sugar over that primitive.
+- **Bare function calls** desugar to `fn.call(window)` in non-strict mode, or `fn.call(undefined)` in strict mode.
+- **Method calls** desugar to `obj.method.call(obj, ...)`. The receiver is whatever is to the left of the dot.
+- **Detachment loses `this`.** Pulling a method off its object and calling it as a bare function turns `obj.method.call(obj)` into `fn.call(window)`. The classic fix is `.bind`.
+- **`.call`, `.apply`, `.bind`** are the explicit-binding tools. `.call` and `.apply` invoke immediately; `.bind` returns a pre-bound function for later use.
+- **`new`** creates a fresh object and uses it as the receiver. The same `.call` primitive applies; `new` just supplies the receiver.
+- **Arrow functions** do not follow the rule at all. They capture `this` lexically from the enclosing scope - a gotcha for object methods, a win for inner callbacks.
+- **Strict mode** changes the default receiver for bare calls from `window` to `undefined`, surfacing detachment bugs immediately.
+
+## Further Reading
+
+- [Yehuda Katz - Understanding JavaScript Function Invocation and "this"](https://yehudakatz.com/2011/08/11/understanding-javascript-function-invocation-and-this/) - the 2011 article this post's mental model is built on.

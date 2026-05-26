@@ -10,17 +10,17 @@ draft: false
 In AWS Lambda, one function can directly invoke another using the AWS SDK:
 
 ```typescript
-import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda'
+import { Lambda } from 'aws-sdk'
 
-const lambda = new LambdaClient({})
+const lambda = new Lambda()
 
-const response = await lambda.send(
-  new InvokeCommand({
+const response = await lambda
+  .invoke({
     FunctionName: 'process-order',
     InvocationType: 'RequestResponse',
-    Payload: Buffer.from(JSON.stringify({ orderId: '123' })),
+    Payload: JSON.stringify({ orderId: '123' }),
   })
-)
+  .promise()
 ```
 
 AWS's own docs call this an anti-pattern, and most blog posts repeat the same warning: tight coupling, double billing, hard to debug. Those concerns are real, but they are not universal. There are specific cases where direct Lambda-to-Lambda invocation is fine, and a few where it is the right call.
@@ -37,15 +37,15 @@ The caller waits for the invoked function to finish and gets its response back.
 
 ```typescript
 // Caller waits for the response
-const response = await lambda.send(
-  new InvokeCommand({
+const response = await lambda
+  .invoke({
     FunctionName: 'process-order',
     InvocationType: 'RequestResponse',
-    Payload: Buffer.from(JSON.stringify({ orderId: '123' })),
+    Payload: JSON.stringify({ orderId: '123' }),
   })
-)
+  .promise()
 
-const result = JSON.parse(Buffer.from(response.Payload!).toString())
+const result = JSON.parse(response.Payload as string)
 ```
 
 This is the mode the anti-pattern warnings are mostly about. The caller is idle while the callee runs.
@@ -56,13 +56,13 @@ The caller fires the invocation and returns immediately. AWS handles delivery an
 
 ```typescript
 // Fire-and-forget; AWS handles retries
-await lambda.send(
-  new InvokeCommand({
+await lambda
+  .invoke({
     FunctionName: 'process-order',
     InvocationType: 'Event',
-    Payload: Buffer.from(JSON.stringify({ orderId: '123' })),
+    Payload: JSON.stringify({ orderId: '123' }),
   })
-)
+  .promise()
 ```
 
 Async direct invoke is less of a problem than sync, but it is still rarely the best choice. SQS, SNS, or EventBridge usually give you more control over retries and failure handling.
@@ -144,13 +144,13 @@ async function invokeWithRetry(
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      return await lambda.send(
-        new InvokeCommand({
+      return await lambda
+        .invoke({
           FunctionName: functionName,
           InvocationType: 'RequestResponse',
-          Payload: Buffer.from(JSON.stringify(payload)),
+          Payload: JSON.stringify(payload),
         })
-      )
+        .promise()
     } catch (error) {
       lastError = error
 
@@ -199,18 +199,18 @@ functions:
 
 ```typescript
 // src/handlers/createOrder.ts
-import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda'
+import { Lambda } from 'aws-sdk'
 
-const lambda = new LambdaClient({})
+const lambda = new Lambda()
 
 export const handler = async (event: CreateOrderEvent) => {
-  const validationResponse = await lambda.send(
-    new InvokeCommand({
-      FunctionName: process.env.VALIDATE_ORDER_FN_NAME,
+  const validationResponse = await lambda
+    .invoke({
+      FunctionName: process.env.VALIDATE_ORDER_FN_NAME!,
       InvocationType: 'RequestResponse',
-      Payload: Buffer.from(JSON.stringify({ order: event.order })),
+      Payload: JSON.stringify({ order: event.order }),
     })
-  )
+    .promise()
 
   // ... rest of createOrder logic
 }
@@ -262,17 +262,17 @@ export const handler = async (event: APIGatewayEvent) => {
   }
 
   // Slow path: invoke the VPC-bound Lambda
-  const response = await lambda.send(
-    new InvokeCommand({
-      FunctionName: process.env.INNER_LAMBDA_FN_NAME,
+  const response = await lambda
+    .invoke({
+      FunctionName: process.env.INNER_LAMBDA_FN_NAME!,
       InvocationType: 'RequestResponse',
-      Payload: Buffer.from(JSON.stringify({ id: event.queryStringParameters.id })),
+      Payload: JSON.stringify({ id: event.queryStringParameters.id }),
     })
-  )
+    .promise()
 
   return {
     statusCode: 200,
-    body: Buffer.from(response.Payload!).toString(),
+    body: response.Payload as string,
   }
 }
 ```
@@ -285,22 +285,22 @@ A one-time backfill that calls the production handler doesn't justify wiring up 
 
 ```typescript
 // scripts/backfill-old-orders.ts
-import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda'
+import { Lambda } from 'aws-sdk'
 import { getOldOrderIds } from './db'
 
-const lambda = new LambdaClient({})
+const lambda = new Lambda()
 
 async function backfill() {
   const orderIds = await getOldOrderIds()
 
   for (const orderId of orderIds) {
-    await lambda.send(
-      new InvokeCommand({
+    await lambda
+      .invoke({
         FunctionName: 'process-order-prod',
         InvocationType: 'RequestResponse',
-        Payload: Buffer.from(JSON.stringify({ orderId })),
+        Payload: JSON.stringify({ orderId }),
       })
-    )
+      .promise()
   }
 }
 ```
@@ -346,17 +346,17 @@ functions:
 
 ```typescript
 // src/handlers/createOrder.ts
-import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs'
+import { SQS } from 'aws-sdk'
 
-const sqs = new SQSClient({})
+const sqs = new SQS()
 
 export const handler = async (event: CreateOrderEvent) => {
-  await sqs.send(
-    new SendMessageCommand({
-      QueueUrl: process.env.ORDER_QUEUE_URL,
+  await sqs
+    .sendMessage({
+      QueueUrl: process.env.ORDER_QUEUE_URL!,
       MessageBody: JSON.stringify(event.order),
     })
-  )
+    .promise()
 
   return { statusCode: 202, body: 'Order accepted' }
 }
@@ -419,12 +419,12 @@ functions:
 
 ```typescript
 // Publishing to EventBridge
-import { EventBridgeClient, PutEventsCommand } from '@aws-sdk/client-eventbridge'
+import { EventBridge } from 'aws-sdk'
 
-const eventBridge = new EventBridgeClient({})
+const eventBridge = new EventBridge()
 
-await eventBridge.send(
-  new PutEventsCommand({
+await eventBridge
+  .putEvents({
     Entries: [
       {
         Source: 'order-service',
@@ -433,7 +433,7 @@ await eventBridge.send(
       },
     ],
   })
-)
+  .promise()
 ```
 
 EventBridge gives you schema enforcement and pattern-based routing - useful when multiple teams produce and consume events.
@@ -512,15 +512,15 @@ Here's the "before" - two Lambdas, one invoking the other for no real reason:
 ```typescript
 // src/handlers/createOrder.ts
 export const handler = async (event: CreateOrderEvent) => {
-  const validationResponse = await lambda.send(
-    new InvokeCommand({
-      FunctionName: process.env.VALIDATE_ORDER_FN_NAME,
+  const validationResponse = await lambda
+    .invoke({
+      FunctionName: process.env.VALIDATE_ORDER_FN_NAME!,
       InvocationType: 'RequestResponse',
-      Payload: Buffer.from(JSON.stringify({ order: event.order })),
+      Payload: JSON.stringify({ order: event.order }),
     })
-  )
+    .promise()
 
-  const validation = JSON.parse(Buffer.from(validationResponse.Payload!).toString())
+  const validation = JSON.parse(validationResponse.Payload as string)
 
   if (!validation.isValid) {
     return { statusCode: 400, body: validation.error }

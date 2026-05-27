@@ -1,0 +1,212 @@
+---
+title: 'HTTP Cache-Control: ETag, Revalidation, and the Two Caching Strategies'
+date: '2020-05-05'
+tags: ['performance', 'http']
+summary: "There are two caching strategies on the web: fingerprinted-immutable URLs and server-revalidated mutable content. Pick one per resource. Most caching confusion comes from conflating no-cache, no-store, and must-revalidate."
+images: ['/static/thumbnails/programming.png']
+draft: false
+---
+
+Caching CSS with `Cache-Control: max-age=31536000` is fast. Doing the same to your HTML ships a frozen app to users for a year. The two headers look interchangeable, but they belong to two different caching strategies - and most of the day-to-day confusion around HTTP caching comes from picking the wrong one for the resource you're serving, or from conflating the three Cache-Control directives that beginners always mix up.
+
+The mental model is one sentence: **there are two caching strategies on the web, and you pick one per resource.** Either the URL itself is the version identifier and the response is immutable forever, or the URL is stable and the server tells the client whether its cached copy is still good. Everything else - ETag, Last-Modified, the directive zoo - is plumbing for one strategy or the other.
+
+## The Two Strategies
+
+**Strategy 1: Fingerprinted Immutable URLs.** Bundle the content hash into the URL - `app.a1b2c3d4.js` - and serve it with `Cache-Control: public, max-age=31536000, immutable`. Change a byte, get a new filename. The URL itself acts as the version identifier, so the cached response never needs to be checked.
+
+**Strategy 2: Server-Revalidated Mutable Content.** The URL is stable (`/index.html`, `/api/orders/42`). Serve it with `Cache-Control: no-cache` plus an `ETag` (or `Last-Modified`). The client may cache the response, but it has to revalidate with the server before using it again. The server returns `304 Not Modified` when nothing changed, saving a body but not a round trip.
+
+The asymmetric pairing is the whole point: **HTML uses Strategy 2; everything HTML references uses Strategy 1.** Pick the wrong strategy for HTML and your users get stale apps. Pick the wrong strategy for assets and you waste a network round trip on every page load.
+
+## Strategy 1: Fingerprinted Immutable URLs
+
+Modern bundlers - webpack, Rollup, Parcel - emit filenames with a content hash baked in:
+
+```text
+dist/
+├── app.a1b2c3d4.js
+├── app.a1b2c3d4.js.map
+├── vendor.e5f6a7b8.css
+└── logo.9c0d1e2f.png
+```
+
+Change a single line in `app.js` and the bundler emits `app.b3c4d5e6.js` - a new filename. The old filename's contents never change.
+
+That property is what makes the asset safe to cache for a year:
+
+```text
+Cache-Control: public, max-age=31536000, immutable
+```
+
+- `public` - shared caches (CDNs) may cache this in addition to the browser.
+- `max-age=31536000` - one year, the conventional "effectively forever" for HTTP caching.
+- `immutable` - tells the browser this response will never change for this URL.
+
+The `immutable` directive matters for one specific case: user-initiated reload. Without it, browsers historically revalidated cached assets when the user hit `Cmd+R` - sending a wave of conditional requests for every fingerprinted file on the page. With `immutable`, Firefox and Safari skip those requests entirely.
+
+Worth knowing: **Chrome never implemented `immutable`.** Chromium's position is that their reload behavior is already correct without it, so the directive is redundant for Chrome users. Firefox 49+ (Sept 2016), Safari 11+ (2017), and Edge 15+ all honor it. Unknown directives are silently ignored, so it's safe to ship - you just don't get the Chrome reload optimization.
+
+The win for Strategy 1: **zero network round-trip.** The cached bytes are used directly. No revalidation, no 304, nothing.
+
+## Strategy 2: Server-Revalidated Mutable Content
+
+Strategy 1 only works when the URL itself encodes the version. For everything else - HTML, JSON API responses, any resource where the URL is stable but the body changes - you need the server in the loop.
+
+```text
+Cache-Control: no-cache
+```
+
+`no-cache` is the most-misunderstood Cache-Control directive. It does **not** mean "don't cache." It means "cache the response, but revalidate with the server before using it." The cache still gets a response body when nothing changed - that's the entire point of the revalidation handshake.
+
+The revalidation itself runs on either an `ETag` (preferred) or a `Last-Modified` date.
+
+## The Revalidation Handshake: ETag + If-None-Match
+
+The first time the client fetches a resource, the server sends a version identifier in the `ETag` header:
+
+```text
+GET /index.html HTTP/1.1
+Host: example.com
+
+HTTP/1.1 200 OK
+Cache-Control: no-cache
+ETag: "v2-9c0d1e2f"
+Content-Type: text/html
+Content-Length: 4823
+
+<!doctype html>...
+```
+
+The client caches the response along with the ETag. On the next request for the same URL, the client sends the ETag back via `If-None-Match`:
+
+```text
+GET /index.html HTTP/1.1
+Host: example.com
+If-None-Match: "v2-9c0d1e2f"
+```
+
+If the content hasn't changed, the server returns `304 Not Modified` with no body:
+
+```text
+HTTP/1.1 304 Not Modified
+ETag: "v2-9c0d1e2f"
+```
+
+The client serves its cached copy. If the content has changed, the server returns a normal `200 OK` with the new body and a new ETag - and the cycle starts again.
+
+### Strong vs Weak ETags
+
+ETags come in two flavors:
+
+- **Strong ETag** - `"abc123"` - asserts byte-for-byte identical content.
+- **Weak ETag** - `W/"abc123"` - asserts semantic equivalence. Compression, whitespace differences, and other byte-level changes that don't change the meaning are allowed to share the same weak ETag.
+
+Two practical gotchas:
+
+- **Range requests require strong ETags.** A resumable download with `If-Range:` falls back to a full re-download if the ETag is weak.
+- **CDNs downgrade.** Cloudflare and others convert strong → weak when they apply Brotli/gzip or image transforms, because the bytes change at the edge. Don't assume the ETag you set on the origin is the ETag the client sees.
+
+## Last-Modified and If-Modified-Since
+
+`Last-Modified` is the older revalidation mechanism, predating ETag. The handshake looks the same shape:
+
+```text
+HTTP/1.1 200 OK
+Last-Modified: Tue, 05 May 2020 12:00:00 GMT
+```
+
+```text
+GET /index.html HTTP/1.1
+If-Modified-Since: Tue, 05 May 2020 12:00:00 GMT
+
+HTTP/1.1 304 Not Modified
+```
+
+Two reasons to prefer ETag when you have the choice:
+
+- **`Last-Modified` is 1-second resolution.** The HTTP-date format has no sub-second precision, so a sub-second edit looks unchanged to the cache.
+- **`Last-Modified` is about time, not content.** A `touch` on the file updates the modification time even though the bytes are identical, and the cache invalidates needlessly. ETag decouples versioning from mtime - the version changes when the content changes, not when the filesystem says so.
+
+Use Last-Modified as a fallback when generating a content hash is impractical (large static files, legacy systems). Use ETag everywhere else.
+
+## The Round-Trip Cost
+
+Strategy 2 is a meaningful win - a `304 Not Modified` response is just headers, no body - but the network round-trip still happens. On a high-latency mobile connection, that round-trip is the entire cost of the request. The body savings don't matter if you've already paid the RTT.
+
+Strategy 1 avoids the round-trip entirely. The cached bytes are used directly without contacting the server.
+
+That asymmetry is why the standard pattern is **HTML on `no-cache` (Strategy 2), everything else fingerprinted-immutable (Strategy 1)**. HTML has to be checked because it's how the user picks up updated asset URLs. Once HTML names the assets, the assets themselves can skip the check.
+
+## The Three Directives Beginners Conflate
+
+The directive zoo collapses to three:
+
+- **`no-cache`** - cache the response, but revalidate with the server before each use. **Not** "don't cache."
+- **`no-store`** - don't cache at all. The only directive that actually disables caching. Use for responses with sensitive data (banking dashboards, auth tokens in the body).
+- **`must-revalidate`** - once the cached response is _stale_ (past `max-age`), revalidate before serving. **Not** "always revalidate." A fresh response under `max-age` is served from cache without contacting the server.
+
+```text
+                      Used while fresh?     Used while stale?
+no-cache              revalidates first     revalidates first
+no-store              never cached          never cached
+must-revalidate       served from cache     revalidates first
+max-age=N (alone)     served from cache     served from cache (may serve stale)
+```
+
+`must-revalidate` has more teeth than people realize: it also disables the stale-on-disconnect escape hatch. If the cache cannot reach the origin to revalidate, it **must return `504 Gateway Timeout`** rather than serving the stale entry. Without `must-revalidate`, a cache is allowed to serve a stale response with a `Warning` header.
+
+One-sentence aside for shared caches: `s-maxage` overrides `max-age` for shared caches (CDNs, proxies) only, and `proxy-revalidate` is the shared-cache-only variant of `must-revalidate`. Your browser cache and your CDN can obey different freshness clocks for the same response.
+
+## Note: `Vary` Is a Common Cache Killer
+
+The `Vary` header tells caches which request headers affect the response. Two failure modes worth knowing:
+
+- **Missing `Vary: Accept-Encoding`** when serving compressed responses. An intermediary cache stores the gzipped body and hands it to a later client that didn't advertise gzip. The client gets bytes it cannot decode.
+- **`Vary: Cookie`** on a CDN-cached response. Every cookie permutation becomes a separate cache entry. If your app sets a per-session cookie, the CDN's hit rate collapses to roughly zero because no two users share the cache key.
+
+The general rule: `Vary` exists for a reason, and getting it wrong silently corrupts caches downstream. If your response truly depends on a request header, declare it; if it doesn't, don't.
+
+## Heuristic Freshness: "No Header" Doesn't Mean "No Caching"
+
+A common assumption: if you send no `Cache-Control` and no `Expires`, the response won't be cached. The opposite is true.
+
+RFC 7234 §4.2.2 lets caches _invent_ a freshness lifetime when none is provided, typically as ~10% of the time since `Last-Modified`. A file modified two days ago might be cached for roughly five hours under heuristic freshness. Your "no header" deploy can ship cached responses far longer than you intended.
+
+The right default for HTML is **`Cache-Control: no-cache`**, not "no header." Make the intent explicit.
+
+## Putting It Together: HTML on `no-cache`, Everything Else Fingerprinted
+
+The asymmetric pairing isn't just about hit rates. The deeper risk - the one Jake Archibald flagged in his 2016 caching write-up - is **version skew between interdependent assets**.
+
+- HTML cached long, fingerprinted assets it referenced no longer exist → 404s on the CSS and JS, broken page.
+- HTML cached long while newer HTML and assets are deployed → users see old layout against new API responses, subtle visual breakage.
+
+The fix isn't shorter `max-age`. Shorter max-age just trades one stale window for another. The fix is the asymmetric pairing:
+
+```text
+Resource           Strategy            Header
+────────────────────────────────────────────────────────────────────
+/index.html        Server-revalidated  Cache-Control: no-cache
+                                       ETag: "..."
+/app.a1b2c3d4.js   Immutable           Cache-Control: public,
+                                          max-age=31536000, immutable
+/vendor.e5f6.css   Immutable           Cache-Control: public,
+                                          max-age=31536000, immutable
+/logo.9c0d.png     Immutable           Cache-Control: public,
+                                          max-age=31536000, immutable
+```
+
+The HTML revalidates on every load - cheap, just a `304` when nothing changed - and is always the source of truth for which asset filenames are current. The assets themselves are cached forever per URL because their content can never change for that URL. New deploy means new HTML names new asset URLs; old asset URLs stay valid until the browser cache eventually evicts them.
+
+Once you can see those two strategies clearly, almost all the day-to-day caching questions answer themselves. The bytes you serve to the browser determine what reaches [the rendering pipeline](/blog/browser-rendering-pipeline-layout-paint-composite); the cache headers determine whether those bytes have to be fetched at all.
+
+## Takeaways
+
+- **There are two caching strategies, and you pick one per resource.** Fingerprinted-immutable URLs (Strategy 1) for assets; server-revalidated content (Strategy 2) for HTML and APIs.
+- **HTML on `no-cache`, everything else fingerprinted-immutable.** The asymmetric pairing prevents version skew between HTML and the assets it names.
+- **`no-cache` means revalidate, not don't cache.** `no-store` is the only directive that actually disables caching. `must-revalidate` controls behavior when the cached response is _stale_, not on every request.
+- **ETag is the revalidation primitive.** Server sends `ETag`, client sends `If-None-Match`, server returns `304 Not Modified` when unchanged. Prefer strong ETags over `Last-Modified` for sub-second precision and content-vs-mtime decoupling.
+- **`immutable` skips revalidation on user reload.** Honored by Firefox, Safari, and Edge. Chrome ignores it but their reload behavior already approximates it.
+- **The round-trip is the real cost.** Strategy 1 avoids it entirely; Strategy 2 still pays it on every check. That's why HTML is the only thing you want on Strategy 2.
+- **`Vary` and heuristic freshness are silent footguns.** Missing `Vary: Accept-Encoding` corrupts caches downstream; missing `Cache-Control` lets caches invent their own freshness lifetime.

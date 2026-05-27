@@ -1,0 +1,281 @@
+---
+title: 'AWS SDK v2 with async/await in Node.js Lambda Handlers'
+date: '2020-02-15'
+tags: ['serverless', 'aws-lambda', 'nodejs']
+summary: 'Bridging callback-style AWS SDK v2 methods with async/await in Node.js Lambda handlers - the .promise() method, sequential and parallel SDK calls, and the init-outside-handler pattern for cached Promises.'
+images: ['/static/thumbnails/serverless.png']
+draft: false
+---
+
+The AWS SDK v2 for JavaScript was designed around callbacks. Every SDK method takes a callback as its last argument and invokes it with `(err, data)`. Lambda handlers, on the other hand, have supported `async` functions since the Node 8 runtime launched in November 2017 - and the `async`/`await` style is the standard for new code.
+
+The bridge between them is `.promise()`, a method on every AWS SDK v2 request object since v2.3.0 (2016). Calling it instead of passing a callback returns a Promise you can `await`.
+
+This post walks through the migration: the old callback style, the kind of code that motivated moving away from it, the new `.promise()` + `async`/`await` pattern, and the patterns that pair with it (sequential calls, parallel calls with `Promise.all`, init-outside-handler with cached Promises).
+
+## The Old Style: Callbacks
+
+Before `async`/`await`, an SDK call looked like this:
+
+```javascript
+const AWS = require('aws-sdk')
+const dynamodb = new AWS.DynamoDB.DocumentClient()
+
+dynamodb.get(
+  {
+    TableName: 'restaurants',
+    Key: { name: 'Fangtasia' },
+  },
+  function (err, data) {
+    if (err) {
+      console.error(err)
+      return
+    }
+    console.log(data.Item)
+  }
+)
+```
+
+The handler signature matched - the third argument was a `callback` you had to invoke when done:
+
+```javascript
+exports.handler = function (event, context, callback) {
+  dynamodb.get(
+    {
+      TableName: 'restaurants',
+      Key: { name: event.name },
+    },
+    function (err, data) {
+      if (err) {
+        callback(err)
+        return
+      }
+      callback(null, {
+        statusCode: 200,
+        body: JSON.stringify(data.Item),
+      })
+    }
+  )
+}
+```
+
+This works, but the indentation creeps right with every additional step.
+
+## Callback Hell with Multiple SDK Calls
+
+The real motivation for moving away from callbacks shows up when you need to chain several SDK calls:
+
+```javascript
+exports.handler = function (event, context, callback) {
+  // 1. Look up the user
+  dynamodb.get(
+    { TableName: 'users', Key: { id: event.userId } },
+    function (err, userData) {
+      if (err) return callback(err)
+
+      // 2. Look up their orders
+      dynamodb.query(
+        {
+          TableName: 'orders',
+          KeyConditionExpression: 'userId = :userId',
+          ExpressionAttributeValues: { ':userId': userData.Item.id },
+        },
+        function (err, ordersData) {
+          if (err) return callback(err)
+
+          // 3. Publish a "viewed" event
+          sns.publish(
+            {
+              TopicArn: process.env.activity_topic,
+              Message: JSON.stringify({ userId: event.userId, action: 'viewed_orders' }),
+            },
+            function (err) {
+              if (err) return callback(err)
+
+              callback(null, {
+                statusCode: 200,
+                body: JSON.stringify({
+                  user: userData.Item,
+                  orders: ordersData.Items,
+                }),
+              })
+            }
+          )
+        }
+      )
+    }
+  )
+}
+```
+
+Three SDK calls, three nested closures, three duplicated `if (err) return callback(err)` checks. Refactoring or adding a fourth call is painful - the indentation alone signals that the structure is fighting you.
+
+## The New Style: `.promise()` + async/await
+
+Calling `.promise()` on the request object returns a Promise that resolves with the SDK response (or rejects with the error):
+
+```javascript
+const AWS = require('aws-sdk')
+const dynamodb = new AWS.DynamoDB.DocumentClient()
+
+const data = await dynamodb
+  .get({
+    TableName: 'restaurants',
+    Key: { name: 'Fangtasia' },
+  })
+  .promise()
+
+console.log(data.Item)
+```
+
+Combined with an `async` handler, the multi-step example becomes:
+
+```javascript
+exports.handler = async function (event) {
+  const userData = await dynamodb
+    .get({ TableName: 'users', Key: { id: event.userId } })
+    .promise()
+
+  const ordersData = await dynamodb
+    .query({
+      TableName: 'orders',
+      KeyConditionExpression: 'userId = :userId',
+      ExpressionAttributeValues: { ':userId': userData.Item.id },
+    })
+    .promise()
+
+  await sns
+    .publish({
+      TopicArn: process.env.activity_topic,
+      Message: JSON.stringify({ userId: event.userId, action: 'viewed_orders' }),
+    })
+    .promise()
+
+  return {
+    statusCode: 200,
+    body: JSON.stringify({
+      user: userData.Item,
+      orders: ordersData.Items,
+    }),
+  }
+}
+```
+
+Same three SDK calls, no nesting, no per-call error handling. The handler `return`s the response (no `callback`).
+
+A few details worth noting:
+
+- The handler is `async function (event)` - no `context` or `callback` arguments needed.
+- Errors are thrown rather than passed to a callback. To handle them, wrap the calls in `try`/`catch`.
+- Returning a value from an `async` handler is equivalent to calling `callback(null, value)` in the old style.
+
+## Error Handling with `try`/`catch`
+
+The error path becomes a normal JavaScript construct:
+
+```javascript
+exports.handler = async function (event) {
+  try {
+    const userData = await dynamodb
+      .get({ TableName: 'users', Key: { id: event.userId } })
+      .promise()
+
+    if (!userData.Item) {
+      return { statusCode: 404, body: 'User not found' }
+    }
+
+    // ... more SDK calls
+  } catch (err) {
+    console.error('Lambda error:', err)
+    return { statusCode: 500, body: 'Internal error' }
+  }
+}
+```
+
+The `catch` block runs whether the error came from a DynamoDB call, an SNS publish, or your own logic. One handler, one error path.
+
+## Parallel SDK Calls with `Promise.all`
+
+When two or more SDK calls don't depend on each other, run them in parallel instead of sequentially. `Promise.all` waits for every Promise to resolve and returns the results as an array:
+
+```javascript
+exports.handler = async function (event) {
+  // Both queries are independent - run them in parallel
+  const [userData, ordersData] = await Promise.all([
+    dynamodb.get({ TableName: 'users', Key: { id: event.userId } }).promise(),
+    dynamodb
+      .query({
+        TableName: 'orders',
+        KeyConditionExpression: 'userId = :userId',
+        ExpressionAttributeValues: { ':userId': event.userId },
+      })
+      .promise(),
+  ])
+
+  return {
+    statusCode: 200,
+    body: JSON.stringify({
+      user: userData.Item,
+      orders: ordersData.Items,
+    }),
+  }
+}
+```
+
+Sequential `await` would have taken roughly the sum of both calls' durations. `Promise.all` takes roughly the max of the two. For two 50ms calls, that's 100ms vs 50ms - a real latency win for the user.
+
+For more on `Promise.all` and its failure modes (fail-fast vs. `Promise.allSettled`), see [Understanding JavaScript Promises](/blog/javascript-promises-chaining-catch-async-await).
+
+## Init-Outside-Handler with Cached Promises
+
+The cold-start optimization of initializing SDK clients in module scope (so they survive across warm invocations) extends naturally to `async` work. The trick is to cache the **Promise**, not the resolved value:
+
+```javascript
+const AWS = require('aws-sdk')
+const ssm = new AWS.SSM()
+
+// This Promise resolves once per cold start and is reused on every warm invocation
+const configPromise = ssm
+  .getParameter({ Name: '/app/config' })
+  .promise()
+  .then((r) => JSON.parse(r.Parameter.Value))
+
+exports.handler = async function (event) {
+  const config = await configPromise
+
+  // ... use config
+}
+```
+
+The first invocation pays the SSM cost. Every subsequent warm invocation gets the cached `configPromise` for free. The Promise stays in the container's module scope across invocations, so each `await configPromise` resolves instantly with the cached value.
+
+For the broader cold-start picture, see [Reducing AWS Lambda Cold Start Latency in Node.js](/blog/aws-lambda-cold-start-optimization-nodejs).
+
+## Note: Promisifying Other Callback APIs
+
+The `.promise()` method is specific to the AWS SDK. For other callback-based APIs in Node's standard library, the equivalent is `util.promisify`:
+
+```javascript
+const fs = require('fs')
+const { promisify } = require('util')
+
+const readFile = promisify(fs.readFile)
+
+exports.handler = async function (event) {
+  const template = await readFile('static/index.html', 'utf-8')
+  // ...
+}
+```
+
+`util.promisify` wraps a function that follows the Node `(err, result) => ...` callback convention and returns a Promise-returning version.
+
+Since Node 10, many of Node's built-in modules already expose Promise-based APIs without needing `util.promisify` - `fs` has `fs.promises` (or `require('fs').promises`), `dns` has `dns.promises`, etc. Reach for those first; `util.promisify` is for callback-only third-party libraries.
+
+## Takeaways
+
+- **`async` Lambda handlers + `.promise()` SDK calls** is the standard pattern for Node.js Lambda code in 2020. Callback-style handlers still work but are increasingly unusual in new code.
+- **Call `.promise()` on every AWS SDK v2 request** to get a Promise you can `await`. Available since v2.3.0 (2016).
+- **Errors throw** in the `async` style. Wrap multi-step handlers in `try`/`catch` for centralized error handling.
+- **Independent SDK calls should run in parallel via `Promise.all`.** Sequential `await` chains add up; parallel calls take the time of the slowest.
+- **The init-outside-handler pattern works with Promises too.** Cache the Promise (not the resolved value) in module scope so the work runs once per cold start, not once per invocation.
+- **`util.promisify`** is the equivalent of `.promise()` for non-AWS callback APIs. For Node's built-in modules, prefer the native `.promises` namespaces (`fs.promises`, etc.) when available.

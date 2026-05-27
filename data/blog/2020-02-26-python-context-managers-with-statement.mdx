@@ -1,0 +1,268 @@
+---
+title: 'Python Context Managers: The with Statement and the __enter__/__exit__ Protocol'
+date: '2020-02-26'
+tags: ['python']
+summary: "Python's with statement compresses try/finally resource handling into a clean syntax - but it's just sugar over the __enter__/__exit__ protocol, which you can implement yourself with a class or the @contextmanager decorator."
+images: ['/static/thumbnails/python.png']
+draft: false
+---
+
+Coming from JavaScript, my first encounter with Python's `with` statement was opening a file:
+
+<div class="filename">example.py</div>
+
+```python
+with open("config.txt") as f:
+    contents = f.read()
+```
+
+Most tutorials show this and stop. What was hidden from me was that `with` is not a special form for files - it is sugar over a protocol called the context manager protocol, and you can implement that protocol on any class. Once I understood that, a whole category of stdlib utilities (`contextlib.suppress`, `tempfile.TemporaryDirectory`, `threading.Lock`) stopped looking like one-off conveniences and started looking like the same idea in different costumes.
+
+This post walks through the resource-lifecycle problem `with` solves, the `__enter__`/`__exit__` protocol that powers it, how to write your own context manager (both as a class and with the `@contextmanager` decorator), and a few stdlib context managers worth knowing.
+
+## The Problem: Manually Managing Resources
+
+Before `with`, the safe way to handle a file looked like this:
+
+<div class="filename">example.py</div>
+
+```python
+f = open("config.txt")
+try:
+    contents = f.read()
+    # ... do something with contents
+finally:
+    f.close()
+```
+
+The `try` / `finally` block matters because of exception safety. If `f.read()` (or anything else inside the block) raises an exception, the `finally` clause still runs - the file still gets closed - and only then does the exception propagate.
+
+Without the `try` / `finally`, an exception inside the block would skip the `f.close()` line entirely, leaving an open file handle behind. Long-running programs that leak file handles eventually hit the operating system's per-process limit and start failing in confusing ways.
+
+The pattern works, but it is verbose, and you have to remember it every single time you open a file (or a socket, or a database connection, or any other resource that needs cleanup). The `with` statement compresses it into one line.
+
+## The `with` Statement: Resources That Clean Up After Themselves
+
+The same code with `with`:
+
+<div class="filename">example.py</div>
+
+```python
+with open("config.txt") as f:
+    contents = f.read()
+    # ... do something with contents
+# f is closed automatically here, even if the block raised
+```
+
+The `as f` binding makes the file object available inside the block. When the block exits - whether by reaching the end normally, by `return`, or by an exception propagating - the file is closed. Exception safety comes for free; you do not need to write the `try` / `finally` yourself.
+
+Multiple resources can be opened in a single `with` statement using a comma:
+
+<div class="filename">example.py</div>
+
+```python
+with open("input.txt") as src, open("output.txt", "w") as dst:
+    dst.write(src.read())
+```
+
+Both files are closed when the block exits, regardless of which one (or which line in the body) raised. (This comma form has been available since Python 3.1 and is the idiomatic way to open multiple resources together.)
+
+The exception-safe cleanup is also why context managers and Python's exception-handling story are interlocked. If you want to handle a specific exception _and_ still clean up, you combine `with` (for the cleanup) with `try` / `except` (for the handling). See [How to Read a Python Error Traceback](/blog/how-to-read-python-error-traceback) for the exception-handling side.
+
+## How `with` Works: `__enter__` and `__exit__`
+
+The `with` statement is not magic. Internally, when Python encounters `with thing as x:`, it calls two methods on `thing`:
+
+1. **`__enter__(self)`** runs at the top of the block. Its return value is bound to `x` (the name after `as`).
+2. **`__exit__(self, exc_type, exc_value, traceback)`** runs when the block exits. If the block ran without exception, all three arguments are `None`. If an exception propagated out of the block, they describe it.
+
+That is the entire context manager protocol. Any object that defines both methods can be used with `with`.
+
+A couple of details worth knowing about `__exit__`:
+
+- Returning a **truthy** value from `__exit__` _suppresses_ the exception - the exception is silently swallowed and execution continues after the `with` block.
+- Returning **`None`** or any falsy value lets the exception propagate normally. This is what you want almost every time.
+- `__exit__` runs whether the block exited normally or via exception. It is the `finally` part of `try` / `finally`.
+
+## Writing a Class-Based Context Manager
+
+Once you know the protocol, you can implement it on any class. Here is a `Timer` that measures how long a block of code takes:
+
+<div class="filename">example.py</div>
+
+```python
+import time
+
+class Timer:
+    def __enter__(self):
+        self.start = time.perf_counter()
+        return self  # this is what `as t` will bind to
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.elapsed = time.perf_counter() - self.start
+        print(f"Block took {self.elapsed:.4f} seconds")
+        # implicit `return None` - any exception inside the block still propagates
+
+
+with Timer() as t:
+    sum(range(10_000_000))
+```
+
+```terminal
+$ python example.py
+
+Block took 0.1532 seconds
+```
+
+A few things to notice:
+
+- `__enter__` returns `self` so that `as t` binds to the `Timer` instance. After the block exits you can still read `t.elapsed`.
+- `__exit__` runs at the end of the block - even if `sum(...)` had raised, the elapsed time would still be printed and then the exception would propagate.
+- The `Timer` class does not need to inherit from anything special. The `with` statement only cares that the two methods exist.
+
+The same pattern works for any setup/teardown pair: opening and closing a connection, acquiring and releasing a lock, changing into a directory and changing back, creating a temporary file and deleting it.
+
+## The `@contextmanager` Decorator: A Simpler Alternative
+
+For one-off context managers, writing a full class can feel heavy. Python's standard library ships `contextlib.contextmanager`, a decorator that turns a generator function into a context manager. Everything before the `yield` is `__enter__`; everything after the `yield` is `__exit__`.
+
+The `Timer` rewritten as a generator:
+
+<div class="filename">example.py</div>
+
+```python
+import time
+from contextlib import contextmanager
+
+@contextmanager
+def timer():
+    start = time.perf_counter()
+    try:
+        yield  # the body of the `with` block runs here
+    finally:
+        elapsed = time.perf_counter() - start
+        print(f"Block took {elapsed:.4f} seconds")
+
+
+with timer():
+    sum(range(10_000_000))
+```
+
+The `try` / `finally` matters. When the body of the `with` block raises an exception, that exception is thrown _back into the generator_ at the `yield` line. Without a `try` / `finally`, the cleanup code after `yield` never runs.
+
+You can also yield a value, and the value becomes what `as x` binds to:
+
+<div class="filename">example.py</div>
+
+```python
+@contextmanager
+def timer():
+    start = time.perf_counter()
+    state = {"elapsed": None}
+    try:
+        yield state
+    finally:
+        state["elapsed"] = time.perf_counter() - start
+
+
+with timer() as t:
+    sum(range(10_000_000))
+
+print(f"Block took {t['elapsed']:.4f} seconds")
+```
+
+One footgun worth flagging: wrapping the `yield` in a bare `try` / `except: pass` silently swallows _every_ exception, including `KeyboardInterrupt` and `SystemExit`. Prefer `try` / `finally` for cleanup, and only catch specific exception types when you intentionally want to suppress them.
+
+## Standard-Library Context Managers Worth Knowing
+
+Once you start looking, context managers are everywhere in the standard library. A few that earn their keep in everyday code:
+
+### `open()` — files
+
+Already covered. The canonical example, and the one most Python developers see first.
+
+### `contextlib.suppress` — pythonic exception swallowing
+
+`contextlib.suppress(SomeException)` is the clean replacement for the `try` / `except SomeException: pass` pattern. It says "ignore this exception type if it happens; otherwise behave normally."
+
+Before:
+
+<div class="filename">example.py</div>
+
+```python
+import os
+
+try:
+    os.remove("tmp.lock")
+except FileNotFoundError:
+    pass
+```
+
+After:
+
+<div class="filename">example.py</div>
+
+```python
+import os
+from contextlib import suppress
+
+with suppress(FileNotFoundError):
+    os.remove("tmp.lock")
+```
+
+The `with` version reads more directly: "delete this file, and shrug if it isn't there."
+
+### `tempfile.TemporaryDirectory` — auto-cleaning scratch directories
+
+For tests and scripts that need a real filesystem path but should not leave files behind, `tempfile.TemporaryDirectory()` creates a directory on disk, gives you its path, and deletes the whole tree when the block exits.
+
+<div class="filename">example.py</div>
+
+```python
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
+with TemporaryDirectory() as tmp:
+    scratch = Path(tmp) / "data.json"
+    scratch.write_text('{"hello": "world"}')
+    # ... do work with the file
+# The directory and everything inside it is gone here.
+```
+
+This is the right primitive for any "I need a real path on disk but only for this one operation" case. No manual cleanup, no try/finally to write.
+
+### Other context managers worth knowing in passing
+
+A short list, each worth one line:
+
+- **`threading.Lock`** - `with lock:` acquires the lock and releases it on block exit. Same idea, applied to concurrency.
+- **`pathlib.Path("x.txt").open()`** - returns the same file object as builtin `open()`, just reached through `pathlib`.
+- **`unittest.mock.patch(...)`** - replaces an attribute for the duration of the block and restores it on exit. The standard tool for mocking in tests.
+
+The point isn't to memorize the list. It's to recognize the shape - any time the stdlib gives you something that has to be paired with a cleanup call, look for a `with` form first.
+
+## `async with`: The Async Equivalent
+
+The async world has its own version. An async context manager defines `__aenter__` and `__aexit__` (note the leading `a`), and is used with `async with`:
+
+<div class="filename">example.py</div>
+
+```python
+async with db.transaction() as tx:
+    await tx.execute("INSERT INTO ...")
+# tx is committed or rolled back here, depending on whether the block raised
+```
+
+Mechanically it is the same idea - acquire on entry, clean up on exit - just awaited. Async database drivers, async HTTP clients (like `aiohttp`'s `ClientSession`), and any other resource with async setup or teardown use this form. Deserves its own post; for now, know that you'll see it in async codebases and the mental model carries over.
+
+## Takeaways
+
+- **The `with` statement is sugar over the `__enter__`/`__exit__` protocol.** Any class that implements both can be used with `with`.
+- **Exception safety is the load-bearing reason `with` exists.** `__exit__` runs whether the block returned normally or raised - the same guarantee `try` / `finally` provides, without the boilerplate.
+- **`__exit__` can suppress exceptions** by returning a truthy value. Almost always return `None` (the default) - swallowing exceptions silently makes bugs invisible.
+- **The `@contextmanager` decorator** turns a generator into a context manager. Code before `yield` is setup; code after is cleanup. Wrap the `yield` in `try` / `finally` if cleanup must always run.
+- **`contextlib.suppress(FileNotFoundError)`** is the clean replacement for the `try` / `except FooError: pass` pattern.
+- **`tempfile.TemporaryDirectory()`** is the right primitive for "I need a scratch directory that goes away when I'm done."
+- **`async with`** is the async equivalent, with `__aenter__` and `__aexit__`. Same mental model, just awaited.
+
+For more Python topics, see [How to Read a Python Error Traceback](/blog/how-to-read-python-error-traceback) and [The `if __name__ == "__main__"` Pattern](/blog/python-name-main-pattern).

@@ -109,6 +109,7 @@ A few rules of thumb:
 
 - **Catch specific exception types**, not bare `except:`. A bare except will swallow `KeyboardInterrupt` and `SystemExit` and hide real bugs.
 - **Catch the narrowest type that makes sense.** `except ValueError:` is much better than `except Exception:` because it only suppresses the case you actually expect.
+- **For resource cleanup that must always run** (closing files, releasing locks), prefer `with` over `try` / `finally`. See [Python Context Managers](/blog/python-context-managers-with-statement) for the protocol behind it.
 - **Catch multiple types with a tuple**:
 
 ```python

@@ -1,0 +1,176 @@
+---
+title: 'CloudFormation !Ref vs !GetAtt in serverless.yml'
+date: '2020-02-15'
+tags: ['serverless', 'aws-cloudformation']
+summary: 'The mental model behind CloudFormation !Ref and !GetAtt - !Ref returns a resource primary identifier, !GetAtt returns one of its named attributes. With practical examples for IAM permissions and Lambda environment variables in serverless.yml.'
+images: ['/static/thumbnails/serverless.png']
+draft: false
+---
+
+When you are writing `serverless.yml` and need to reference one resource from another - granting IAM permissions to a DynamoDB table by ARN, passing a queue URL into a Lambda's environment, building an API Gateway URL from its REST API ID - you have to choose between two CloudFormation intrinsic functions: `!Ref` and `!GetAtt`.
+
+They look interchangeable in some cases and not in others. This post is the mental model that makes the choice obvious.
+
+## The Mental Model
+
+Every CloudFormation resource has three things:
+
+- **A logical ID** - the name you give it in the `Resources` block (`RestaurantsTable`, `MyBucket`).
+- **A primary "Ref return value"** - what `!Ref LogicalId` returns. AWS defines this per resource type.
+- **A set of named attributes** - what `!GetAtt LogicalId.AttributeName` reaches. Each resource type has its own list.
+
+The two intrinsic functions map onto that:
+
+- **`!Ref`** returns the primary value.
+- **`!GetAtt`** returns one specific named attribute.
+
+That is the whole rule. The rest of this post is making it concrete with the resources you actually touch.
+
+## `!Ref`: The Primary Identifier
+
+`!Ref` has two uses:
+
+1. On a CloudFormation parameter, it returns the parameter's value.
+2. On a resource, it returns the resource's primary identifier (defined per type by AWS).
+
+The primary identifier varies per resource type. Here is what `!Ref` returns for the most common AWS resources:
+
+| Resource type              | `!Ref` returns                  |
+| -------------------------- | ------------------------------- |
+| `AWS::DynamoDB::Table`     | Table name                      |
+| `AWS::S3::Bucket`          | Bucket name                     |
+| `AWS::SQS::Queue`          | Queue URL                       |
+| `AWS::Lambda::Function`    | Function name                   |
+| `AWS::SNS::Topic`          | Topic ARN _(note: not name)_    |
+| `AWS::IAM::Role`           | Role name                       |
+| `AWS::ApiGateway::RestApi` | REST API ID (e.g. `abc123def4`) |
+| `AWS::KinesisStream`       | Stream name                     |
+
+Most resources follow the pattern of "primary value is the name." SNS topics are the outlier - `!Ref` returns the ARN.
+
+A typical use - referencing a table name from a Lambda's environment block:
+
+```yaml
+functions:
+  get-restaurants:
+    handler: functions/get-restaurants.handler
+    environment:
+      restaurants_table: !Ref RestaurantsTable
+
+resources:
+  Resources:
+    RestaurantsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        BillingMode: PAY_PER_REQUEST
+        # ...
+```
+
+The deployed Lambda gets `process.env.restaurants_table = "my-service-dev-RestaurantsTable-1Y097GF7QLUIX"` - the real CloudFormation-generated table name. For more on the pattern of passing CloudFormation values into Lambda env vars (including how to read them locally), see [Export Serverless Framework Environment Variables to a Local .env File](/blog/serverless-export-environment-variables).
+
+## `!GetAtt`: A Specific Named Attribute
+
+`!GetAtt` reaches into a resource and returns one of its named attributes. The syntax is `!GetAtt LogicalId.AttributeName`.
+
+Common attributes for the same resources:
+
+| Resource type              | Useful `!GetAtt` attributes                             |
+| -------------------------- | ------------------------------------------------------- |
+| `AWS::DynamoDB::Table`     | `Arn`, `StreamArn`                                      |
+| `AWS::S3::Bucket`          | `Arn`, `DomainName`, `RegionalDomainName`, `WebsiteURL` |
+| `AWS::SQS::Queue`          | `Arn`, `QueueName`                                      |
+| `AWS::Lambda::Function`    | `Arn`                                                   |
+| `AWS::SNS::Topic`          | `TopicName`                                             |
+| `AWS::IAM::Role`           | `Arn`, `RoleId`                                         |
+| `AWS::ApiGateway::RestApi` | `RootResourceId`                                        |
+
+Most resources expose an `Arn` attribute via `!GetAtt`. This is the most common reason you reach for `!GetAtt` instead of `!Ref` - you want the ARN, not the name.
+
+## Practical Example: Scoping IAM Permissions
+
+The most common `!GetAtt` use in `serverless.yml` is scoping IAM permissions to a specific resource:
+
+```yaml
+provider:
+  name: aws
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Scan
+        - dynamodb:GetItem
+      Resource: !GetAtt RestaurantsTable.Arn
+
+resources:
+  Resources:
+    RestaurantsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        # ...
+```
+
+IAM policy statements need ARNs, not names. `!Ref RestaurantsTable` would give you the table name (`my-service-dev-Restaurants...`), which IAM does not accept as a resource. `!GetAtt RestaurantsTable.Arn` gives you the full ARN (`arn:aws:dynamodb:us-east-1:123456789012:table/my-service-dev-Restaurants...`), which IAM does.
+
+For the broader picture of scoping IAM permissions for serverless deployments, see [A Least-Privilege IAM Strategy for Serverless Framework Deployments](/blog/serverless-framework-least-privilege-iam-deployment-strategy).
+
+## Practical Example: Lambda Environment Variables
+
+The other common use is passing a resource identifier into a Lambda via the `environment` block:
+
+```yaml
+functions:
+  process-orders:
+    handler: functions/process-orders.handler
+    environment:
+      orders_queue_url: !Ref OrdersQueue            # Queue URL
+      orders_queue_arn: !GetAtt OrdersQueue.Arn     # Queue ARN
+
+resources:
+  Resources:
+    OrdersQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        VisibilityTimeout: 60
+```
+
+Most SDK calls that talk to the queue need the URL (`!Ref`). Some configurations - dead-letter queues, IAM policy resources, EventBridge targets - need the ARN (`!GetAtt`). Which one you reach for depends on what the downstream code expects.
+
+## Looking Up What `!Ref` Returns for a New Resource Type
+
+When you start using a CloudFormation resource you haven't touched before, the way to find out what `!Ref` returns is:
+
+1. Open the resource's AWS docs page - e.g. [`AWS::DynamoDB::Table`](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-dynamodb-table.html).
+2. Scroll to the **Return values** section near the bottom.
+3. The **Ref** subsection lists what `!Ref` returns; the **Fn::GetAtt** subsection lists every available named attribute.
+
+Yan Cui maintains a [searchable cheatsheet](https://theburningmonk.com/cloudformation-ref-and-getatt-cheatsheet/) of `!Ref` and `!GetAtt` values across every CloudFormation resource, which is faster than navigating AWS docs for one-off lookups.
+
+## `Fn::Sub` and `${...}`: Composing Strings
+
+`!Ref` and `!GetAtt` return values verbatim. When you need to build a composed string - a URL, a connection string, a formatted ARN - reach for `Fn::Sub`:
+
+```yaml
+provider:
+  environment:
+    api_url: !Sub https://${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/${self:provider.stage}
+```
+
+Inside `!Sub`, `${LogicalId}` is equivalent to `!Ref LogicalId`. `${AWS::Region}`, `${AWS::AccountId}`, `${AWS::StackName}` are CloudFormation pseudo-parameters that resolve at deploy time.
+
+To reference a `!GetAtt` attribute inside `!Sub`, use the dot syntax:
+
+```yaml
+provider:
+  environment:
+    table_arn: !Sub ${RestaurantsTable.Arn}
+```
+
+For places where the Serverless Framework's native YAML doesn't accept intrinsic functions (rare, but it happens with some plugins), the [`serverless-pseudo-parameters`](https://www.npmjs.com/package/serverless-pseudo-parameters) plugin lets you inline pseudo-parameters with a `#{...}` syntax. See the [env-vars post](/blog/serverless-export-environment-variables) for an example of when this matters.
+
+## Takeaways
+
+- **`!Ref` returns a resource's primary identifier** (varies per type - usually the name, sometimes the ARN as with SNS topics).
+- **`!GetAtt LogicalId.AttributeName` returns a specific named attribute** of a resource. `Arn` is the most common attribute to ask for.
+- **IAM policy resources need ARNs**, so IAM scoping in `serverless.yml` almost always uses `!GetAtt LogicalId.Arn` (not `!Ref`).
+- **Lambda environment variables can use either**, depending on what the downstream code expects (queue URL vs queue ARN, table name vs table ARN).
+- **For composed strings - URLs, formatted ARNs - use `!Sub`** with `${LogicalId}` (equivalent to `!Ref`) and `${LogicalId.Attribute}` (equivalent to `!GetAtt`).
+- **Looking up what `!Ref` returns for a new resource type**: the resource's AWS docs page has a "Return values" section that lists both `Ref` and `Fn::GetAtt` outputs.

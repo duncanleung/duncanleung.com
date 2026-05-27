@@ -44,7 +44,7 @@ The same applies to API Gateway URLs, SQS queue ARNs, SNS topic ARNs, and any ot
 
 ## Step 1: Declare Environment Variables in `serverless.yml`
 
-In the `environment:` block of a function, you can reference CloudFormation resources using the standard intrinsic functions `!Ref` and `!GetAtt`:
+In the `environment:` block of a function, you can reference CloudFormation resources using the standard intrinsic functions `!Ref` and `!GetAtt`. (For the mental model on when to use which, see [CloudFormation !Ref vs !GetAtt in serverless.yml](/blog/cloudformation-ref-vs-getatt-serverless-yml).)
 
 ```yaml
 functions:

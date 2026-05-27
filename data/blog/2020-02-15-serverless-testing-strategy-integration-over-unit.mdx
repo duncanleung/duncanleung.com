@@ -182,6 +182,8 @@ A unit test cannot reach any of those layers. A pure integration test that calls
 
 The flip side: end-to-end tests are slow and brittle compared to unit tests, so keep them targeted. Cover the critical paths (the API endpoints that exist), the IAM-sensitive operations (everything that writes), and the async event sources. Do not try to exhaustively cover every combination at this level.
 
+Idempotency contracts on queue-driven workers are a particularly good target for this kind of testing - the lock is a property of the database, not your handler code, so only an integration test against real Postgres and real SQS can verify it actually holds (see [Idempotent SQS Workers with Postgres UPDATE](/blog/postgres-where-status-idempotent-sqs-worker) for the pattern).
+
 The deployer permissions that make this whole loop possible - the IAM user that actually runs `sls deploy` - are a separate concern, covered in [Serverless Framework: a least-privilege IAM deployment strategy](/blog/serverless-framework-least-privilege-iam-deployment-strategy).
 
 ## Pure Logic Helpers Are Still Worth Unit Testing

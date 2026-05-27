@@ -1,0 +1,238 @@
+---
+title: 'Idempotent SQS Workers with Postgres UPDATE: The WHERE-Status Pattern'
+date: '2026-05-27'
+tags: ['backend', 'go', 'aws', 'postgres']
+summary: "Most SQS idempotency guides reach for Redis dedupe keys or dedupe tables. If your worker's job ends in a terminal state-machine transition, the row's own status column is already the lock - and one UPDATE statement is the entire safety story."
+images: ['/static/thumbnails/go.png']
+draft: false
+---
+
+Coming from a frontend background, my mental model for "make sure this only happens once" was Redux: dispatch an action, the reducer handles it, done. The first time I had to think about idempotency on the backend - a worker pulling SQS messages - I assumed I'd need Redis. A dedupe key, maybe a fallback dedupe table, TTLs, the whole machinery.
+
+What I ran into instead, on a project that had been doing this for years, was a pattern that needed none of that. One `UPDATE` statement. The row's own `status` column was the lock. I didn't believe it could be that simple at first - I kept looking for the "real" idempotency layer somewhere upstream - but the pattern is correct, it's the codebase's de facto convention, and it works precisely because of properties of Postgres and SQS I had to actually go read about.
+
+This post is what I wish someone had handed me on day one of that project.
+
+## The Problem: At-Least-Once Means Duplicate Execution
+
+The setup. A user takes an action - say, generating an AI summary of some content. An API handler writes a row to a `jobs` table with `status = pending`, then publishes an SQS message saying "process job X." A worker process polls SQS, receives the message, does the actual work (calls an external API, gets a result), and updates the row to `status = completed`.
+
+The problem is that SQS guarantees **at-least-once** delivery. The same message can be redelivered if:
+
+- The worker crashes mid-processing.
+- The worker takes longer than the queue's visibility timeout to ack the message.
+- The worker explicitly returns failure and SQS retries.
+
+Coming from frontend, the failure case I was worried about was the simplest one: worker pulls message, calls OpenAI, gets back a summary, writes it to the database, crashes _before_ deleting the SQS message. Five minutes later the visibility timeout expires and the same message gets redelivered. The worker calls OpenAI again - second bill - writes the result again, overwrites the metadata of the first call. Generation timestamp is wrong, token count is doubled, money is wasted.
+
+The naive fix - "make sure the worker deletes the message before doing the work" - doesn't help. If you delete first, a worker crash before completing the work means the job is silently lost forever. The whole point of at-least-once is that the queue insists on delivery until you ack.
+
+So you need _idempotent processing on the consumer side._ I assumed that meant Redis.
+
+## What I Reached For First (And Why It Was Overkill)
+
+The standard recommendations when I went searching:
+
+**Redis SETNX with a TTL.** Hash the SQS message ID, try to set it in Redis with `NX` (only if not exists) and a 24-hour TTL. If the set succeeds, you're the first; if it fails, someone else got there first; bail.
+
+The catch: Redis is not durable. A failover can lose keys. That makes Redis a fast pre-filter, not a correctness primitive. If a key disappears and a redelivery sneaks through, you're double-billing again.
+
+**A dedupe table with `UNIQUE(message_id)`.** Insert the message ID into a `processed_messages` table at the start of processing. If the insert hits the unique constraint, you've already processed it; bail. This is durable - but it costs an extra write per message even when 99% of messages are unique. And you end up with a `processed_messages` table you have to garbage-collect.
+
+**SQS FIFO queues with content-based deduplication.** FIFO does it for you - within a 5-minute window. Past 5 minutes, you're on your own. FIFO also has a per-message-group throughput cap that standard queues don't.
+
+**Distributed locks (Postgres advisory locks, Redis Redlock).** Acquire a lock by job ID, do the work, release. This is right when concurrent workers would corrupt shared mutable state _during_ the work. For my case - one row per job, one terminal transition - a lock held for the duration of the body was overkill.
+
+All four are real tools with real use cases. But the codebase I joined didn't use any of them, and I couldn't figure out why until someone pointed at the actual `UPDATE` statement.
+
+## The Pattern: WHERE-Status as the Idempotency Guard
+
+Here is the UPDATE that's doing the work:
+
+```sql
+UPDATE jobs
+SET status = 'completed',
+    result = $2,
+    completed_at = NOW()
+WHERE id = $1
+  AND status = 'pending';
+```
+
+The non-obvious part is the second condition in the `WHERE`. Postgres takes a row-level exclusive lock on the matching row. If two workers race on the same `id`, one of them acquires the lock first, completes the `UPDATE`, and commits. The second worker, when it tries the same `UPDATE`, re-reads the row under `READ COMMITTED` (the default isolation level), sees `status = 'completed'`, finds zero rows matching, and returns `rowsAffected = 0`.
+
+A single `UPDATE` statement is its own implicit transaction in Postgres. You don't need `BEGIN` / `COMMIT` around it; the row-level lock plus the `WHERE` check is the entire atomicity story.
+
+On the Go side, the worker checks the rows-affected count:
+
+```go
+func (s *store) UpdateCompleted(ctx context.Context, id uuid.UUID, result Result) error {
+    res, err := s.db.ExecContext(ctx, updateCompletedSQL, id, result)
+    if err != nil {
+        return fmt.Errorf("update completed: %w", err)
+    }
+    rowsAffected, err := res.RowsAffected()
+    if err != nil {
+        return err
+    }
+    if rowsAffected == 0 {
+        return ErrAlreadyHandled
+    }
+    return nil
+}
+```
+
+When the worker sees `ErrAlreadyHandled`, the right move is to log it at Debug, return `nil` to the SQS handler so the message gets deleted, and move on. The duplicate delivery is a silent no-op, not an error.
+
+## The Worker Side: Always-Delete + DB-Driven Retry
+
+The companion piece is what the SQS consumer does with the worker's return value. In the codebase I joined, the consumer _always deletes_ the message regardless of outcome:
+
+```go
+func (c *Consumer) handle(ctx context.Context, msg *sqs.Message) {
+    err := c.processor.Process(ctx, msg)
+    // Always delete - the DB is the source of truth, not SQS.
+    c.queue.DeleteMessage(ctx, msg)
+    if err != nil && !errors.Is(err, ErrAlreadyHandled) {
+        c.logger.Error("processor failed", "err", err)
+    }
+}
+```
+
+My frontend instinct said: "wait, if the processor failed, shouldn't we leave the message in the queue so it retries?" Backend convention (at least on this team) said the opposite. The argument:
+
+- If processing failed, the row gets updated to `status = 'error'` with `last_error = '<detail>'` and `attempt_count = attempt_count + 1` (incremented SQL-side, not read-modify-write).
+- A separate cron sweeps `status = 'error'` rows on whatever backoff policy you want and re-enqueues them.
+- This separates "is the message still alive in the queue?" from "should we retry this job?" The queue is just a trigger to re-evaluate; the row's status column is the actual retry ledger.
+
+The SQS queue's `maxReceiveCount` and DLQ then become a safety net for _infrastructure_ failures (the worker crashed before it could even update the row), not for _job_ failures (the LLM returned an error).
+
+This was the shift I had to internalize. On the frontend, the action you dispatch _is_ the work; if it failed, you dispatch again. On a backend with a database, the database is the source of truth, and the queue is just a hint that says "something might be ready."
+
+## The Load-Bearing Caveat: Side Effects Run Before the UPDATE
+
+Here is the part I want to be honest about, because it's the part I missed reading the codebase the first time.
+
+The single-UPDATE pattern prevents duplicate **state corruption**. It does not prevent duplicate **side effects**.
+
+The order of operations inside a typical worker is:
+
+1. Read the job row.
+2. Call the expensive external API (LLM, payment processor, whatever).
+3. `UPDATE` the row with the result, with `WHERE status = 'pending'`.
+
+If two workers race on the same job - because SQS redelivered the message before the first worker finished - they both reach step 2. Both call the LLM. Both get a result back. Both attempt step 3. One wins, one gets `rowsAffected = 0`.
+
+But you've called the LLM twice.
+
+For most of what I've been working on, this is an acknowledged tradeoff. The duplicate-delivery rate in steady state is low. The cost of an occasional duplicate LLM call (a few cents) is much cheaper than the infrastructure cost of preventing it. We log the rate, monitor it, accept it.
+
+If your side effect is _not_ tolerable to call twice - a charge against a customer's credit card, an email to a real human, an irreversible transfer of funds - the single-UPDATE pattern is not enough. You need to protect the side effect itself, not just the row.
+
+## The Two-Phase Variant: Claim Then Commit
+
+For expensive or externally-visible side effects, the pattern grows to two `UPDATE`s.
+
+**Phase 1: claim.** Before doing any work, atomically transition the row from `pending` to `processing`:
+
+```sql
+UPDATE jobs
+SET status = 'processing',
+    claimed_at = NOW()
+WHERE id = $1
+  AND status = 'pending';
+```
+
+If `rowsAffected = 0`, someone else claimed it (or it's already terminal). Bail out as `ErrAlreadyHandled`. If it succeeds, you have an exclusive claim on the job - no other worker can claim it because `status` is no longer `pending`.
+
+**Phase 2: commit.** Do the side effect, then transition `processing → completed`:
+
+```sql
+UPDATE jobs
+SET status = 'completed',
+    result = $2,
+    completed_at = NOW()
+WHERE id = $1
+  AND status = 'processing';
+```
+
+Now the expensive side effect only runs once - for whichever worker won the claim race in phase 1. The other workers saw zero rows in phase 1, never called the LLM, and went home.
+
+This is the minimum-viable version of Brandur Leach's atomic-phases pattern from [Implementing Stripe-like Idempotency Keys in Postgres](https://brandur.org/idempotency-keys). Stripe's version goes much further - recovery points so a retry resumes mid-workflow, an idempotency keys table with saved response payloads - but the kernel of the idea is what's above.
+
+## The Cost of Two-Phase: Stuck-in-Processing
+
+The two-phase variant has a failure mode the single-UPDATE pattern does not: a worker that successfully claims (phase 1) and then crashes _before_ phase 2 leaves the row stuck in `processing`. Forever. No subsequent message can claim it, because the WHERE clause requires `status = 'pending'`.
+
+The fix is a reaper - a separate cron that periodically sweeps stranded rows:
+
+```sql
+UPDATE jobs
+SET status = 'pending',
+    claimed_at = NULL
+WHERE status = 'processing'
+  AND claimed_at < NOW() - INTERVAL '15 minutes';
+```
+
+A stranded claim now ages out, and the next message can pick the job back up. The 15-minute timeout is tunable - long enough that a legitimate slow worker isn't pre-empted, short enough that operational delay is acceptable.
+
+Without the reaper, claimed-and-crashed jobs are silently lost. The gnarly part of this for frontend-me was realizing that the "simple" two-phase pattern in fact requires a third moving part (the reaper) to be complete. Idempotency on the backend has more failure modes than I expected, and each escape hatch tends to drag in its own escape hatch.
+
+## A Note on Postgres Isolation Levels
+
+Everything above assumes `READ COMMITTED`, which is Postgres's default. The pattern works exactly as described - the second worker re-reads the row after the first commits, sees the new status, matches zero rows, returns `ErrAlreadyHandled`.
+
+If your application runs under `REPEATABLE READ` or `SERIALIZABLE`, the second `UPDATE` can return `40001 serialization_failure` instead of zero rows. Worker code under those isolation levels needs to treat `40001` as "retry or treat as already-handled" - not as an error to surface. Most application code runs on `READ COMMITTED` and never touches this case, but it's worth knowing about so you don't get blindsided.
+
+## When the Pattern Doesn't Fit
+
+The WHERE-status pattern is precisely scoped. A few cases where it isn't the right tool:
+
+- **Counter increments.** `UPDATE accounts SET balance = balance + $1 WHERE id = $2` is not a state transition; every call moves the value. A WHERE-status guard does nothing here. You need a dedupe table keyed on the message ID, or an event-sourced ledger.
+
+- **Send-once side effects with no DB row.** Sending an email, posting a webhook, charging a card. These don't have a natural state column to gate on. Use idempotency keys with a dedupe table - Brandur's pattern is the canonical reference.
+
+- **Strict exactly-once semantics with external systems.** You cannot have it. Pick either at-least-once with idempotent consumers (the pattern above) or at-most-once with possible drops.
+
+- **Long-running mutex during the body of the work.** If concurrent workers would corrupt shared mutable state _during_ the work and not just at the commit, you need a lock held for the duration. The WHERE-status pattern only locks at the commit point.
+
+## When to Reach for What
+
+```text
+Is the work a terminal state-machine transition?
+├── No → Dedupe table with UNIQUE(message_id)
+└── Yes
+    ├── Is the side effect tolerable to run twice?
+    │   ├── Yes → Single UPDATE with WHERE status = pending
+    │   └── No  → Two-phase: claim (pending → processing),
+    │             then commit (processing → completed),
+    │             plus a stuck-in-processing reaper cron
+    └── Is shared mutable state involved during the work?
+        └── Yes → Add an advisory lock or distributed lock;
+                  the WHERE-status guards the commit, not the body
+```
+
+For the CRUD-shaped backend workers I've been writing, the single-UPDATE pattern is usually enough, and reaching for Redis or a dedupe table is overkill. The "interesting" case is the two-phase variant, and the cost of that is the reaper cron you have to remember to add.
+
+## Testing the Contract
+
+One last thing. The only way to know any of this actually works is integration tests against a real Postgres and a real (or high-fidelity simulated) SQS. A unit test that mocks the database will happily pass for code that doesn't actually lock anything, because the lock is a property of Postgres, not your Go code.
+
+This is the same point I made in [Serverless Testing Strategy: Test Integrations and IAM Surface](/blog/serverless-testing-strategy-integration-over-unit) - for backend systems the bugs live at integration boundaries, and the test that catches them is the one that exercises the real boundary.
+
+Concretely, the regression test for this contract looks like: insert a row at `pending`, run the worker handler twice with the same job ID concurrently, assert that the row ends up `completed` exactly once and the second call returned `ErrAlreadyHandled`.
+
+## Takeaways
+
+- **The single `UPDATE` with `WHERE status = 'pending'` is the idempotency primitive for terminal state transitions.** Postgres's row-level lock under `READ COMMITTED` is the entire safety story - no Redis, no dedupe table, no FIFO needed.
+- **`rowsAffected = 0` means "already handled."** Return a sentinel error, swallow it at the consumer layer, and delete the SQS message. Treating the duplicate delivery as a silent no-op is the correct default.
+- **Always-delete plus DB-driven retry separates queue concerns from job concerns.** The queue is just a trigger to re-evaluate; the row's status column is the actual retry ledger. A cron re-drives `error` rows.
+- **The single-UPDATE pattern prevents duplicate state corruption, not duplicate side effects.** If your worker calls an expensive API before the UPDATE, two concurrent workers can both call it. For most workloads this is an acceptable tradeoff - quantify the duplicate rate and accept it.
+- **For non-tolerable side effects, use the two-phase variant.** Claim (`pending → processing`) before the side effect, commit (`processing → completed`) after. The side effect only runs once.
+- **Two-phase requires a stuck-in-processing reaper.** A worker that claims and crashes leaves the row stranded. A cron that resets `status = 'processing' AND claimed_at < NOW() - 15 minutes` back to `pending` is mandatory, not optional.
+- **The pattern only fits terminal state transitions.** Counter increments, send-once side effects with no row, and at-most-once-required work all need different primitives.
+
+## Further Reading
+
+- [Implementing Stripe-like Idempotency Keys in Postgres](https://brandur.org/idempotency-keys) - Brandur Leach's canonical writeup. The atomic-phases pattern in this post is the minimum-viable version of his design.
+- [Designing robust and predictable APIs with idempotency](https://stripe.com/blog/idempotency) - Stripe's blog post on idempotency keys at the HTTP layer.
+- [Serverless Testing Strategy: Test Integrations and IAM Surface](/blog/serverless-testing-strategy-integration-over-unit) - why integration tests are the only way to verify idempotency contracts against real Postgres and real SQS.

@@ -1,0 +1,288 @@
+---
+title: 'Agentic Engineering at Airvet: Research, Plan, Implement'
+date: '2026-04-09'
+tags: ['ai', 'productivity']
+summary: "A talk I gave to the Airvet engineering team on working with AI coding agents - the mental model, context engineering, and the Research → Plan → Implement loop that ties them together."
+images: ['/static/thumbnails/programming.png']
+draft: false
+---
+
+This is a talk I gave to the Airvet engineering team on April 9, 2026, about how we work with AI coding agents day to day. The thesis: the highest-leverage thing you can do with an agent isn't write a better prompt - it's split your work into Research, Plan, and Implement phases and manage context deliberately at each step.
+
+The post below is the scroll-through version. Each slide is on the left, the narration follows on the right (or stacks above on mobile). Scroll the narration column and the slide will keep pace.
+
+<ScrollyTalkSection images={[
+  "/static/talks/agentic-engineering-airvet-research-plan-implement/slide-01.png",
+  "/static/talks/agentic-engineering-airvet-research-plan-implement/slide-02.png",
+  "/static/talks/agentic-engineering-airvet-research-plan-implement/slide-03.png",
+  "/static/talks/agentic-engineering-airvet-research-plan-implement/slide-04.png",
+  "/static/talks/agentic-engineering-airvet-research-plan-implement/slide-05.png",
+  "/static/talks/agentic-engineering-airvet-research-plan-implement/slide-06.png",
+  "/static/talks/agentic-engineering-airvet-research-plan-implement/slide-07.png",
+  "/static/talks/agentic-engineering-airvet-research-plan-implement/slide-08.png",
+  "/static/talks/agentic-engineering-airvet-research-plan-implement/slide-09.png",
+  "/static/talks/agentic-engineering-airvet-research-plan-implement/slide-10.png",
+  "/static/talks/agentic-engineering-airvet-research-plan-implement/slide-11.png",
+  "/static/talks/agentic-engineering-airvet-research-plan-implement/slide-12.png",
+  "/static/talks/agentic-engineering-airvet-research-plan-implement/slide-13.png",
+  "/static/talks/agentic-engineering-airvet-research-plan-implement/slide-14.png",
+  "/static/talks/agentic-engineering-airvet-research-plan-implement/slide-15.png",
+  "/static/talks/agentic-engineering-airvet-research-plan-implement/slide-16.png",
+  "/static/talks/agentic-engineering-airvet-research-plan-implement/slide-17.png",
+  "/static/talks/agentic-engineering-airvet-research-plan-implement/slide-18.png",
+  "/static/talks/agentic-engineering-airvet-research-plan-implement/slide-19.png",
+  "/static/talks/agentic-engineering-airvet-research-plan-implement/slide-20.png",
+]}>
+
+<div data-slide="0">
+
+Today I'm talking about agentic engineering - how we work with AI coding agents at Airvet using a deliberate Research → Plan → Implement workflow.
+
+The argument is that the biggest leverage we get from agents in 2026 isn't from finding clever prompts. It's from splitting work into phases, picking the right mode of the agent for each phase, and managing context ruthlessly at every step.
+
+</div>
+
+<div data-slide="1">
+
+A quick map of where we are. AI coding agents have gone through four phases.
+
+**Early 2020s** - autocomplete on steroids, line-level completion.
+**2022** - GitHub Copilot's breakthrough with function-level suggestions.
+**2025** - agents that actually execute: decomposing tasks, modifying files, running tests, opening pull requests.
+**2026** - what Armin Ronacher (creator of Python's Flask) calls "working with machines." A fundamental shift from using a tool to collaborating with one.
+
+This last shift is the one that changes how we should be working day to day.
+
+</div>
+
+<div data-slide="2">
+
+Three things to internalize about that shift.
+
+AI coding agents are no longer just autocomplete - they're collaborators, and we work with them continuously through the day.
+
+To get full value out of that, we have to manage context ruthlessly and follow a deliberate Research → Plan → Implement loop.
+
+Otherwise we run into the classic problem: garbage in, garbage out.
+
+</div>
+
+<div data-slide="3">
+
+The mental model I've found most useful for working with agents: treat them as an _energetic, well-read, confidently wrong junior developer_.
+
+Their strengths are real. They're fast and tireless. They can read and explain large volumes of code in seconds. They have no ego - they take corrections and iterate without resistance. They're well-read across an enormous breadth of sources, often knowing APIs and patterns you don't. And they're confident and energetic - the "You're absolutely right!" response is half the time genuine recognition.
+
+</div>
+
+<div data-slide="4">
+
+The weaknesses are equally real, and they're where most of the bad output comes from.
+
+They lack judgment - confidently wrong without the context to correct themselves. They have no business context - they don't know why we made the architectural choices we did. They don't have memory of past decisions or constraints. They're prone to errors that need human review.
+
+Working with them well means treating their output like a junior developer's PR: often useful, often correct, but always requiring a careful read before you merge. And that mental model is what lets you avoid the "garbage in, garbage out" trap.
+
+</div>
+
+<div data-slide="5">
+
+There are three layers of agent configuration that work together. Knowing what each one is for is most of the battle.
+
+**Modes** are role-based behaviors. `ask` is read-only research. `architect` is planning and outlining changes. `code` is implementation and execution. Each mode restricts the agent's capabilities to suit the current phase of work.
+
+**`agents.md`** is project-level persistent rules - the always-on configuration file. It contains conventions, build and test commands, scope boundaries. The agent loads it on every interaction to maintain consistency and context.
+
+**Skills** are reusable on-demand workflow playbooks. Saved prompts for repeated workflows like generating changelogs, creating graphics, or specific coding tasks. They make agent behavior consistent across projects.
+
+</div>
+
+<div data-slide="6">
+
+Four primitives for managing context, which together are most of what "context engineering" means in practice.
+
+**Persist context outside the window.** Keep essential information in memory files, scratch pads, and `agents.md` rather than relying on what fits in the prompt. The window is small; the project state is not.
+
+**Select relevant information.** Give the agent only what it needs for the current task. Irrelevant data hurts more than it helps.
+
+**Summarize and compress.** When context grows past what's useful, condense it into summaries that preserve key insights while cutting tokens.
+
+**Isolate context across agents.** When you run agents in parallel, keep their contexts separate so they don't contaminate each other.
+
+</div>
+
+<div data-slide="7">
+
+Three things to watch for in the context window itself.
+
+**Quality drops past ~50% utilization.** More context isn't better. Performance falls off sharply once the window fills up. This is sometimes called "context rot."
+
+**Context poisoning.** Outdated comments, failed approaches lingering in history, and mixing unrelated tasks all degrade output quality. Bad context causes the agent to repeat errors or generate irrelevant suggestions.
+
+**MCP token consumption.** Every MCP server you connect adds its tool descriptions to every prompt - silently consuming tokens you could have spent on the actual task.
+
+</div>
+
+<div data-slide="8">
+
+Four specific failure modes worth naming, so you can spot them when they show up.
+
+**Expensive context.** Every token of conversation history is re-sent as input on every turn. Long sessions become slow and expensive. The bill creeps up in a way that's invisible if you're not watching.
+
+**Quality degradation.** Output gets worse past ~50% window utilization. More context does not equal better results - excessive or irrelevant context actively harms output quality.
+
+**MCP bloat.** Disable MCP servers you don't actively need. Their tool descriptions are loaded into every prompt, filling the window unnecessarily.
+
+**Poisoned context.** Don't try to steer an agent back from a wrong direction by adding more context - that just deepens the poison. Start a new session and have the agent summarize its current state for handoff.
+
+</div>
+
+<div data-slide="9">
+
+This is the loop, in three phases, with one critical insight tying them together. We'll walk through each.
+
+The **Research Phase** comes first. Use read-only mode to understand the system, identify the files involved, and brainstorm edge cases. Output a research document for human review. The deliverables are a research document, an edge case list, and system understanding notes - all written down so a human can verify before any code gets touched.
+
+</div>
+
+<div data-slide="10">
+
+The **Plan Phase**. In architect mode, outline the files to change, the verification strategy, and the scope boundaries. Produce a step-by-step plan file, often in a `plans/` folder of the repo.
+
+The deliverables: the plan file itself, a change-scope definition (what's in and what's explicitly out), and a verification strategy. The plan is the bridge between "we understand the system" and "now we modify it."
+
+</div>
+
+<div data-slide="11">
+
+The **Implement Phase**. Run in code mode with minimal context in a fresh session. Execute the plan, commit frequently, and review the changes like a PR.
+
+The deliverables: code changes, frequent commits as checkpoints, and PR-style human reviews of what the agent produced. Implementation should feel cheap and mechanical because the hard thinking already happened in the previous two phases.
+
+</div>
+
+<div data-slide="12">
+
+The **Critical Insight** that ties all three phases together:
+
+Human time spent on research and planning is the highest-leverage investment you can make. Hard thinking should be done _before_ implementation, not during it. A good plan turns implementation into well-thought-out code, reduced errors, and efficient execution. A bad plan turns implementation into hundreds of lines of code that have to be thrown away.
+
+This is why we separate the phases. Each one has a different purpose and a different cost; treating them as one continuous "ask the agent to do something" session conflates the cheap parts with the expensive parts.
+
+</div>
+
+<div data-slide="13">
+
+Zooming in on the Research Phase.
+
+The reason this phase exists: _a bad line of research can become hundreds of lines of bad code._ Cheap effort here saves expensive effort later.
+
+Use read-only mode. Task the agent to study the system without making changes. The agent reads files, identifies the parts relevant to the change, brainstorms edge cases, and maps the data flow. The goal is to minimize risk before planning and implementation begin.
+
+The output is a detailed research document - a written summary of insights and findings that a human can review before committing to anything.
+
+</div>
+
+<div data-slide="14">
+
+The Plan Phase.
+
+The framing: _human time at the planning phase is the highest-leverage use of your time._ This is where you should spend a disproportionate share of your hours, because everything downstream depends on it.
+
+Use plan mode. The agent outlines the files to change, the verification strategies, and the scope boundaries. It defines the exact changes to be made, how to verify them through testing, and what is explicitly in or out of scope (which is how you stop scope creep before it starts).
+
+The output is a step-by-step plan file. With a good plan, implementation can run with minimal context - often by smaller and cheaper models, and often in parallel across multiple agents.
+
+</div>
+
+<div data-slide="15">
+
+The Implementation Phase.
+
+The framing: _"We're no longer just using machines. We're now working with them."_
+
+Run each implementation agent in a fresh session. Use worktrees to enable parallel work without merge conflicts. Pass in minimal context to prevent degradation. Avoid carrying over tasks from earlier sessions - old context contaminates new work. Avoid outdated or irrelevant information in the prompt.
+
+Commit changes frequently to maintain checkpoints you can roll back to. Treat each commit like a small PR you'd review on a junior engineer's branch.
+
+</div>
+
+<div data-slide="16">
+
+Four tactical tips for working with agents day-to-day.
+
+**@-mentions for precise context** - reference specific files, commits, or terminal output directly so the agent knows exactly what you mean instead of guessing.
+
+**Select and send code snippets** - focus the agent's attention on relevant code sections rather than expecting it to find them.
+
+**Autocomplete in prompts** - use VSCode or Cursor's prompt autocomplete to write better prompts faster.
+
+**Slash commands for task management** - create slash commands for repeated workflows so you don't re-prompt the same instructions every time.
+
+</div>
+
+<div data-slide="17">
+
+The five things to take with you.
+
+**Adopt the Research → Plan → Implement loop** as your default workflow. Avoid premature coding.
+
+**Use read-only mode for research.** Prevent agents from writing code during the understanding phase - keep the focus on understanding.
+
+**Monitor context utilization.** Quality degrades past ~50% utilization. Disable irrelevant MCP servers to reduce context pollution.
+
+**Manage sessions wisely.** Start a new session when things go off the rails. Have the agent summarize current state for a smooth handoff instead of trying to steer it back.
+
+**Commit frequently and review.** Treat agent output like a junior developer's PR. Review carefully, especially architectural decisions and edge cases.
+
+</div>
+
+<div data-slide="18">
+
+A reference glossary of the terms used in this talk.
+
+**Agentic Engineering** - working collaboratively with AI agents using deliberate workflows and context management.
+
+**Context Engineering** - curating LLM context by persisting, selecting, compressing, and isolating information.
+
+**Context Window Degradation** - output quality drops when context exceeds ~50% of the window, worsened by irrelevant or outdated context.
+
+**MCP (Model Context Protocol)** - the standard for AI agents to access tools. MCP servers add tool descriptions to prompts.
+
+**`agents.md`** - project-level configuration file with always-on rules, conventions, and context.
+
+**Skills** - reusable, on-demand workflow playbooks that agents invoke for specific tasks.
+
+**Ask / Architect / Code Modes** - role-based configurations restricting agent capabilities during research, planning, and implementation phases.
+
+**Work Trees** - git worktrees used to isolate agent changes for review and merge before committing.
+
+**Research → Plan → Implement Loop** - workflow emphasizing understanding, planning, and executing with minimal context for high-quality output.
+
+</div>
+
+<div data-slide="19">
+
+Where to go next.
+
+**Key thought leaders** worth following:
+
+- Andrej Karpathy on context engineering
+- Dexter Horthy on research-plan-implement workflows
+- Armin Ronacher on collaborating with AI agents and productivity gains
+
+**Curated collections:** [obra/superpowers on GitHub](https://github.com/obra/superpowers) - a community-maintained set of agent workflow patterns.
+
+**Tools and platforms:**
+
+- Spec-Driven Development
+- Research-Plan-Implement
+- QRSPI (Question-Research-Structure-Plan-Implement) - the expanded variant
+
+The patterns and language are still settling, but the underlying ideas - phase-separated workflows, context discipline, treating the agent as a junior collaborator - are stable enough to build a daily practice around.
+
+</div>
+
+</ScrollyTalkSection>
+
+The big shift from 2024 to 2026 hasn't been the raw capability of the models - it's been the discipline of how we work with them. Models will keep getting better. What gets compounding leverage is the workflow you build around them: where you spend human time, where you let the agent run, and how you keep the context honest as the work progresses.

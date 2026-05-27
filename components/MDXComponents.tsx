@@ -5,6 +5,7 @@ import Image from './Image'
 import CustomLink from './Link'
 import TableWrapper from './TableWrapper'
 import Bleed from 'pliny/ui/Bleed'
+import ScrollyTalkSection from './ScrollyTalkSection'
 
 export const components: MDXComponents = {
   Image,
@@ -13,4 +14,5 @@ export const components: MDXComponents = {
   pre: Pre,
   table: TableWrapper,
   Bleed,
+  ScrollyTalkSection,
 }

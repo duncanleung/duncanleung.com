@@ -1,0 +1,303 @@
+---
+title: 'Producer, Service, ProducerService: Interface Segregation for Shared Singletons in Go'
+date: '2026-04-30'
+tags: ['backend', 'go']
+summary: "When one Go struct legitimately serves multiple consumer roles - producer, service, admin - declare three interfaces and let DI cache the singleton at the wide type while each consumer holds only the methods it can call. Same shape as io.ReadWriteCloser in the stdlib."
+images: ['/static/thumbnails/go.png']
+draft: false
+---
+
+Coming from TypeScript, the natural mental model for "one class, several roles" is interface inheritance: `interface IService extends IProducer, IConsumer`. The first time I needed to share a stateful service across several call sites in Go - a webhook that wanted to enqueue work, a worker that wanted to process it, an admin handler that wanted to read the result - I reached for one wide interface that bundled every method and called it done.
+
+The codebase I joined used a different shape. Three interfaces, not one: a narrow `Producer`, a narrow `Service`, and a combined `ProducerService` that embedded both. Each consumer's struct held only the narrow interface for its role; DI cached the singleton at the wide combined type and let Go's implicit interface satisfaction do the narrowing at the parameter boundary.
+
+It felt like ceremony at first. Then someone pointed out that `io.ReadWriteCloser` in the standard library is the exact same shape, and it stopped feeling like ceremony and started feeling like discipline.
+
+## The Problem: One Struct, Multiple Consumer Roles
+
+The scenario. A queue-backed feature has one concrete service:
+
+```go
+type service struct {
+    db    *sql.DB
+    queue Queue
+    llm   LLMClient
+}
+
+func (s *service) Enqueue(ctx context.Context, id uuid.UUID) error {
+    // push an SQS message saying "process job id"
+}
+
+func (s *service) Process(ctx context.Context, id uuid.UUID) error {
+    // load the job, call the LLM, write the result
+}
+
+func (s *service) GetLatest(ctx context.Context, id uuid.UUID) (*Result, error) {
+    // read the most recent terminal row for id
+}
+```
+
+Three different call sites consume it:
+
+- A **webhook handler** wants `Enqueue` only.
+- A **worker** wants `Process` only.
+- An **admin handler** wants `GetLatest` only.
+
+You want one singleton (one set of connection pools, one LLM client) wired into all three. My first instinct was to declare one wide interface and let DI hand it out everywhere.
+
+## What's Wrong with One Wide Interface
+
+The wide interface looks like this:
+
+```go
+type SummaryService interface {
+    Enqueue(ctx context.Context, id uuid.UUID) error
+    Process(ctx context.Context, id uuid.UUID) error
+    GetLatest(ctx context.Context, id uuid.UUID) (*Result, error)
+}
+```
+
+It compiles. DI hands the singleton out. Every consumer is satisfied. But every consumer now also _can_ call any method on the interface. A webhook handler holding `SummaryService` can call `GetLatest`. A worker can call `Enqueue` and re-queue more work to itself. None of that fails at compile time. Some of it might not fail at runtime either - it just produces wrong-but-plausible behavior that's hard to spot in a code review.
+
+This is the case the **Interface Segregation Principle** is talking about - "no client should be forced to depend on methods it does not use." Dave Cheney's [SOLID Go Design](https://dave.cheney.net/2016/08/20/solid-go-design) makes the point that ISP isn't a Go-specific idea, but Go's implicit interface satisfaction makes it cheap to apply: there's no `implements` declaration to update, no inheritance graph to refactor. Splitting one wide interface into smaller role interfaces costs almost nothing.
+
+## The Standard Go Answer: Consumer-Declared Interfaces
+
+The idiomatic Go move here, before we get to the singleton case, is **"accept interfaces, return structs"** - the consumer declares the interface it needs, right at the consumption site. I wrote about this in [Go Idioms: Accept Interfaces, Return Types](/blog/go-idiom-accept-interfaces-return-types), and it's the right move most of the time.
+
+In this style, each consumer's package owns its own narrow interface:
+
+```go
+// internal/webhook/handler.go
+package webhook
+
+type enqueuer interface {
+    Enqueue(ctx context.Context, id uuid.UUID) error
+}
+
+type Handler struct {
+    summary enqueuer
+}
+```
+
+```go
+// internal/worker/worker.go
+package worker
+
+type processor interface {
+    Process(ctx context.Context, id uuid.UUID) error
+}
+
+type Worker struct {
+    summary processor
+}
+```
+
+The concrete `*service` satisfies both interfaces because Go's interface satisfaction is implicit - no `implements` keyword required, the method set of `*service` is checked against the method set of the interface at the point of assignment. The webhook handler sees only `Enqueue` on its `summary` field; the worker sees only `Process`. Neither can call into the other's methods.
+
+This is great for two or three consumers. The interfaces are tiny, they live next to the code that uses them, and refactoring is local.
+
+## Where Consumer-Declared Breaks Down
+
+The problem shows up at scale. Imagine five consumers across different layers, three of which all need `Process(ctx context.Context, id uuid.UUID) error`. Each one declares it in their own package:
+
+```go
+// internal/worker/worker.go
+type processor interface {
+    Process(ctx context.Context, id uuid.UUID) error
+}
+
+// internal/cron/regenerator.go
+type processor interface {
+    Process(ctx context.Context, id uuid.UUID) error
+}
+
+// internal/admin/regenerate.go
+type processor interface {
+    Process(ctx context.Context, id uuid.UUID) error
+}
+```
+
+Three packages, three identical declarations. Change the signature of `Process` - add a parameter, return an extra value - and you're updating four places: the concrete type plus every consumer's local interface. Each of those updates has its own diff, its own review, its own opportunity to miss one.
+
+This is the case where the role interfaces want to live at the **provider** package, not at each consumer. Declare them once, share them across consumers, and let each consumer narrow at its own field declaration.
+
+## The Stdlib Already Does This: `io.ReadWriteCloser`
+
+Before getting into the domain-named version, look at what the standard library does. From the `io` package:
+
+```go
+type Reader interface {
+    Read(p []byte) (n int, err error)
+}
+
+type Writer interface {
+    Write(p []byte) (n int, err error)
+}
+
+type Closer interface {
+    Close() error
+}
+
+type ReadWriteCloser interface {
+    Reader
+    Writer
+    Closer
+}
+```
+
+Three narrow role interfaces and one combined interface that embeds all three. Concrete types like `*os.File` and `net.Conn` satisfy `ReadWriteCloser` because they have every method on the union. Different consumers reach for different subsets:
+
+- `io.Copy(dst Writer, src Reader)` only needs reading and writing.
+- A function that needs to close at the end takes `ReadWriteCloser`.
+- A function that only writes takes `Writer`.
+
+This is the same pattern, applied to file-like things instead of domain services. The standard library doesn't apologize for using it. It's how `io.ReadWriteCloser` exists at all - Go has no inheritance, no intersection types, and no `&` operator on types. **Interface embedding is the only mechanism in the language for expressing "satisfies all of these contracts at once."** The method set of the combined interface is the union of the embedded interfaces' method sets.
+
+Once `io.ReadWriteCloser` clicks as the prototype, the domain-service version is just renaming.
+
+## The Pattern: Producer + Service + Combined
+
+Generalize the `io` example to a domain service. The three interfaces live in the provider's package:
+
+```go
+// internal/summary/interface.go
+package summary
+
+type Producer interface {
+    Enqueue(ctx context.Context, id uuid.UUID) error
+}
+
+type Service interface {
+    Process(ctx context.Context, id uuid.UUID) error
+    GetLatest(ctx context.Context, id uuid.UUID) (*Result, error)
+}
+
+// ProducerService is satisfied by anything that satisfies both
+// Producer AND Service.
+type ProducerService interface {
+    Producer
+    Service
+}
+```
+
+`ProducerService` is the singleton-shaped interface - empty body, just two embedded interfaces. The concrete `*service` from earlier satisfies it for free because its method set is the union of `Producer`'s and `Service`'s method sets.
+
+The names are domain-specific in your codebase (mine literally calls them `Producer` and `Service` because the singleton is both a queue producer and a queue-driven service). The shape is what matters.
+
+## How the Narrowing Works
+
+Go satisfies interfaces **implicitly**. The community usually says "implicit interface satisfaction"; type theorists call it structural typing. The practical effect: a value typed as `ProducerService` is automatically accepted anywhere a `Service` is expected, with no cast.
+
+```go
+func runWorker(svc summary.Service) {
+    svc.Process(ctx, id)  // OK - Process is on Service
+    svc.Enqueue(ctx, id)  // compile error - Enqueue is not on Service
+}
+
+func main() {
+    var ps summary.ProducerService = summary.NewService(...)
+    runWorker(ps)  // accepted - ProducerService is a superset of Service
+}
+```
+
+The function signature is the contract. Inside `runWorker`, the compiler only sees the methods on `Service`, even though the underlying value also has `Enqueue`. The narrowing happens at the parameter boundary; the receiver inside the function genuinely cannot call methods outside the narrow interface.
+
+This is the load-bearing property. With the wide interface from earlier, the worker could call `Enqueue` and you'd find out in production. With `Service` as the parameter type, the worker calls `Enqueue` and you find out at `go build`.
+
+## DI Wiring
+
+The dependency-injection container caches the singleton at the wide combined type, then narrows when handing it to consumers:
+
+```go
+// pkg/di/services.go
+type Services struct {
+    summary summary.ProducerService
+}
+
+func (s *Services) Summary() summary.ProducerService {
+    if s.summary == nil {
+        s.summary = summary.NewService(s.db, s.queue, s.llm)
+    }
+    return s.summary
+}
+```
+
+Consumers declare their field at the narrow role they actually use:
+
+```go
+// internal/webhook/handler.go
+type Handler struct {
+    summary summary.Producer  // only Enqueue
+}
+
+// internal/worker/worker.go
+type Worker struct {
+    summary summary.Service  // only Process, GetLatest
+}
+
+// internal/admin/handler.go
+type AdminHandler struct {
+    summary summary.Service  // only Process, GetLatest
+}
+```
+
+At wiring time, the DI container passes the singleton (typed `ProducerService`) into each consumer's constructor, and Go narrows it at the parameter boundary:
+
+```go
+// cmd/server/main.go
+func main() {
+    services := di.NewServices(...)
+
+    webhookHandler := webhook.NewHandler(services.Summary())  // narrows to Producer
+    worker := worker.NewWorker(services.Summary())            // narrows to Service
+    adminHandler := admin.NewHandler(services.Summary())      // narrows to Service
+}
+```
+
+Each `services.Summary()` returns a `ProducerService`; each constructor's parameter type narrows it. One singleton, three narrowed views.
+
+## The Mockgen Bonus
+
+Tooling like [mockgen](https://github.com/uber-go/mock) and [mockery](https://github.com/vektra/mockery) generates one mock per interface. Declaring three interfaces means three mocks: `MockProducer`, `MockService`, `MockProducerService`.
+
+A worker's test depends on `Service`, so it instantiates `MockService`. The mock physically does not have an `Enqueue` method - `mockgen` only generated methods that appear on the `Service` interface. Writing `mockService.EXPECT().Enqueue(...)` in a test is a compile error, not a "the test passes but doesn't actually check anything" runtime non-failure.
+
+This is the same compile-time-narrowing property carried into the test layer. You can't accidentally write an assertion against a method the worker shouldn't be calling, because the method doesn't exist on the mock.
+
+## When the Pattern Doesn't Fit
+
+The three-interface shape isn't universally right. A few cases where it isn't:
+
+- **Only one consumer profile.** Just one interface. Don't invent roles that don't exist in the code yet.
+- **Heavy overlap (Service is Producer plus one extra method).** Skip the named combined; just embed: `interface { Producer; ExtraMethod(ctx context.Context) error }` at the consumer site, or have `Service` itself embed `Producer`. The named `ProducerService` ceremony earns its keep when the two halves are genuinely distinct, not when one is a superset of the other.
+- **Five or more wildly different roles on one struct.** The pattern is telling you to split the struct, not split the interface. If `service` is also the admin reporter, the cache invalidator, and the metrics collector, that's three or four structs trapped in one.
+- **The role halves share zero state or lifecycle.** Different state means different structs. The whole point of the shared singleton is that the two roles share underlying state (DB connections, queue clients) - if they don't, you're saving nothing by combining them.
+
+## A Note on Overlapping Methods
+
+One Go-spec subtlety worth mentioning. Before Go 1.14 (Feb 2020), embedding two interfaces that declared the same method - even with identical signatures - was a `duplicate method` compile error. The classic case: you couldn't write `interface { io.Reader; io.ReadCloser }` because both contain `Read`. Go 1.14 [relaxed this](https://go.googlesource.com/proposal/+/master/design/6977-overlapping-interfaces.md): overlapping methods with identical signatures now merge cleanly, and only conflicting signatures error.
+
+For the `Producer` + `Service` case with no method overlap, this never comes up. For more elaborate role hierarchies - especially ones built on top of `io.Reader` and friends - it's worth knowing why the pre-1.14 workarounds (separate "interface aliases", awkward forwarding shims) used to exist and why they're now unnecessary.
+
+## Testing the Contract
+
+The compile-time safety of this pattern is enforced by the Go compiler, not by your tests. The thing tests _can_ catch is the actual behavioral contract of the concrete type - that `*service` correctly enqueues a message, processes it, and exposes the result. For that contract, the [integration-test discipline](/blog/postgres-where-status-idempotent-sqs-worker) is what you want: real Postgres, real queue, real assertions on side effects. The mocks generated from these role interfaces are for testing the _consumers_ - the webhook handler, the worker, the admin handler - not the service itself.
+
+## Takeaways
+
+- **One concrete struct can satisfy several narrow interfaces.** Declare each role at the provider; let the DI singleton be typed at the wide combined interface; let each consumer narrow at its own field declaration.
+- **The combined interface is just embedding.** `interface { Producer; Service }` is empty-body and its method set is the union of the embedded interfaces. Go has no inheritance and no `&` intersection type; interface embedding is the only mechanism.
+- **`io.ReadWriteCloser` is the canonical example.** Reader, Writer, Closer, and the combined ReadWriteCloser are the same pattern applied to file-like things. Naming the domain-service version differently doesn't change the shape.
+- **Narrowing happens at the parameter boundary.** A `ProducerService` value passed to a function expecting `Service` is accepted with no cast; inside that function, calling a `Producer` method is a compile error. The safety is compile-time, not runtime.
+- **mockgen generates per-role mocks.** A worker's test using `MockService` literally cannot have an `EXPECT().Enqueue(...)` call - the method isn't on the mock. The compile-time safety carries into the test layer.
+- **Consumer-declared interfaces (the "accept interfaces, return structs" idiom) are still the right first move.** The three-interface pattern is a refinement for the specific case of a shared singleton consumed by many call sites with overlapping subsets. Don't reach for it on day one.
+- **The pattern fits when roles are distinct and share state.** It doesn't fit when there's only one consumer, when one role is a superset of another, when there are five or more wildly different roles, or when the roles share no state.
+
+## Further Reading
+
+- [Dave Cheney - SOLID Go Design](https://dave.cheney.net/2016/08/20/solid-go-design) - the canonical Go-flavored treatment of the Interface Segregation Principle.
+- [`io.ReadWriteCloser` on pkg.go.dev](https://pkg.go.dev/io#ReadWriteCloser) - the stdlib precedent for this exact shape.
+- [Go Idioms: Accept Interfaces, Return Types](/blog/go-idiom-accept-interfaces-return-types) - the complementary idiom, and the right first move before reaching for role interfaces at the provider.
+- [Understanding Interfaces in Go](/blog/understand-go-golang-interfaces) - the foundation, including how implicit interface satisfaction and embedding work.
+- [Idempotent SQS Workers with Postgres UPDATE](/blog/postgres-where-status-idempotent-sqs-worker) - sibling backend-learning post from the same project.

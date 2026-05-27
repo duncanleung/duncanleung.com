@@ -251,3 +251,5 @@ For example, if you need to access fields or methods that are specific to a conc
 ### Returning Interfaces
 
 For example, if you need to return a type that implements multiple interfaces, you should return an interface. For example, if you have a type that implements both `Storer` and `Logger`, you should return a `Storer` or `Logger` interface.
+
+When the same concrete type is genuinely consumed by many call sites with overlapping subsets of methods - a shared singleton wired through DI - declaring per-consumer interfaces in each consumer's package starts to duplicate. The refinement is to declare role interfaces at the provider and let each consumer narrow at its field. See [Producer, Service, ProducerService: Interface Segregation for Shared Singletons in Go](/blog/go-interface-segregation-shared-singletons).

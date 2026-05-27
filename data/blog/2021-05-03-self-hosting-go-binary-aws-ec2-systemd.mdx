@@ -1,0 +1,305 @@
+---
+title: 'Self-Hosting a Go Binary on AWS EC2'
+date: '2021-05-03'
+tags: ['backend', 'go', 'aws']
+summary: 'Deploying a Go service to a single AWS EC2 instance as a hardened systemd service - cross-compiling the binary, copying it across, creating a non-root service user, configuring systemd with the right hardening directives, and handling graceful shutdown.'
+images: ['/static/thumbnails/go.png']
+draft: false
+---
+
+When I deploy a small Go service to a single AWS EC2 instance, the workflow is straightforward but easy to get wrong in subtle ways - running the service as root because port 80 needs it, shipping a binary fat with debug symbols, missing graceful shutdown so deploys drop in-flight requests.
+
+This post walks through doing it carefully: cross-compile the binary, copy it to the host, run it as a non-root systemd service with the right hardening, and handle SIGTERM in the Go code so restarts don't lose requests.
+
+The scope is deliberately the **simple single-host, no-Docker path**. For multi-instance production fleets, containers on ECS or Fargate are usually the right answer - the "When to Outgrow This Pattern" note at the end touches on that. But for a side project, a small internal service, or a single-box production deploy, this pattern is still entirely appropriate.
+
+## Why Go Fits Well on Bare EC2
+
+Go's deployment model is unusually pleasant compared to most other languages:
+
+- **One file.** `go build` produces a single statically-linked binary. No runtime to install, no virtualenv, no `node_modules`, no Gemfile.
+- **Cross-compile from your laptop.** Build the Linux binary on macOS or Windows, `scp` it to the EC2 box, done.
+- **Small attack surface.** Nothing on the box but your binary, the OS, and whatever systemd needs.
+
+That makes the EC2 + systemd pattern especially clean for Go. The rest of this post is the actual steps.
+
+## Step 1: Cross-Compile the Binary
+
+From your local machine, build a Linux binary targeted at the EC2 instance's architecture:
+
+```bash
+$ GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w" -o myapp
+```
+
+What each flag does:
+
+- **`GOOS=linux`** - target Linux instead of your local OS. Required when cross-compiling from macOS or Windows.
+- **`GOARCH=amd64`** - target x86_64. This is the right default for most EC2 instance types (t3, m5, c5, etc.). If you're using a Graviton instance (see the next section), set `GOARCH=arm64` instead.
+- **`CGO_ENABLED=0`** - disable cgo so the binary is fully static. Without this, the binary links against the host's `glibc` and can fail to run if the EC2 instance has a different version than your build machine. The cost: any dependency that requires cgo (like `mattn/go-sqlite3`) won't work - check your dependency tree before using this flag.
+- **`-ldflags="-s -w"`** - strip the symbol table and DWARF debug info. Typically shrinks the binary by ~25% with no runtime effect.
+- **`-o myapp`** - name the output binary.
+
+Verify the build:
+
+```bash
+$ file myapp
+myapp: ELF 64-bit LSB executable, x86-64, ..., statically linked, ...
+```
+
+`statically linked` confirms the `CGO_ENABLED=0` worked.
+
+### A Note on Graviton (ARM64)
+
+AWS Graviton2 instances (t4g, m6g, c6g, r6g) use ARM64. By May 2021, t4g.micro was free-tier-eligible and Graviton was a real cost-saving option for production workloads.
+
+If you're using a Graviton instance, build with `GOARCH=arm64`:
+
+```bash
+$ GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="-s -w" -o myapp
+```
+
+If you're not sure which architecture your instance uses, SSH in and run:
+
+```bash
+$ uname -m
+x86_64       # amd64
+aarch64      # arm64
+```
+
+## Step 2: Create a Service User on the EC2 Instance
+
+SSH into the instance:
+
+```bash
+$ ssh -i ~/.ssh/myapp.pem ubuntu@<public-DNS>
+```
+
+The most common deployment mistake is running the service as `root` because port 80 requires it. We're going to use systemd's capabilities instead, but we still need a non-root user for the service to run as.
+
+Create a dedicated system user that exists only to run the service:
+
+```bash
+$ sudo useradd --system --no-create-home --shell /usr/sbin/nologin myapp
+```
+
+- **`--system`** - creates a system user (no login privileges, no aging, low UID).
+- **`--no-create-home`** - no `/home/myapp` directory. The service has nowhere to read or write outside of paths we explicitly grant.
+- **`--shell /usr/sbin/nologin`** - the user can't be used to log in.
+
+This is defense in depth. If your Go binary is exploited, the attacker gets a shell-less user with no home directory, instead of root on the box.
+
+## Step 3: Copy the Binary to the Instance
+
+From your local machine, copy the binary to a temporary location on the EC2 host:
+
+```bash
+$ scp -i ~/.ssh/myapp.pem ./myapp ubuntu@<public-DNS>:/tmp/myapp
+```
+
+Then SSH in and move it to its final location, with the right owner and permissions:
+
+```bash
+$ sudo mv /tmp/myapp /usr/local/bin/myapp
+$ sudo chown myapp:myapp /usr/local/bin/myapp
+$ sudo chmod 755 /usr/local/bin/myapp
+```
+
+- `/usr/local/bin/` is the standard location for locally-installed executables.
+- `chown myapp:myapp` makes the service user the owner.
+- `chmod 755` lets the owner read/write/execute and everyone else read/execute. This is the standard mode for binaries.
+
+## Step 4: Create the systemd Service File
+
+This is the part most blog posts get wrong. The naive service file runs the binary as `root` with no other hardening. We're going to do it properly.
+
+Create the unit file:
+
+```bash
+$ sudo nano /etc/systemd/system/myapp.service
+```
+
+```ini
+[Unit]
+Description=My Go Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=myapp
+Group=myapp
+ExecStart=/usr/local/bin/myapp
+
+Environment=PORT=80
+Environment=GO_ENV=production
+
+Restart=always
+RestartSec=5
+
+# Allow binding to port 80 without running as root
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
+```
+
+What each section does:
+
+- **`[Unit]`** - `After=network-online.target` + `Wants=network-online.target` makes systemd wait for the network to be reachable before starting the service. Critical for an HTTP server.
+- **`User=myapp` / `Group=myapp`** - run as the non-root user we created in Step 2.
+- **`Environment=...`** - inject configuration into the process. systemd's environment file syntax also supports `EnvironmentFile=/etc/myapp/env` for larger configs.
+- **`Restart=always` / `RestartSec=5`** - if the binary crashes, restart it after a 5-second pause. The pause prevents tight restart loops from monopolizing CPU.
+- **`AmbientCapabilities=CAP_NET_BIND_SERVICE`** - this is the key directive. It lets the non-root `myapp` user bind to privileged ports (anything below 1024, including port 80) without running as root. The `CapabilityBoundingSet` line locks down the set of capabilities the process can ever acquire.
+- **Hardening directives** - `NoNewPrivileges` prevents privilege escalation via `setuid` binaries. `PrivateTmp` gives the service its own `/tmp` (isolated from other processes). `ProtectSystem=strict` mounts `/usr`, `/boot`, `/efi`, and `/etc` read-only for the service. `ProtectHome=true` makes `/home`, `/root`, `/run/user` inaccessible. Together they significantly shrink the blast radius of a compromise.
+
+You can audit a service's hardening with `systemd-analyze security myapp.service` - it returns a score and lists which directives are missing.
+
+## Step 5: Enable, Start, and Verify
+
+After creating the service file, tell systemd to pick up the change:
+
+```bash
+$ sudo systemctl daemon-reload
+```
+
+Enable the service to start at boot, and start it now:
+
+```bash
+$ sudo systemctl enable --now myapp.service
+```
+
+Check its status:
+
+```bash
+$ sudo systemctl status myapp.service
+● myapp.service - My Go Service
+     Loaded: loaded (/etc/systemd/system/myapp.service; enabled; vendor preset: enabled)
+     Active: active (running) since Mon 2021-05-03 14:23:01 UTC; 5s ago
+   Main PID: 12345 (myapp)
+      Tasks: 7 (limit: 1130)
+     Memory: 8.4M
+        ...
+```
+
+Tail the logs to see your application's output:
+
+```bash
+$ sudo journalctl -u myapp -f
+```
+
+`journalctl` reads the systemd journal. The `-u myapp` filters to your service; `-f` follows new output as it arrives. Anything your Go code writes to `stdout` or `stderr` lands here.
+
+Common commands worth knowing:
+
+```bash
+$ sudo systemctl stop myapp.service       # stop the service
+$ sudo systemctl restart myapp.service    # stop + start
+$ sudo systemctl reload myapp.service     # reload config (if your binary supports it)
+$ sudo systemctl disable myapp.service    # don't start at boot
+$ journalctl -u myapp --since "10 min ago"  # historical logs
+```
+
+## Step 6: Handle Graceful Shutdown in Your Go Code
+
+When systemd stops your service (during a deploy, a restart, or shutdown), it sends `SIGTERM` and waits up to `TimeoutStopSec` (default 90s) for the process to exit. If the process doesn't exit in time, systemd sends `SIGKILL`.
+
+If your Go code doesn't handle `SIGTERM`, in-flight HTTP requests are interrupted - users see truncated responses or connection resets. Worse, the next restart may overlap with the old process for a brief window.
+
+Go's `net/http` package has `http.Server.Shutdown(ctx)` for exactly this. It stops accepting new connections, waits for in-flight requests to complete, then returns.
+
+The pattern:
+
+```go
+package main
+
+import (
+	"context"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+)
+
+func main() {
+	server := &http.Server{
+		Addr:    ":" + os.Getenv("PORT"),
+		Handler: buildRouter(),
+	}
+
+	// Start the server in a goroutine so it doesn't block signal handling
+	go func() {
+		log.Printf("Listening on %s", server.Addr)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("server error: %v", err)
+		}
+	}()
+
+	// Block until we receive SIGTERM or SIGINT
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
+	<-stop
+
+	log.Println("Shutdown signal received, draining connections...")
+
+	// Give in-flight requests up to 30 seconds to complete
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		log.Fatalf("shutdown error: %v", err)
+	}
+
+	log.Println("Shutdown complete")
+}
+
+func buildRouter() http.Handler {
+	// ... your routes
+	return nil
+}
+```
+
+A few things worth knowing about this pattern:
+
+- **`server.ListenAndServe()` blocks**, so it has to run in a goroutine. The signal-handling code in `main` blocks on `<-stop` instead.
+- **`http.ErrServerClosed`** is returned by `ListenAndServe` when `Shutdown` is called - it is not an error condition, so we explicitly check for and ignore it.
+- **The shutdown timeout (30s here) should be shorter than systemd's `TimeoutStopSec`** (default 90s). If your `Shutdown(ctx)` hangs longer than systemd is willing to wait, systemd sends `SIGKILL` and you lose the graceful behavior anyway.
+- **`SIGINT` is also handled** so the same code works when you Ctrl+C the binary during local development.
+
+With this in place, a `sudo systemctl restart myapp.service` cleanly drains the current process before starting the new one - no dropped requests.
+
+## Note: When to Outgrow This Pattern
+
+The single-host + systemd pattern is appropriate for:
+
+- Side projects and personal apps
+- Small internal services with one or two instances
+- Single-box production for low-traffic apps where horizontal scaling isn't a concern
+
+It starts to break down when:
+
+- **You need horizontal scaling across multiple instances.** Managing systemd on each box manually doesn't scale. Move to ECS/Fargate (containers + AWS managed orchestration), Beanstalk (Go is a supported platform), or EKS if you already run Kubernetes.
+- **You need zero-downtime deploys across a fleet.** systemd's `restart` is per-instance; multi-instance rolling deploys need a load balancer + a tool that knows about it. ECS/Fargate handles this natively.
+- **You're packaging declaratively.** Consider [`goreleaser`](https://goreleaser.com/) with `nfpm` for building `.deb` / `.rpm` packages that include the systemd unit file - more portable across hosts and easier to roll back.
+- **You need ephemeral compute.** If most of the time the service is idle, Lambda is cheaper than a long-running EC2 instance - though you trade EC2's startup time for Lambda's [cold start latency](/blog/aws-lambda-cold-start-optimization-nodejs).
+
+For now, single-host + systemd is fine. Move when one of the constraints above actually bites.
+
+## Takeaways
+
+- **Cross-compile statically.** `GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w"` produces a small, portable binary. Use `GOARCH=arm64` for Graviton instances.
+- **Never run as root just to bind to port 80.** Create a dedicated `--system --no-create-home` user and use `AmbientCapabilities=CAP_NET_BIND_SERVICE` in the systemd unit.
+- **Always include systemd hardening directives.** `NoNewPrivileges=true`, `PrivateTmp=true`, `ProtectSystem=strict`, `ProtectHome=true` shrink the blast radius of a compromise for no functional cost.
+- **`Restart=always` + `RestartSec=5`** to recover from crashes without a tight restart loop.
+- **Use `journalctl -u myapp -f` for logs.** Anything your Go code writes to `stdout`/`stderr` lands in the systemd journal.
+- **Handle `SIGTERM` with `http.Server.Shutdown(ctx)`.** systemd sends `SIGTERM` first; respecting it means deploys don't drop in-flight requests.
+- **Audit with `systemd-analyze security myapp.service`** to see which hardening directives you might be missing.
+- **Outgrow this pattern when scaling demands it.** Multi-instance fleets belong on ECS/Fargate; ephemeral workloads belong on Lambda (mind the [cold start trade-off](/blog/aws-lambda-cold-start-optimization-nodejs)).

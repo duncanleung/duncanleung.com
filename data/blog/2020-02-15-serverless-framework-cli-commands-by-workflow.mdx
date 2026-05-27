@@ -1,0 +1,123 @@
+---
+title: 'Serverless Framework Commands by Workflow'
+date: '2020-02-15'
+tags: ['serverless', 'aws-lambda']
+summary: 'A practical cheatsheet for the Serverless Framework CLI - organized by workflow phase (bootstrap, develop, deploy, invoke, inspect, rollback, remove) instead of alphabetically.'
+images: ['/static/thumbnails/serverless.png']
+draft: false
+---
+
+The official Serverless Framework docs list every command alphabetically. In practice you reach for the same ~10 commands in predictable phases - starting a new service, iterating locally, deploying, invoking the deployed function, checking logs, rolling back a bad deploy, tearing the stack down. This post is the cheatsheet organized that way.
+
+## Bootstrap a New Service
+
+```bash
+$ serverless create -t aws-nodejs                 // Create a new Node.js service
+$ serverless create -t aws-nodejs-typescript      // Node.js + TypeScript starter
+$ serverless create -t aws-python3                // Python 3 service
+$ serverless create -t aws-go                     // Go service
+```
+
+The `-t` flag picks a template. `serverless create --help` lists all available templates.
+
+## Develop Locally
+
+```bash
+$ serverless invoke local -f hello                       // Run a handler locally
+$ serverless invoke local -f hello -p event.json         // Pass a payload from a file
+$ serverless invoke local -f hello -d '{"foo":"bar"}'    // Pass a payload inline
+```
+
+`invoke local` runs the handler in your local Node.js process - no deploy needed. Useful for fast iteration on handler logic.
+
+```bash
+$ serverless print                  // Print the fully-resolved serverless.yml
+$ serverless print --stage staging  // Resolve variables for a specific stage
+```
+
+`print` resolves every `${...}` variable reference and shows you the final config. Essential when a deploy fails with a variable-substitution error and you need to see what the framework is actually computing.
+
+## Deploy
+
+```bash
+$ serverless deploy                              // Full CloudFormation deploy
+$ serverless deploy -f hello                     // Deploy just one function (fast path)
+$ serverless deploy --stage staging --region eu-west-1  // Multi-stage / multi-region
+$ serverless package                             // Build artifacts without deploying
+```
+
+The two deploy modes are worth knowing:
+
+- **`serverless deploy`** runs a full CloudFormation update. It picks up every change in `serverless.yml` - IAM role changes, new resources, environment variable changes - but is slower (often 1-2 minutes for a small service).
+- **`serverless deploy -f hello`** uses the Lambda `UpdateFunctionCode` API directly. Much faster (a few seconds) but **only updates the function's code**. It can't apply config changes, add resources, or change IAM. Use it for fast handler iteration once the rest of your stack is stable.
+
+```bash
+$ serverless package -p ./build   // Package into ./build/ instead of .serverless/
+```
+
+`package` builds the deployment artifacts without uploading anything. Useful for CI/CD pipelines that want to build once and deploy the same artifact to multiple stages.
+
+## Invoke the Deployed Function
+
+```bash
+$ serverless invoke -f hello                       // Invoke the deployed function
+$ serverless invoke -f hello -d '{"foo":"bar"}'    // Inline payload
+$ serverless invoke -f hello -p event.json         // Payload from file
+$ serverless invoke -f hello --stage staging       // Specific stage
+$ serverless invoke -f hello --log                 // Also print the function's logs
+```
+
+`invoke` (without `local`) calls the deployed function via the Lambda API and prints the response.
+
+## View Logs
+
+```bash
+$ serverless logs -f hello                  // Most recent logs
+$ serverless logs -f hello -t               // Tail logs in real time
+$ serverless logs -f hello --startTime 10m  // Logs from the last 10 minutes
+$ serverless logs -f hello --filter "ERROR" // CloudWatch filter pattern
+```
+
+`logs` is a wrapper over CloudWatch Logs. `-t` (tail) is the one you'll use most - it streams new log events as they arrive.
+
+## Inspect a Deployed Service
+
+```bash
+$ serverless info                  // Endpoints, functions, layers, stack info
+$ serverless info --stage staging  // Specific stage
+$ serverless info --verbose        // Include CloudFormation stack outputs
+```
+
+`info` is the quick "what's actually deployed?" command - shows you the public HTTP endpoints, the deployed function names, and (with `--verbose`) every CloudFormation output.
+
+## Rollback a Bad Deploy
+
+```bash
+$ serverless deploy list                                 // List past deployments with timestamps
+$ serverless rollback --timestamp 1582489427000          // Roll back to a specific deploy
+$ serverless rollback --timestamp 1582489427000 --stage staging
+```
+
+`deploy list` shows you every past deployment of the current service, each with a Unix-ms timestamp. `rollback --timestamp` swaps the Lambda function code and CloudFormation stack back to that point - useful when you've deployed something broken and need to revert quickly.
+
+## Remove a Stack
+
+```bash
+$ serverless remove                                      // Tear down the deployed stack
+$ serverless remove --stage staging --region eu-west-1   // Tear down a specific stage/region
+```
+
+`remove` deletes the CloudFormation stack and all the resources it manages - functions, API Gateway endpoints, IAM roles, log groups, etc. The deployment S3 bucket is also cleaned up.
+
+## Useful Global Flags
+
+These work with most commands:
+
+```bash
+$ serverless deploy --aws-profile my-deployer   // Pick an AWS credentials profile
+$ serverless deploy --verbose                   // Show CloudFormation events as they happen
+$ serverless deploy -s staging -r eu-west-1     // Short forms of --stage and --region
+$ serverless deploy --conceal                   // Hide credentials in CloudFormation output
+```
+
+`--aws-profile` is the one to know about. It picks which profile from `~/.aws/credentials` the framework uses for deploys, so you can keep separate deployer credentials per environment. For the broader picture of scoping IAM permissions on that deployer, see [A Least-Privilege IAM Strategy for Serverless Framework Deployments](/blog/serverless-framework-least-privilege-iam-deployment-strategy).

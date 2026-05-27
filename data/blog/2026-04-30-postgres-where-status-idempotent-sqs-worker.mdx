@@ -1,6 +1,6 @@
 ---
 title: 'Idempotent SQS Workers with Postgres UPDATE: The WHERE-Status Pattern'
-date: '2026-05-27'
+date: '2026-04-30'
 tags: ['backend', 'go', 'aws', 'postgres']
 summary: "Most SQS idempotency guides reach for Redis dedupe keys or dedupe tables. If your worker's job ends in a terminal state-machine transition, the row's own status column is already the lock - and one UPDATE statement is the entire safety story."
 images: ['/static/thumbnails/go.png']

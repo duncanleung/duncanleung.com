@@ -1,0 +1,244 @@
+---
+title: 'Serverless Testing Strategy: Test Integrations and IAM Surface'
+date: '2020-02-15'
+tags: ['serverless', 'aws-lambda', 'aws-iam']
+summary: "Most serverless bugs don't live in your code - they live at integration points and in IAM config. Here's why unit tests miss them and what to test instead."
+images: ['/static/thumbnails/serverless.png']
+draft: false
+---
+
+Most serverless bugs do not live in your code. They live at the integration points between your Lambda and the rest of AWS - and in the IAM policy attached to the function role. Unit tests cannot see either of those surfaces, which is why a green Jest suite routinely ships a broken function.
+
+The standard testing-pyramid advice - heavy on unit tests, light on integration - was shaped by hosted-server applications where most of the logic lived inside the process. Serverless inverts that shape. The handler body is mostly glue: parse an event, call an SDK client, return a response. The bugs live in the glue's environment, not in the glue itself.
+
+## The Risk Profile Shifted
+
+A traditional Express service running on EC2 owns most of its execution context. Authentication middleware, database connections, request routing, response shaping - all of it lives inside one process you can spin up locally and exercise with unit tests.
+
+A Lambda owns almost none of that context. API Gateway parses the request. IAM authorizes the SDK calls. CloudFormation wires the env vars from one resource's output to another resource's input. SQS or SNS or EventBridge decides whether your function even gets invoked. The handler is a thin layer of business logic sitting on top of a stack of AWS configuration.
+
+That stack is where the bugs are. If you take the testing pyramid from your old monolith and apply it to a Lambda service, you end up exhaustively unit-testing the one layer that rarely breaks.
+
+## Where Serverless Bugs Actually Live
+
+Concretely - these are the bugs that ship to production unnoticed when your test strategy is unit-heavy:
+
+**Missing IAM action.** Your handler adds a `dynamodb:PutItem` call but the function role only has `dynamodb:GetItem`:
+
+```yaml
+# serverless.yml
+provider:
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:GetItem
+      Resource: !GetAtt OrdersTable.Arn
+```
+
+The unit test mocks `documentClient.put` and passes. The deployed function returns `AccessDeniedException: User is not authorized to perform: dynamodb:PutItem`.
+
+**DynamoDB GSI missing or with a wrong KeySchema.** The handler queries a `byEmail` index that the table definition never created, or created with a different sort key. The handler code is correct. The table definition is wrong.
+
+**SQS queue not wired as an event source.** The function deploys cleanly. The queue exists. Messages arrive in the queue. The function never fires because the `events:` block in `serverless.yml` is missing the SQS mapping entirely.
+
+**Lambda env var typed via `!GetAtt` against a CloudFormation resource that doesn't exist** - or `!GetAtt OrdersTable.StreamArn` on a table that didn't enable streams. CloudFormation deploys, the env var ends up `undefined` at runtime, and the handler crashes the first time it reads `process.env.ORDERS_STREAM_ARN`. The mechanics of `!Ref` versus `!GetAtt` are covered in [CloudFormation !Ref vs !GetAtt in serverless.yml](/blog/cloudformation-ref-vs-getatt-serverless-yml).
+
+**API Gateway request/response mapping wrong.** The VTL template strips a header you depend on, or wraps the body in a key your handler does not destructure. The handler code works correctly when called directly; the deployed endpoint does not.
+
+**SNS subscription filter policy mismatch.** The subscription's filter policy expects `eventType = "order.created"` but the publisher sends `event_type`. Messages are silently dropped at the subscription layer. No error, no log, just nothing happens.
+
+**Lambda timeout longer than the API Gateway timeout.** API Gateway caps synchronous integration at 29 seconds. If the Lambda is configured with `timeout: 60`, slow invocations look like Lambda errors to the client even though the function eventually returns successfully and gets billed for the full 60 seconds.
+
+**DLQ or `onFailure` destination not configured.** An async invocation fails. The function retries twice per AWS defaults, then the message is dropped on the floor because nothing was wired to catch the failure.
+
+Every one of these passes a unit test that mocks the SDK.
+
+## Why Unit Tests Miss All of These
+
+A unit test for a Lambda handler looks roughly like this:
+
+```javascript
+// handler.test.js
+const AWS = require('aws-sdk')
+jest.mock('aws-sdk')
+
+const mockPut = jest.fn().mockReturnValue({
+  promise: () => Promise.resolve({}),
+})
+AWS.DynamoDB.DocumentClient.mockImplementation(() => ({
+  put: mockPut,
+}))
+
+const { handler } = require('./handler')
+
+test('creates an order', async () => {
+  const result = await handler({ body: JSON.stringify({ id: 'o-1' }) })
+
+  expect(result.statusCode).toBe(201)
+  expect(mockPut).toHaveBeenCalledWith({
+    TableName: 'orders',
+    Item: { id: 'o-1' },
+  })
+})
+```
+
+The test asserts that the handler called `documentClient.put` with the right arguments. That assertion is true. The test passes. The deployed function returns `AccessDeniedException` because the function role does not have `dynamodb:PutItem` on the `orders` table.
+
+The mock is the problem. The unit test's view of the world is bounded by the mock - everything past it is invisible. And everything past it is where the bugs are.
+
+You can spend more effort on the mocks: hand-write conditional responses, use `aws-sdk-mock` to capture every call shape, simulate eventual consistency. The result is a more elaborate fiction. The function role still does not have `dynamodb:PutItem`.
+
+## Integration Tests as the Primary Defense
+
+The shape that actually works:
+
+1. Deploy the service to a real dev stage with `sls deploy --stage dev` (or a per-developer ephemeral stage like `--stage pr-123` for parallel work).
+2. Run Jest or Mocha against the deployed stage. The tests use the real AWS SDK to write fixtures into the real DynamoDB table, invoke the real handler via the real API Gateway endpoint, and read the real result back.
+3. Tear down the stage with `sls remove --stage pr-123` when the branch merges.
+
+A representative integration test:
+
+```javascript
+// integration/createOrder.test.js
+const AWS = require('aws-sdk')
+const fetch = require('node-fetch')
+
+const dynamo = new AWS.DynamoDB.DocumentClient({ region: 'us-east-1' })
+const API_URL = process.env.API_URL // captured from `sls info`
+
+test('POST /orders writes to DynamoDB', async () => {
+  const orderId = `test-${Date.now()}`
+
+  const res = await fetch(`${API_URL}/orders`, {
+    method: 'POST',
+    body: JSON.stringify({ id: orderId, total: 42 }),
+  })
+  expect(res.status).toBe(201)
+
+  const row = await dynamo
+    .get({ TableName: `orders-dev`, Key: { id: orderId } })
+    .promise()
+  expect(row.Item).toMatchObject({ id: orderId, total: 42 })
+})
+```
+
+This test exercises the API Gateway integration, the function's IAM role, the env-var wiring to the table name, the request/response mapping, and the actual DynamoDB write - in one assertion. If any one of those layers is broken, the test fails. None of them are mocked.
+
+The `.promise()` pattern on the SDK calls is the standard AWS SDK v2 shape - see [AWS SDK async/await in Node.js Lambdas](/blog/aws-sdk-promise-async-await-nodejs-lambda) for the longer treatment. Use the same pattern in integration tests; you are calling the same SDK, just from the test process instead of from the Lambda.
+
+If your tests need access to deployed env vars, [exporting them to a local `.env`](/blog/serverless-export-environment-variables) lets the test process talk to the same resources the function does without hard-coding ARNs.
+
+## What Integration Tests Still Don't Cover
+
+Integration tests against real AWS catch a lot, but not everything. Two gaps:
+
+**IAM permissions on the deployed function role.** An integration test that calls DynamoDB _from the test process_ uses the test process's IAM credentials - usually your dev AWS profile, which has wide permissions. The deployed Lambda uses its own function role, which is what `serverless.yml` provisioned. An integration test that writes to DynamoDB through the test process will not catch a function role that is missing `dynamodb:PutItem`. Only invoking the deployed function exercises the deployed function's role.
+
+**API Gateway endpoint configuration.** Request validators, authorizers, CORS, custom domain mappings, stage variables. These only fail when a real HTTP request hits the deployed endpoint with the same headers and shape a real client would send.
+
+Both gaps close the same way: tests that hit the deployed function through its real entry point.
+
+## End-to-End Tests for IAM and Endpoint Config
+
+End-to-end means: deploy, then exercise. For an HTTP-triggered Lambda that is `curl https://abc123.execute-api.us-east-1.amazonaws.com/dev/orders` or its `fetch` equivalent. For an SQS-triggered Lambda, it is publishing to the real queue and asserting on the side effect (a row in DynamoDB, a record in S3, a log line in CloudWatch).
+
+The integration test above is _already_ end-to-end for an HTTP handler, because it goes through `fetch(API_URL)`. The distinction matters more for async handlers, where you cannot simply read a response - you publish to SQS or SNS or EventBridge, then poll the downstream resource for the expected side effect.
+
+```javascript
+// e2e/orderProcessor.test.js
+const sqs = new AWS.SQS()
+const dynamo = new AWS.DynamoDB.DocumentClient()
+
+test('orderProcessor writes to DynamoDB on SQS message', async () => {
+  const orderId = `e2e-${Date.now()}`
+
+  await sqs
+    .sendMessage({
+      QueueUrl: process.env.ORDERS_QUEUE_URL,
+      MessageBody: JSON.stringify({ id: orderId, total: 99 }),
+    })
+    .promise()
+
+  // poll DynamoDB for the row the handler should have written
+  const row = await pollFor(() =>
+    dynamo
+      .get({ TableName: 'orders-dev', Key: { id: orderId } })
+      .promise()
+      .then((r) => r.Item)
+  )
+  expect(row).toMatchObject({ id: orderId, total: 99 })
+})
+```
+
+This is the only kind of test that exercises:
+
+- The SQS-to-Lambda event source mapping
+- The function role's `sqs:ReceiveMessage`, `sqs:DeleteMessage` permissions
+- The function role's `dynamodb:PutItem` permission on the orders table
+- The env-var wiring of `ORDERS_QUEUE_URL` and the table name
+- The actual SQS batching and visibility-timeout semantics
+
+A unit test cannot reach any of those layers. A pure integration test that calls DynamoDB directly does not exercise the function role. End-to-end is the only level at which the deployed system - the thing your users actually hit - is under test.
+
+The flip side: end-to-end tests are slow and brittle compared to unit tests, so keep them targeted. Cover the critical paths (the API endpoints that exist), the IAM-sensitive operations (everything that writes), and the async event sources. Do not try to exhaustively cover every combination at this level.
+
+The deployer permissions that make this whole loop possible - the IAM user that actually runs `sls deploy` - are a separate concern, covered in [Serverless Framework: a least-privilege IAM deployment strategy](/blog/serverless-framework-least-privilege-iam-deployment-strategy).
+
+## Pure Logic Helpers Are Still Worth Unit Testing
+
+The argument is not that unit tests are worthless - it is that unit tests of the _handler_ are worthless. There is still a place for them.
+
+Anything you can extract into a pure function - parsing, validation, formatting, calculation - is a perfect unit-test target:
+
+```javascript
+// lib/pricing.js
+function calculateTotal(items, taxRate) {
+  const subtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0)
+  return Math.round(subtotal * (1 + taxRate) * 100) / 100
+}
+```
+
+```javascript
+// lib/pricing.test.js
+test('applies tax rate', () => {
+  expect(calculateTotal([{ price: 10, qty: 2 }], 0.0875)).toBe(21.75)
+})
+
+test('handles empty cart', () => {
+  expect(calculateTotal([], 0.0875)).toBe(0)
+})
+```
+
+These tests run in milliseconds, do not touch AWS, and catch real bugs in real code. They work because `calculateTotal` does not call any SDK clients - everything it needs is in its arguments.
+
+The discipline: keep handlers thin, push logic into pure helpers, unit-test the helpers, integration-test the handler. A handler whose body is `parse → validate → load → compute → save → respond` should have most of the validation and computation in pure helpers, leaving the handler itself almost trivial enough that the integration test is sufficient coverage.
+
+## A Sensible Test Pyramid for Serverless
+
+```text
+                  ┌─────────────────┐
+                  │  E2E (deployed) │   IAM, API Gateway,
+                  │   critical paths│   async event sources
+                  ├─────────────────┤
+                  │                 │
+                  │  Integration    │   real DynamoDB / SQS / SNS,
+                  │  (deployed dev) │   real handler invocations
+                  │                 │
+                  ├─────────────────┤
+                  │   Unit          │   pure helpers only
+                  │ (pure helpers)  │   (parsing, validation, math)
+                  └─────────────────┘
+```
+
+The shape is inverted from the classic monolith pyramid. Integration is the widest band. End-to-end is a thin top targeted at the IAM-sensitive paths and the async event sources. Unit tests are a thin bottom limited to the pure-logic helpers extracted out of the handler.
+
+The thing to notice is that the _deployed_ layers (integration and E2E) carry most of the weight. That is because the deployed system is where the bugs live. You cannot mock your way to confidence about IAM, CloudFormation outputs, event-source mappings, or VTL templates - you have to deploy them and exercise them.
+
+## Takeaways
+
+- **Serverless bugs are mostly integration bugs.** IAM, CloudFormation outputs, event-source mappings, API Gateway templates - none of these are in your handler code, and none are visible from a unit test.
+- **Unit tests of Lambda handlers mock the SDK, which is the surface that's actually broken.** A passing unit test against `AWS.DynamoDB.DocumentClient` tells you almost nothing about whether the deployed function works.
+- **Integration tests against a deployed dev stage are the primary defense.** Deploy with `sls deploy --stage dev`, then hit the real API Gateway endpoint with real SDK calls. No mocks.
+- **End-to-end tests cover what integration tests miss:** the deployed function's IAM role, the API Gateway endpoint configuration, and async event-source semantics. Keep them targeted to critical paths.
+- **Unit tests still make sense for pure-logic helpers** - parsing, validation, formatting, calculation. Push logic out of the handler so the unit-testable surface is meaningfully covered.
+- **The pyramid inverts for serverless.** Integration is the widest band, end-to-end is a thin top for IAM and async, unit tests are a thin bottom for pure helpers.

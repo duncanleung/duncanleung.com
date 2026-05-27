@@ -275,7 +275,7 @@ Since Node 10, many of Node's built-in modules already expose Promise-based APIs
 
 - **`async` Lambda handlers + `.promise()` SDK calls** is the standard pattern for Node.js Lambda code in 2020. Callback-style handlers still work but are increasingly unusual in new code.
 - **Call `.promise()` on every AWS SDK v2 request** to get a Promise you can `await`. Available since v2.3.0 (2016).
-- **Errors throw** in the `async` style. Wrap multi-step handlers in `try`/`catch` for centralized error handling.
+- **Errors throw** in the `async` style. Wrap multi-step handlers in `try`/`catch` for centralized error handling. But handler `try`/`catch` only catches code errors - permission denials, missing env vars, and event-source misconfigurations need [integration and end-to-end tests against a deployed stage](/blog/serverless-testing-strategy-integration-over-unit).
 - **Independent SDK calls should run in parallel via `Promise.all`.** Sequential `await` chains add up; parallel calls take the time of the slowest.
 - **The init-outside-handler pattern works with Promises too.** Cache the Promise (not the resolved value) in module scope so the work runs once per cold start, not once per invocation.
 - **`util.promisify`** is the equivalent of `.promise()` for non-AWS callback APIs. For Node's built-in modules, prefer the native `.promises` namespaces (`fs.promises`, etc.) when available.

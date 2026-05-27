@@ -593,7 +593,7 @@ Does the caller need the response back synchronously?
 ## Takeaways
 
 - Direct Lambda-to-Lambda invocation is an anti-pattern _most_ of the time, not always. The arguments against it - double billing, coupling, timeout cascades, manual retries - all have specific costs you can compute and weigh.
-- Sync direct invoke is fine when both functions are owned by the same team and live in the same service. The internal contract is yours to manage.
+- Sync direct invoke is fine when both functions are owned by the same team and live in the same service. The internal contract is yours to manage - but it is still a wire-level contract, so test it [end-to-end against a deployed stage](/blog/serverless-testing-strategy-integration-over-unit) rather than with mocks of `lambda.invoke`.
 - The VPC Proxy Pattern is the one case where direct invoke is _better_ than the alternatives - keeping the public-facing function outside the VPC saves cold-start time.
 - For everything else, pick the right alternative: SQS for async durable delivery, SNS for fan-out, EventBridge for cross-service routing, Step Functions for multi-step workflows.
 - Before reaching for any of the above, check whether the second Lambda needs to exist. If it has no AWS dependencies of its own, it's probably a library function in disguise.

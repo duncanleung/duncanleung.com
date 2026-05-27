@@ -417,7 +417,7 @@ One caveat: using `cfnRole` is incompatible with the CloudTrail-based extraction
 
 ## Takeaways
 
-- The Framework user (deploy-time) and the function execution role (runtime) are two different IAM contexts. Both need to be scoped down independently.
+- The Framework user (deploy-time) and the function execution role (runtime) are two different IAM contexts. Both need to be scoped down independently. The function role is best validated by [end-to-end tests against a deployed stage](/blog/serverless-testing-strategy-integration-over-unit) - unit tests with mocked SDKs cannot see it.
 - The Framework's deploy footprint is wide: CloudFormation, S3, CloudWatch Logs, Lambda, IAM, API Gateway, plus whatever your `serverless.yml` declares, plus the delete-side of all of it for rollbacks.
 - **Bottom-up** scoping (start with nothing, add on deploy failures) is the most rigorous but slowest. Best when you have a single small service and unlimited patience.
 - **Top-down** scoping (admin deployer in an isolated dev account, then extract actions from CloudTrail) is the more practical pattern at any real scale. It trades a little dev-account permissiveness for a real least-privilege prod deployer.

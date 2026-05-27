@@ -1,0 +1,232 @@
+---
+title: 'How to Read a Python Error Traceback'
+date: '2020-02-26'
+tags: ['python']
+summary: 'A practical guide to reading Python tracebacks - the bottom-up mental model, multi-frame call stacks, common exception types, and the "During handling of the above exception" chain that confuses beginners.'
+images: ['/static/thumbnails/python.png']
+draft: false
+---
+
+When I first started reading Python error tracebacks, I made the mistake of reading them top-down. The most useful information - the exception type and the line where it actually failed - sits at the **bottom**, not the top. Once I learned to read tracebacks bottom-up, debugging Python errors got much faster.
+
+This post walks through the anatomy of a traceback, the mental model for multi-frame call stacks, the basic `try` / `except` tools for handling exceptions, the exception types you'll see most often, and the confusing "During handling of the above exception" chain that comes up when an exception is raised inside an `except` block.
+
+## The Anatomy of a Traceback (Bottom-Up)
+
+Here is the simplest possible traceback. The file is two lines: a comment and a single `int("abc")` call.
+
+<div class="filename">example.py</div>
+
+```python
+# This will fail
+int("abc")
+```
+
+```terminal
+$ python example.py
+
+Traceback (most recent call last):
+  File ".../example/example.py", line 2, in <module>
+    int("abc")
+ValueError: invalid literal for int() with base 10: 'abc'
+```
+
+Read it from the bottom:
+
+1. **Bottom line** - the exception type (`ValueError`) and its message (`invalid literal for int() with base 10: 'abc'`). This tells you _what_ went wrong.
+2. **Middle** - the line of code that triggered the exception (`int("abc")`). This tells you _which line_ failed.
+3. **One line up from that** - the file path and line number (`File ".../example/example.py", line 2`). This tells you _where_ to look.
+4. **Top line** - `Traceback (most recent call last):` - this is a header that explains the order. Python prints stack frames oldest to newest, so the most recent (the one that actually raised the exception) is at the bottom.
+
+That "most recent call last" header is the key. The frame closest to the exception type is the one closest to the bug.
+
+## A Multi-Frame Traceback
+
+Real tracebacks usually span several function calls. Here's a more typical example with three frames:
+
+<div class="filename">example.py</div>
+
+```python
+def parse_value(text):
+    return int(text)
+
+def load_config(path):
+    return parse_value("abc")
+
+def main():
+    load_config("config.txt")
+
+main()
+```
+
+```terminal
+$ python example.py
+
+Traceback (most recent call last):
+  File ".../example/example.py", line 10, in <module>
+    main()
+  File ".../example/example.py", line 8, in main
+    load_config("config.txt")
+  File ".../example/example.py", line 5, in load_config
+    return parse_value("abc")
+  File ".../example/example.py", line 2, in parse_value
+    return int(text)
+ValueError: invalid literal for int() with base 10: 'abc'
+```
+
+Same bottom-up rule applies, but now there's a call chain to walk through:
+
+- **Bottom**: the exception happened inside `parse_value`, on the `int(text)` call.
+- Moving up: `parse_value` was called from `load_config`, which was called from `main`, which was called at the module level.
+
+The frame closest to the exception (`parse_value`) is usually where the bug lives - but not always. Sometimes the bug is upstream (a caller passing the wrong value). Walking the chain from bottom to top is how you decide where in the stack to actually fix it.
+
+In this example, the bug is _upstream_: `load_config` is hardcoding `"abc"` instead of reading from the file. The exception surfaces inside `parse_value`, but the fix belongs in `load_config`.
+
+## Catching Exceptions with `try` / `except`
+
+When you want your program to keep running after an exception, wrap the risky code in a `try` block and handle the exception in an `except` block:
+
+<div class="filename">example.py</div>
+
+```python
+try:
+    int("a")
+except ValueError:
+    print("Oops, couldn't convert that value into an int!")
+
+print("Reached end of the program.")
+```
+
+```terminal
+$ python example.py
+
+Oops, couldn't convert that value into an int!
+Reached end of the program.
+```
+
+A few rules of thumb:
+
+- **Catch specific exception types**, not bare `except:`. A bare except will swallow `KeyboardInterrupt` and `SystemExit` and hide real bugs.
+- **Catch the narrowest type that makes sense.** `except ValueError:` is much better than `except Exception:` because it only suppresses the case you actually expect.
+- **Catch multiple types with a tuple**:
+
+```python
+try:
+    int(some_value)
+except (ValueError, TypeError):
+    print("That wasn't a valid number")
+```
+
+## Accessing Exception Details with `as`
+
+The `as` clause binds the exception object to a variable so you can inspect its message and attributes:
+
+<div class="filename">example.py</div>
+
+```python
+try:
+    int("a")
+except ValueError as error:
+    print(f"Something went wrong. Message: {error}")
+
+print("Reached end of the program.")
+```
+
+```terminal
+$ python example.py
+
+Something went wrong. Message: invalid literal for int() with base 10: 'a'
+Reached end of the program.
+```
+
+The `error` variable is the actual exception instance. `str(error)` gives you the message, and `error.args` is the tuple of arguments it was raised with. For most built-in exceptions, `error.args[0]` is the same string you see in the message.
+
+This is how you log errors meaningfully - with the original message preserved - rather than just printing a generic "something went wrong."
+
+## Common Python Exception Types
+
+These are the built-in exceptions you'll see most often, with a one-line description of when each one fires:
+
+| Exception                             | Fires when                                                      |
+| ------------------------------------- | --------------------------------------------------------------- |
+| `ValueError`                          | Right type, wrong value: `int("abc")`                           |
+| `TypeError`                           | Wrong type for an operation: `"3" + 4`                          |
+| `KeyError`                            | Missing dictionary key: `{"a": 1}["b"]`                         |
+| `IndexError`                          | List/tuple index out of range: `[1, 2, 3][5]`                   |
+| `AttributeError`                      | Object has no such attribute: `"hello".foo()`                   |
+| `FileNotFoundError`                   | File doesn't exist: `open("missing.txt")`                       |
+| `PermissionError`                     | Insufficient OS permissions on a file path                      |
+| `ZeroDivisionError`                   | `1 / 0`                                                         |
+| `ImportError` / `ModuleNotFoundError` | `import foo` where `foo` isn't installed or can't be found      |
+| `StopIteration`                       | An iterator has no more values - you rarely catch this directly |
+| `KeyboardInterrupt`                   | User hit `Ctrl+C` - do NOT catch this unless you really mean to |
+
+A useful debugging habit: read the exception type first, then the message. The type tells you what category of bug it is; the message tells you the specifics.
+
+## The Exception Chain: "During Handling of the Above Exception..."
+
+If an exception is raised inside an `except` block, Python shows _both_ exceptions in the traceback. The output includes the line **"During handling of the above exception, another exception occurred:"** as a separator.
+
+<div class="filename">example.py</div>
+
+```python
+def get_user(user_id):
+    users = {"alice": 1, "bob": 2}
+    try:
+        return users[user_id]
+    except KeyError:
+        # Bug: 'user_name' was never assigned
+        print(f"User not found: {user_name}")
+```
+
+```terminal
+$ python example.py
+
+Traceback (most recent call last):
+  File ".../example/example.py", line 4, in get_user
+    return users[user_id]
+KeyError: 'carol'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File ".../example/example.py", line 10, in <module>
+    get_user("carol")
+  File ".../example/example.py", line 7, in get_user
+    print(f"User not found: {user_name}")
+NameError: name 'user_name' is not defined
+```
+
+This output trips up beginners because it shows two stack traces stacked on top of each other.
+
+The model:
+
+- The **first traceback** (above the "During handling" line) is the exception you _were_ handling.
+- The **second traceback** (below) is the new exception that happened _while you were handling the first one_.
+- The bug is almost always in the second one, because the first was an expected case you tried to handle. The second is the one your code didn't account for.
+
+In this example, the original `KeyError` was an expected case (we knew lookups could fail). The bug is the `NameError` in our handler - we referenced a `user_name` variable that doesn't exist. Read the second traceback first; the first one is just context.
+
+### Suppressing the Chain with `from None`
+
+If you want to deliberately raise a new exception without exposing the original, use `raise X from None`:
+
+```python
+try:
+    return users[user_id]
+except KeyError:
+    raise LookupError(f"User not found: {user_id}") from None
+```
+
+This is useful when the original exception is an implementation detail you don't want to leak in API responses or library boundaries.
+
+## Takeaways
+
+- **Read tracebacks bottom-up.** The exception type and message are at the bottom; the file/line is one line up. The header "Traceback (most recent call last)" tells you the explicit order.
+- **In a multi-frame traceback, the frame closest to the exception is usually where the bug lives** - but check upstream callers too. Sometimes the fix belongs in the function that passed bad input.
+- **Catch the narrowest exception type that makes sense.** Bare `except:` swallows `KeyboardInterrupt` and hides real bugs.
+- **Use `except X as error:`** to bind the exception to a variable and log the actual message.
+- **The "During handling of the above exception, another exception occurred" chain** means a new exception was raised inside an `except` block. The bug is almost always in the second traceback.
+
+For more Python beginner topics, see [What is, if \_\_name\_\_ == "\_\_main\_\_":](/blog/python-name-main-pattern) - another pattern that confused me when I first picked up Python.

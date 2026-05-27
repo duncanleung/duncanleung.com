@@ -215,7 +215,7 @@ For the prototype-chain details of what `new` actually does, see [Understanding 
 
 ## Arrow Functions: Lexical `this`
 
-Arrow functions are the one invocation style that does not follow the `.call` rule. Arrow functions do not have their own `this` - they capture `this` from the enclosing scope at the moment they are defined.
+Arrow functions are the one invocation style that does not follow the `.call` rule. Arrow functions do not have their own `this` - they capture `this` from the enclosing scope at the moment they are defined. (This is the same lexical-capture mechanism that powers regular [closures](/blog/javascript-closures-lexical-scope-environment-survives) - arrow functions just apply it to `this` as well as ordinary variables.)
 
 ```javascript
 const person = {
@@ -288,7 +288,7 @@ The strict-mode behavior surfaces detachment bugs immediately. ES modules and cl
 
 ## Implementing `Function.prototype.bind` From Scratch
 
-`.bind` sounds magical until you write it yourself. It is just a closure over `.call`.
+`.bind` sounds magical until you write it yourself. It is just a [closure](/blog/javascript-closures-lexical-scope-environment-survives) over `.call`.
 
 A simple implementation:
 

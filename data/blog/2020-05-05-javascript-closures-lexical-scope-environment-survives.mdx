@@ -1,0 +1,209 @@
+---
+title: 'JavaScript Closures: Lexical Scope and the Environment That Survives Function Return'
+date: '2020-05-05'
+tags: ['interview-prep', 'javascript']
+summary: "A closure is a function bundled with the lexical environment it was created in. That environment survives because the closure holds a reference to it - which is why each call to a function factory returns an independent counter."
+images: ['/static/thumbnails/programming.png']
+draft: false
+---
+
+JavaScript closures have a reputation for being a tricky interview topic. Most explainers reach for the counter factory, show that the count keeps incrementing, and stop there - leaving you to guess _why_ it works.
+
+The mental model is one sentence: **a closure is a function bundled with the lexical environment it was created in**. That environment survives because the closure holds a reference to it. Everything else - the counter that keeps counting, the `var`-in-a-loop bug, why arrow functions capture `this` - falls out of that one rule.
+
+## Lexical Scope: Where the Function Is _Written_ Decides What It Sees
+
+JavaScript is **lexically scoped**. When a function references a variable, the engine resolves it by walking outward from where the function was _written_, not from where it was called.
+
+```javascript
+const name = 'outer'
+
+function greet() {
+  console.log(name) // 'outer'
+}
+
+function caller() {
+  const name = 'inner'
+  greet() // logs 'outer', not 'inner'
+}
+
+caller()
+```
+
+`greet` was written next to the top-level `name`, so that is the `name` it sees. The fact that `caller` happens to have its own `name` in scope at the call site is irrelevant. That is what "lexical" means - resolution follows the text of the program.
+
+The opposite would be dynamic scope (old Lisp, bash) where the engine walks the call stack at call time. JavaScript does not do that. The one exception is `this` - regular functions resolve `this` dynamically at the call site, which is exactly why arrow functions exist (more in [the `this` post](/blog/javascript-this-function-invocation-call-bind-apply)).
+
+## Closures: When a Function Outlives Its Outer Call
+
+Every time a function is invoked, the engine creates a new **Lexical Environment** for that call - a record of all the local variables and parameters in scope. When the function returns, that environment is normally discarded.
+
+A closure changes that. If the function returns (or otherwise hands out) an _inner_ function that still references variables from the outer environment, the engine cannot discard the environment - the inner function holds a reference to it. The environment outlives the call that created it.
+
+```javascript
+function makeGreeter(name) {
+  // makeGreeter's environment: { name: <the argument> }
+
+  return function () {
+    // This inner function closes over `name`
+    console.log(`Hello, ${name}`)
+  }
+}
+
+const greetAlice = makeGreeter('Alice')
+const greetBob = makeGreeter('Bob')
+
+// makeGreeter has long since returned, but its environments are still alive
+greetAlice() // 'Hello, Alice'
+greetBob() // 'Hello, Bob'
+```
+
+`makeGreeter('Alice')` returned, but the environment that held `name: 'Alice'` was not discarded - `greetAlice` is still holding a reference to it. Same for `'Bob'`. Two calls, two environments, both kept alive by their respective closures.
+
+That's the entire mechanism. The rest of the post is consequences.
+
+## Each Call Creates a Fresh Environment
+
+The interview-favorite demo:
+
+```javascript
+function buildCounter(start) {
+  let count = start
+
+  // The returned function closes over the `count` declared above
+  return function () {
+    console.log(count)
+    count++
+  }
+}
+
+const myCounter = buildCounter(1)
+myCounter() // 1
+myCounter() // 2
+myCounter() // 3
+
+// New call, new environment, new `count`
+const otherCounter = buildCounter(10)
+otherCounter() // 10
+otherCounter() // 11
+
+// myCounter's environment is independent - untouched
+myCounter() // 4
+```
+
+Every call to `buildCounter` runs the function body fresh, which creates a fresh Lexical Environment with a fresh `count` binding. The returned function captures _that specific_ environment. Two calls return two closures over two completely independent environments - which is why `otherCounter` counting up does not affect `myCounter`.
+
+This is also what people mean by "each closure has its own state." The state is not on the function; the state is in the captured environment, and each call creates a new one.
+
+## The Classic Bug: `var` in a Loop with `setTimeout`
+
+The canonical closure interview question. What does this log?
+
+```javascript
+for (var i = 0; i < 3; i++) {
+  setTimeout(function () {
+    console.log(i)
+  }, 100)
+}
+```
+
+It logs `3 3 3` - not `0 1 2`.
+
+`var` declarations are hoisted to the enclosing _function_ scope, so all three iterations of the loop share **one binding** of `i`. Each `setTimeout` callback closes over that one binding. The loop runs to completion synchronously (timers fire later, as macrotasks); by the time the first callback fires, the loop has already finished and `i === 3`. All three callbacks read the same `i`.
+
+The fix is `let`:
+
+```javascript
+for (let i = 0; i < 3; i++) {
+  setTimeout(function () {
+    console.log(i)
+  }, 100)
+}
+// 0 1 2
+```
+
+`let` is block-scoped, but more specifically the spec creates a **fresh binding per iteration** of the loop. Each callback now closes over a _different_ `i` - one of three independent bindings, each frozen at the value it had when its iteration ran.
+
+### The Pre-ES2015 Workaround: IIFE
+
+Before `let` was available, the standard fix was to wrap the loop body in an Immediately Invoked Function Expression (IIFE):
+
+```javascript
+for (var i = 0; i < 3; i++) {
+  ;(function (i) {
+    setTimeout(function () {
+      console.log(i)
+    }, 100)
+  })(i)
+}
+// 0 1 2
+```
+
+Each iteration calls a fresh function that takes `i` as a parameter, which creates a new Lexical Environment per iteration - same mechanism `let` uses, just done by hand. You will still see this in older codebases, and interviewers like it as the follow-up to "how would you fix this _without_ `let`?".
+
+## Closures vs `this`: Two Different Bindings
+
+The highest-leverage interview distinction. Closure and `this` are often confused because both feel like "what the function remembers," but they are bound at different times by different rules:
+
+- **Closure** captures the **lexical environment at definition time**. Resolved by where the function is _written_.
+- **`this`** is set by **invocation**. Resolved at the call site: by the method's receiver (`obj.method()`), by `new`, by `.call`/`.apply`/`.bind`, or by the default (`undefined` in strict mode, `window` otherwise).
+
+Arrow functions are where the two concepts touch. Arrow functions have no `this` of their own - they look it up lexically, exactly like any other captured variable. That's why this works:
+
+```javascript
+class Timer {
+  constructor() {
+    this.seconds = 0
+    setInterval(() => {
+      // No own `this` - lexically captures the Timer instance's `this`
+      this.seconds++
+    }, 1000)
+  }
+}
+```
+
+The arrow function closes over `this` from the enclosing `constructor`, which was called with `new Timer()` and therefore had `this` bound to the new instance. A regular `function () { this.seconds++ }` callback would not work - `setInterval` would invoke it with a different `this`. (See [the `this` post](/blog/javascript-this-function-invocation-call-bind-apply) for the full set of invocation rules.)
+
+The short version: closures are about _scope_, `this` is about _invocation_. Arrow functions inherit `this` because they treat it as a captured variable rather than a call-time binding.
+
+## A Note on Memory
+
+Closures keep their captured environment reachable, which means the variables in that environment are not garbage collected as long as the closure itself is reachable. Usually this is exactly what you want - the counter would not work otherwise.
+
+Occasionally it is a footgun: a long-lived event listener that closes over a large DOM subtree, or a cache entry that closes over a parsed-but-no-longer-needed blob, can keep significant memory alive. If a closure is registered globally (event listener, timer, observer) and the captured environment is large, that environment is alive until the closure is unregistered.
+
+## Where You're Using Closures Without Noticing
+
+Most closure use cases in 2020 JavaScript are unremarkable - you write them without thinking of them as closures.
+
+**React event handlers with captured arguments:**
+
+```jsx
+function OrderList({ orders, onDelete }) {
+  return (
+    <ul>
+      {orders.map((order) => (
+        <li key={order.id}>
+          {order.name}
+          {/* The arrow closes over `order.id` from the map callback */}
+          <button onClick={() => onDelete(order.id)}>Delete</button>
+        </li>
+      ))}
+    </ul>
+  )
+}
+```
+
+Each rendered `<button>` gets its own onClick that closes over the `order.id` for _that_ iteration of `.map()`. Same mechanism as the loop example above - one environment per iteration, each captured independently.
+
+Closures also power currying, memoization, partial application, and (historically) the **module pattern** for private state - a function returned an object whose methods closed over local variables, giving you "private" data. ES modules replaced most of those use cases, and class private fields (`#count`) replaced the rest (for the modern alternative, see [Prototypal Inheritance](/blog/javascript-prototypal-inheritance-prototype-chain-class-new)).
+
+## Takeaways
+
+- **A closure is a function plus the Lexical Environment it was created in.** Everything else follows from that one rule.
+- **Lexical scope** means variables are resolved by where the function is _written_, not where it is called. `this` is the exception - it is bound at the call site.
+- **Each call to a function creates a fresh Lexical Environment.** Two calls to `buildCounter` return two closures over two completely independent environments, which is why their counts do not interfere.
+- **The `var` + setTimeout + for-loop bug** happens because `var` is function-scoped: all iterations share one binding, and all callbacks close over it. `let` fixes it by creating a fresh per-iteration binding.
+- **Closures are about scope; `this` is about invocation.** Arrow functions inherit `this` because they treat it as a captured variable rather than a call-time binding.
+- **Closures keep their captured environment alive.** Usually that is the point; occasionally it is a memory footgun for long-lived listeners over large objects.
+- **You are already using closures constantly** - every arrow function inside a `.map()`, every event handler that captures a row id, every `setTimeout` callback referencing a local variable.

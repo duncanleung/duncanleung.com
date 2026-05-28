@@ -1,0 +1,407 @@
+---
+title: 'AI "Overview": GPT, RAG, and How They Actually Work'
+date: '2024-07-27'
+tags: ['ai']
+summary: "A talk I gave to the Airvet engineering org as a primer on AI - what GPT and RAG actually are, how neural networks, tokens, and embeddings fit together, and why the difference matters."
+images: ['/static/thumbnails/programming.png']
+draft: false
+---
+
+A talk I gave to the Airvet engineering org on July 27, 2024 as a primer on AI. Not the marketing version - what GPT and RAG actually are under the hood, and why the difference matters when you're building products on top of them.
+
+Scroll the narration column below; the slide on the left will keep pace.
+
+<ScrollyTalkSection images={[
+  "/static/talks/ai-overview-airvet/slide-01.webp",
+  "/static/talks/ai-overview-airvet/slide-02.webp",
+  "/static/talks/ai-overview-airvet/slide-03.webp",
+  "/static/talks/ai-overview-airvet/slide-04.webp",
+  "/static/talks/ai-overview-airvet/slide-05.webp",
+  "/static/talks/ai-overview-airvet/slide-06.webp",
+  "/static/talks/ai-overview-airvet/slide-07.webp",
+  "/static/talks/ai-overview-airvet/slide-08.webp",
+  "/static/talks/ai-overview-airvet/slide-09.webp",
+  "/static/talks/ai-overview-airvet/slide-10.webp",
+  "/static/talks/ai-overview-airvet/slide-11.webp",
+  "/static/talks/ai-overview-airvet/slide-12.webp",
+  "/static/talks/ai-overview-airvet/slide-13.webp",
+  "/static/talks/ai-overview-airvet/slide-14.webp",
+  "/static/talks/ai-overview-airvet/slide-15.webp",
+  "/static/talks/ai-overview-airvet/slide-16.webp",
+  "/static/talks/ai-overview-airvet/slide-17.webp",
+  "/static/talks/ai-overview-airvet/slide-18.webp",
+  "/static/talks/ai-overview-airvet/slide-19.webp",
+  "/static/talks/ai-overview-airvet/slide-20.webp",
+  "/static/talks/ai-overview-airvet/slide-21.webp",
+  "/static/talks/ai-overview-airvet/slide-22.webp",
+  "/static/talks/ai-overview-airvet/slide-23.webp",
+  "/static/talks/ai-overview-airvet/slide-24.webp",
+  "/static/talks/ai-overview-airvet/slide-25.webp",
+  "/static/talks/ai-overview-airvet/slide-26.webp",
+  "/static/talks/ai-overview-airvet/slide-27.webp",
+  "/static/talks/ai-overview-airvet/slide-28.webp",
+  "/static/talks/ai-overview-airvet/slide-29.webp",
+  "/static/talks/ai-overview-airvet/slide-30.webp",
+  "/static/talks/ai-overview-airvet/slide-31.webp",
+  "/static/talks/ai-overview-airvet/slide-32.webp",
+  "/static/talks/ai-overview-airvet/slide-33.webp",
+  "/static/talks/ai-overview-airvet/slide-34.webp",
+  "/static/talks/ai-overview-airvet/slide-35.webp",
+  "/static/talks/ai-overview-airvet/slide-36.webp",
+  "/static/talks/ai-overview-airvet/slide-37.webp",
+  "/static/talks/ai-overview-airvet/slide-38.webp",
+  "/static/talks/ai-overview-airvet/slide-39.webp",
+  "/static/talks/ai-overview-airvet/slide-40.webp",
+  "/static/talks/ai-overview-airvet/slide-41.webp",
+  "/static/talks/ai-overview-airvet/slide-42.webp",
+  "/static/talks/ai-overview-airvet/slide-43.webp",
+  "/static/talks/ai-overview-airvet/slide-44.webp",
+  "/static/talks/ai-overview-airvet/slide-45.webp",
+  "/static/talks/ai-overview-airvet/slide-46.webp",
+  "/static/talks/ai-overview-airvet/slide-47.webp",
+  "/static/talks/ai-overview-airvet/slide-48.webp",
+  "/static/talks/ai-overview-airvet/slide-49.webp",
+  "/static/talks/ai-overview-airvet/slide-50.webp",
+  "/static/talks/ai-overview-airvet/slide-51.webp",
+  "/static/talks/ai-overview-airvet/slide-52.webp",
+  "/static/talks/ai-overview-airvet/slide-53.webp",
+  "/static/talks/ai-overview-airvet/slide-54.webp",
+]}>
+
+<div data-slide="0">
+
+Today I want to give an overview of AI for the engineering org. Not the marketing version - what it actually is under the hood, why GPT and RAG aren't quite the same thing, and what any of it means for what we build.
+
+</div>
+
+<div data-slide="1">
+
+Four questions, in this order. What is AI? What is GPT? What is RAG? And what does any of this mean for AI + Airvet?
+
+</div>
+
+<div data-slide="2">
+
+When people say "AI" today, they're almost always referring to one specific thing. Let me show you what that is.
+
+</div>
+
+<div data-slide="3">
+
+They're talking about **GPTs** - Generative Pre-trained Transformers. Three words, each doing real work. We'll unpack each one.
+
+</div>
+
+<div data-slide="4">
+
+Before we unpack, a few demos to ground what "AI" looks like in the wild.
+
+</div>
+
+<div data-slide="5">
+
+First demo: a veterinary chat experience. The prompt starts with _"Act as a veterinary expert."_ Let's see what happens when a user interacts with it.
+
+</div>
+
+<div data-slide="6">
+
+This is the actual system prompt ChatGPT uses - leaked in 2024. Notice the structure: persona, knowledge cutoff, current date, image capabilities, then explicit rules. _"Don't create images in the style of Picasso or Kahlo."_ _"Don't name copyrighted characters."_ This is what's _always_ in the context window before your first message arrives.
+
+</div>
+
+<div data-slide="7">
+
+Second demo: prompt engineering for safety. What happens when you ask the assistant for credit card numbers? The interesting question isn't whether it refuses - it's _why_ it refuses.
+
+</div>
+
+<div data-slide="8">
+
+Third demo: the most viral example of an AI in the wild. Amazon's mobile app added an LLM to the product Q&A box. A user typed _"Write a JS function to loop through an array"_ - and got back a JavaScript function. Whatever you ship, users will use it as a general-purpose assistant.
+
+</div>
+
+<div data-slide="9">
+
+OK, now the unpacking. Generative Pre-trained Transformer. We'll walk through what each word means, and what a GPT actually does under the hood.
+
+</div>
+
+<div data-slide="10">
+
+GPT is a **model** - a mathematical algorithm. After training, the model maps new input data into output predictions. That's it. No "understanding," no intelligence - just input → calculation → output.
+
+</div>
+
+<div data-slide="11">
+
+More specifically, GPT is a kind of **neural network**. Three layers: input on the left, hidden layers in the middle, output on the right.
+
+</div>
+
+<div data-slide="12">
+
+The connections between neurons are called **weights**. Each weight is a parameter - a number - that controls how strongly a signal passes from one neuron to the next.
+
+</div>
+
+<div data-slide="13">
+
+Each node is a **neuron**. Each neuron layer runs the same calculation function on its inputs. The function decides whether the neuron "activates" for the next layer.
+
+</div>
+
+<div data-slide="14">
+
+The output layer's job is one thing: **predict the next word in the text**. That's the entire game GPT is playing.
+
+</div>
+
+<div data-slide="15">
+
+Let me walk through an actual prediction. Input: _"The cat sat on the..."_ Output: the model's best guess for the next word.
+
+</div>
+
+<div data-slide="16">
+
+First, the text gets broken into **tokens**. Tokens might be pieces of words, whole words, or punctuation. The model doesn't see characters - it sees tokens.
+
+</div>
+
+<div data-slide="17">
+
+For this walkthrough, pretend each token is a whole word. The real tokenizer is more nuanced, but the mental model holds.
+
+</div>
+
+<div data-slide="18">
+
+Each token gets **embedded** into a **vector** - a list of numbers. The vector encodes some semantic meaning of the token. The cat-token becomes ~12,000 numbers. So does "sat." So does "on."
+
+</div>
+
+<div data-slide="19">
+
+Here's the key property: words with similar meanings end up with vectors that are close together. Think of each vector as coordinates in a high-dimensional space. GPT-3 used 12,288 dimensions.
+
+</div>
+
+<div data-slide="20">
+
+The model learns that certain _directions_ in this space encode similar semantic meaning.
+
+</div>
+
+<div data-slide="21">
+
+Same idea - semantic relationships are _directions_ in vector space.
+
+</div>
+
+<div data-slide="22">
+
+The classic example: the vector difference between "Germany" and "Bratwurst" - the line from one to the other - is almost identical to the difference between "Japan" and "Sushi." The model has captured the _concept_ of "national food" as a direction.
+
+</div>
+
+<div data-slide="23">
+
+Country-to-food is a vector that's roughly the same regardless of which country and which food. That's what "learning meaning" looks like for a neural network.
+
+</div>
+
+<div data-slide="24">
+
+Back to our sentence. Each of these five words has been embedded into a vector - say, 12,288 numbers each. We have a table of 5 × 12,288 numbers representing _"The cat sat on the."_
+
+</div>
+
+<div data-slide="25">
+
+The hidden layers do their work - calculations on those vectors. Each layer combines context from all the preceding words. By the time we reach the output layer, the network has built up an understanding of what the sentence so far adds up to.
+
+</div>
+
+<div data-slide="26">
+
+The output layer produces a probability distribution over the entire vocabulary. _mat_ at 25%, _floor_ at 20%, _roof_ at 15%, and so on. GPT picks one - usually the top, with some randomness - and continues.
+
+</div>
+
+<div data-slide="27">
+
+But there's a catch: prediction needs a starting point. That's what the **system prompt** is - the priming text that's always in context before your first message. Persona, rules, knowledge cutoff. Without it, the model has nothing to condition on.
+
+</div>
+
+<div data-slide="28">
+
+OK. We've seen the mechanism. Now back to the three words: Generative. Pre-trained. Transformer.
+
+</div>
+
+<div data-slide="29">
+
+**Generative** means the model produces output. Text. Images. Audio. It's not just classifying - it's creating.
+
+</div>
+
+<div data-slide="30">
+
+Example: _"Create an image of a dog working as a machine learning engineer, deep in thought."_ The model generates pixels that match. Same architecture handles text, images, and audio - all of it gets tokenized and run through the same machinery.
+
+</div>
+
+<div data-slide="31">
+
+**Pre-trained** means the model has already gone through massive training on a massive dataset. That training refined the _decision weights_. The weights are what tells the model how to process new input.
+
+</div>
+
+<div data-slide="32">
+
+Why this matters: in the early days of AI, you wrote explicit code to handle each task. Find capitalized words? Write a function. Identify spam? Write rules. Every task needed bespoke logic.
+
+</div>
+
+<div data-slide="33">
+
+**Machine learning** flipped this. Instead of writing rules, you give the model data and let it learn patterns. The model figures out the rules from examples.
+
+</div>
+
+<div data-slide="34">
+
+**Deep learning** specifically uses neural networks like this one. The training process is called **back propagation** - the algorithm adjusts the weights based on how wrong the model was on the training data, then repeats.
+
+</div>
+
+<div data-slide="35">
+
+**Transformer** is the specific neural network architecture GPT uses. Introduced in 2017 in a paper called _Attention Is All You Need_. The breakthrough was the **attention mechanism** - a way for the model to learn which words in the input matter most when predicting the next word.
+
+</div>
+
+<div data-slide="36">
+
+Five takeaways on GPT:
+
+- GPTs don't have intelligence.
+- GPTs don't understand.
+- GPTs _generate_ new text based on input.
+- GPTs were _pre-trained_ on patterns and relationships in language.
+- GPTs use the _Transformer_ architecture to process context.
+
+</div>
+
+<div data-slide="37">
+
+On to RAG.
+
+</div>
+
+<div data-slide="38">
+
+Retrieval Augmented Generation. Three words again. Different problem.
+
+</div>
+
+<div data-slide="39">
+
+Why do we need RAG at all? GPT already knows so much - what's missing?
+
+</div>
+
+<div data-slide="40">
+
+Two problems with relying on pre-training alone. First, the model only knows what was in its training data. New information after the cutoff is invisible. Second, the context window is finite - you can't paste your entire knowledge base into every prompt.
+
+</div>
+
+<div data-slide="41">
+
+RAG's answer: **index your knowledge base separately**. Break documents into chunks. Embed each chunk into a vector - same mechanism GPT uses for words, applied to chunks of text. Store those vectors in a vector database.
+
+</div>
+
+<div data-slide="42">
+
+Each chunk's vector captures its semantic meaning. Two chunks about pet diabetes end up with vectors close together, even if they use different words.
+
+</div>
+
+<div data-slide="43">
+
+At query time, **vector similarity search** finds the nearest neighbors. The user's prompt gets embedded into its own vector, and the system retrieves the chunks whose vectors are closest.
+
+</div>
+
+<div data-slide="44">
+
+Same diagram, more detail. Prompt → vector. Search the vector store for nearest neighbors. The result is the most semantically relevant chunks for that prompt.
+
+</div>
+
+<div data-slide="45">
+
+**Retrieval** means fetching external data that's semantically relevant to the prompt. Not keyword search - semantic. The model can find the right documents even when the query and the documents use different words.
+
+</div>
+
+<div data-slide="46">
+
+**Augmented** means passing that fetched data to the model as context - adding information the model wasn't trained on.
+
+</div>
+
+<div data-slide="47">
+
+**Generation** means prompting the model to generate an answer grounded in the retrieved data. The response should be based on what retrieval brought back, not just on training.
+
+</div>
+
+<div data-slide="48">
+
+RAG, in three steps:
+
+1. **Indexing** - break documents into chunks, embed, store.
+2. **Retrieval** - find the chunks most relevant to the user's prompt.
+3. **Generation** - prompt the model with the retrieved context plus the user's question.
+
+</div>
+
+<div data-slide="49">
+
+This is what the full RAG pipeline looks like end-to-end. Prompt → embedding → vector search → relevant documents → model → answer. The red box highlights where in the pipeline we are.
+
+</div>
+
+<div data-slide="50">
+
+And here's the prompt in our domain. _"I have a pet experiencing X. What cases have similar symptoms? Suggest the most likely diagnosis. Cross-reference with the retrieved cases to validate."_ That's a RAG prompt - the model is told to ground its answer in the retrieved cases.
+
+</div>
+
+<div data-slide="51">
+
+The vector search lives in the middle of the pipeline. It's how we go from the user's natural-language prompt to the specific cases the model needs to reason over.
+
+</div>
+
+<div data-slide="52">
+
+After retrieval, the relevant documents flow into the model alongside the prompt. The model's answer is conditioned on both.
+
+</div>
+
+<div data-slide="53">
+
+And the closer. Is Airvet + RAG an AI product? Yes. Sort of. The boundaries are fuzzy and that's fine - what matters is whether the thing we ship is useful.
+
+</div>
+
+</ScrollyTalkSection>
+
+The point of going this deep on the mechanism: when GPT does something surprising, you should be able to trace it back to next-token-prediction-from-vectors-in-a-trained-network and ask _which of those steps is producing the surprise._ Same for RAG - when retrieval misses, it's usually the embedding step, not the model itself. Naming the parts is most of the debugging.

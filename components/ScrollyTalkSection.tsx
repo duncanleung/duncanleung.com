@@ -58,81 +58,83 @@ export default function ScrollyTalkSection({ images, children }: ScrollyTalkSect
   const childArray = Children.toArray(children).filter(isValidElement)
 
   return (
-    <div ref={sectionRef} className="relative my-16 grid grid-cols-1 gap-8 lg:grid-cols-[3fr_2fr]">
-      {/* Desktop: sticky image panel (hidden below lg) */}
-      <div className="sticky top-12 hidden h-[calc(100vh-6rem)] items-center justify-center lg:flex">
-        <div className="relative aspect-video w-full">
-          {images.map((src, i) =>
-            isVideoSrc(src) ? (
-              <video
-                key={src + i}
-                data-img-index={i}
-                src={src}
-                muted
-                loop
-                playsInline
-                controls
-                preload="none"
-                className={`absolute inset-0 h-full w-full rounded-md border border-gray-200 object-contain shadow-md transition-opacity duration-700 ease-out dark:border-gray-700 ${
-                  i === 0 ? 'opacity-100' : 'opacity-0'
-                }`}
-              />
-            ) : (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                key={src + i}
-                data-img-index={i}
-                src={src}
-                alt=""
-                loading="lazy"
-                className={`absolute inset-0 h-full w-full rounded-md border border-gray-200 object-contain shadow-md transition-opacity duration-700 ease-out dark:border-gray-700 ${
-                  i === 0 ? 'opacity-100' : 'opacity-0'
-                }`}
-              />
-            )
-          )}
+    <div ref={sectionRef} className="not-prose relative left-1/2 my-16 w-screen -translate-x-1/2">
+      <div className="mx-auto grid max-w-[1400px] grid-cols-1 gap-8 px-4 lg:grid-cols-[3fr_2fr] lg:px-8">
+        {/* Desktop: sticky image panel (hidden below lg) */}
+        <div className="sticky top-12 hidden h-[calc(100vh-6rem)] items-center justify-center lg:flex">
+          <div className="relative aspect-video w-full">
+            {images.map((src, i) =>
+              isVideoSrc(src) ? (
+                <video
+                  key={src + i}
+                  data-img-index={i}
+                  src={src}
+                  muted
+                  loop
+                  playsInline
+                  controls
+                  preload="none"
+                  className={`absolute inset-0 h-full w-full rounded-md border border-gray-200 object-contain shadow-md transition-opacity duration-700 ease-out dark:border-gray-700 ${
+                    i === 0 ? 'opacity-100' : 'opacity-0'
+                  }`}
+                />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={src + i}
+                  data-img-index={i}
+                  src={src}
+                  alt=""
+                  loading="lazy"
+                  className={`absolute inset-0 h-full w-full rounded-md border border-gray-200 object-contain shadow-md transition-opacity duration-700 ease-out dark:border-gray-700 ${
+                    i === 0 ? 'opacity-100' : 'opacity-0'
+                  }`}
+                />
+              )
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Scrolling narration column. On mobile, each narration row has its
+        {/* Scrolling narration column. On mobile, each narration row has its
           slide image inline above it so the reader sees them together. */}
-      <div className="flex flex-col">
-        {childArray.map((child, idx) => {
-          const slideAttr =
-            isValidElement(child) && (child.props as { 'data-slide'?: string })['data-slide']
-          const slideIndex = typeof slideAttr === 'string' ? parseInt(slideAttr, 10) : idx
-          const src = images[slideIndex]
-          return (
-            <div key={idx} className="flex flex-col">
-              {/* Mobile-only image (hidden at lg+) */}
-              {src && (
-                <div className="mb-4 lg:hidden">
-                  {isVideoSrc(src) ? (
-                    <video
-                      src={src}
-                      muted
-                      loop
-                      playsInline
-                      controls
-                      preload="none"
-                      className="w-full rounded-md border border-gray-200 shadow-md dark:border-gray-700"
-                    />
-                  ) : (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={src}
-                      alt=""
-                      loading="lazy"
-                      className="w-full rounded-md border border-gray-200 shadow-md dark:border-gray-700"
-                    />
-                  )}
-                </div>
-              )}
-              {/* The narration block (carries data-slide for scrollama to observe) */}
-              {child}
-            </div>
-          )
-        })}
+        <div className="prose dark:prose-invert flex max-w-none flex-col">
+          {childArray.map((child, idx) => {
+            const slideAttr =
+              isValidElement(child) && (child.props as { 'data-slide'?: string })['data-slide']
+            const slideIndex = typeof slideAttr === 'string' ? parseInt(slideAttr, 10) : idx
+            const src = images[slideIndex]
+            return (
+              <div key={idx} className="flex flex-col">
+                {/* Mobile-only image (hidden at lg+) */}
+                {src && (
+                  <div className="mb-4 lg:hidden">
+                    {isVideoSrc(src) ? (
+                      <video
+                        src={src}
+                        muted
+                        loop
+                        playsInline
+                        controls
+                        preload="none"
+                        className="w-full rounded-md border border-gray-200 shadow-md dark:border-gray-700"
+                      />
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={src}
+                        alt=""
+                        loading="lazy"
+                        className="w-full rounded-md border border-gray-200 shadow-md dark:border-gray-700"
+                      />
+                    )}
+                  </div>
+                )}
+                {/* The narration block (carries data-slide for scrollama to observe) */}
+                {child}
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )

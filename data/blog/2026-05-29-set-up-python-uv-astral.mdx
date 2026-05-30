@@ -1,0 +1,246 @@
+---
+title: 'Setting Up Python with uv'
+date: '2026-05-29'
+tags: ['python']
+summary: 'A guide to set up a modern Python development environment using uv, the fast all-in-one tool from Astral that replaces pyenv, virtualenv, and Poetry.'
+images: ['/static/thumbnails/python.png']
+draft: false
+---
+
+A few years ago I wrote about setting up Python with [pyenv, pyenv-virtualenv, and Poetry](/blog/set-up-python-pyenv-virtualenv-poetry/). That stack worked, but it was three separate tools stitched together: one for Python versions, one for virtual environments, and one for packages.
+
+`uv` collapses all three into a single tool. It is built in Rust by [Astral](https://astral.sh/) (the same team behind the Ruff linter), and over the last ~18 months it has become the de-facto industry standard for Python tooling. It is also dramatically faster — installs that took Poetry seconds finish in milliseconds.
+
+This is a guide to install and set up Python with `uv` on a Mac.
+
+Skip to the sections below:
+
+- [Install uv](#install-uv)
+- [Python Version Management](#python-version-management)
+- [Project Workflow](#project-workflow)
+- [Virtual Environments](#virtual-environments)
+- [Running Tools: uvx](#running-tools-uvx)
+- [Coming from pyenv / Poetry](#coming-from-pyenv--poetry)
+
+Additional reference: <a href='https://docs.astral.sh/uv/' target='_blank'>uv Documentation</a>
+
+## Install uv
+
+Docs: <a href='https://docs.astral.sh/uv/getting-started/installation/' target='_blank'>uv - Installation</a>
+
+`uv` is a single static binary with no Python dependency of its own, so it manages Python rather than relying on it.
+
+Install with the standalone installer:
+
+```bash
+$ curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Or with Homebrew:
+
+```bash
+$ brew install uv
+```
+
+### Update uv
+
+If you installed with the standalone installer, update in place:
+
+```bash
+$ uv self update
+```
+
+If you installed with Homebrew, use `brew upgrade uv` instead.
+
+### Enable shell completions
+
+Add `uv` completions to your shell.
+
+<div class="filename">.zshrc</div>
+
+```bash
+eval "$(uv generate-shell-completion zsh)"
+```
+
+Restart your shell so the changes take effect.
+
+```bash
+$ exec "$SHELL"
+```
+
+## Python Version Management
+
+Docs: <a href='https://docs.astral.sh/uv/guides/install-python/' target='_blank'>uv - Installing Python</a>
+
+This replaces `pyenv`. `uv` downloads and manages standalone Python builds for you — there is no need to compile from source, so the `zlib` / Xcode header issues from the old `pyenv` workflow disappear.
+
+```bash
+# List versions available to install
+$ uv python list
+
+# Install a specific version
+$ uv python install 3.13
+
+# Install multiple versions at once
+$ uv python install 3.11 3.12 3.13
+
+# Find where an installed version lives
+$ uv python find 3.13
+
+# Uninstall a version
+$ uv python uninstall 3.11
+```
+
+### Pin a project to a Python version
+
+`uv python pin` writes a `.python-version` file to the current directory, similar to `pyenv local`. `uv` auto-selects that version for commands run in the directory.
+
+```bash
+$ uv python pin 3.13
+```
+
+<div class="filename">.python-version</div>
+
+```bash
+3.13
+```
+
+You usually do not need to set a "global" version. `uv` resolves the right Python per project from `.python-version` and the `requires-python` field in `pyproject.toml`, and downloads it on demand if it is missing.
+
+## Project Workflow
+
+Docs: <a href='https://docs.astral.sh/uv/guides/projects/' target='_blank'>uv - Working on Projects</a>
+
+This replaces `Poetry`. `uv` uses the standard `pyproject.toml` for metadata and dependencies, and writes a `uv.lock` file as the snapshot of the exact resolved package set — direct dependencies and their sub-dependencies.
+
+### Initialize a new project
+
+```bash
+$ uv init my-project
+$ cd my-project
+```
+
+This scaffolds a `pyproject.toml`, a `.python-version`, a `README.md`, and a starter `main.py`.
+
+### Add and remove dependencies
+
+`uv add` resolves, installs, updates `pyproject.toml`, and updates `uv.lock` in one step. The first `add` also creates the project's virtual environment in `.venv` automatically.
+
+```bash
+# Add the requests package and its dependencies
+$ uv add requests
+
+# Add a dev-only dependency
+$ uv add --dev pytest
+
+# Pin a version constraint
+$ uv add 'requests>=2.31'
+
+# Remove a package and its now-unused sub-dependencies
+$ uv remove requests
+```
+
+### Run code in the project environment
+
+`uv run` executes a command inside the project's environment, syncing dependencies first if anything is out of date. You do not need to manually activate the virtual environment.
+
+```bash
+# Run a script
+$ uv run main.py
+
+# Run an installed tool, e.g. the test suite
+$ uv run pytest
+```
+
+### Sync and lock
+
+`uv` keeps the lockfile and environment in sync automatically on `add` / `remove` / `run`. You can also run them explicitly — useful in CI or after a fresh `git clone`.
+
+```bash
+# Resolve dependencies and write uv.lock
+$ uv lock
+
+# Install the locked dependencies into .venv
+$ uv sync
+```
+
+## Virtual Environments
+
+Docs: <a href='https://docs.astral.sh/uv/pip/environments/' target='_blank'>uv - Virtual Environments</a>
+
+For project work, `uv` manages `.venv` for you and you rarely touch it directly. When you do need a standalone environment, `uv venv` replaces `virtualenv` / `pyenv-virtualenv`.
+
+```bash
+# Create a virtual environment in .venv
+$ uv venv
+
+# Create one with a specific Python version
+$ uv venv --python 3.13
+
+# Activate it
+$ source .venv/bin/activate
+
+# Deactivate it
+$ deactivate
+```
+
+### Check the installation
+
+With the environment active, `which python` should resolve to the project's `.venv`.
+
+```terminal
+$ which python
+  /Users/MACHINE_NAME/my-project/.venv/bin/python
+```
+
+```terminal
+$ python --version
+  Python 3.13.0
+```
+
+## Running Tools: uvx
+
+Docs: <a href='https://docs.astral.sh/uv/guides/tools/' target='_blank'>uv - Tools</a>
+
+`uvx` runs a command-line tool in a temporary, isolated environment without installing it into your project — handy for one-off invocations of things like `ruff`, `black`, or `httpie`.
+
+```bash
+# Run ruff once, in a throwaway environment
+$ uvx ruff check
+
+# Run a specific version
+$ uvx ruff@0.6.0 check
+```
+
+To install a tool user-wide so it is always on your `PATH`:
+
+```bash
+# Install a tool globally for the user
+$ uv tool install ruff
+
+# List installed tools
+$ uv tool list
+
+# Uninstall a tool
+$ uv tool uninstall ruff
+```
+
+## Coming from pyenv / Poetry
+
+If you are migrating from the older stack, here is the rough mapping:
+
+| Old workflow                   | uv equivalent               |
+| ------------------------------ | --------------------------- |
+| `pyenv install 3.13`           | `uv python install 3.13`    |
+| `pyenv local 3.13`             | `uv python pin 3.13`        |
+| `pyenv virtualenv 3.13 my-env` | `uv venv`                   |
+| `pyenv activate my-env`        | `source .venv/bin/activate` |
+| `poetry init` / `poetry new`   | `uv init`                   |
+| `poetry add requests`          | `uv add requests`           |
+| `poetry add --dev pytest`      | `uv add --dev pytest`       |
+| `poetry remove requests`       | `uv remove requests`        |
+| `poetry install`               | `uv sync`                   |
+| `poetry lock`                  | `uv lock`                   |
+| `poetry run pytest`            | `uv run pytest`             |
+
+The biggest mental shift: with `uv` you no longer manage the version manager, the virtual environment, and the package manager as separate tools. `uv` is all three, and it is fast enough that syncing the environment on every `run` is effectively free.

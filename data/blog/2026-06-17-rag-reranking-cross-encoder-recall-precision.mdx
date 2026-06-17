@@ -1,0 +1,139 @@
+---
+title: 'Reranking in RAG: Why Retrieval Needs a Second, Slower Opinion'
+date: '2026-06-17'
+tags: ['ai', 'rag', 'retrieval']
+summary: "Vector search finds the right chunk but ranks it badly and waves through near-garbage that's vaguely on-topic. Reranking fixes that with a second model - a cross-encoder that reads the query and each chunk together instead of comparing two frozen vectors. The whole trick is affording an expensive judge by only running it on the cheap stage's survivors."
+images: ['/static/thumbnails/programming.png']
+draft: false
+---
+
+Vector search will find the right document. It just won't reliably put it first - and it will happily wave through a chunk that's only _vaguely_ on-topic with a deceptively high score.
+
+That gap is what reranking closes. The mental model is one sentence: **retrieval optimizes recall cheaply, reranking optimizes precision expensively, and you afford the expensive step by only running it on the survivors of the cheap one.** Everything else in this post - why one model can't do both jobs, why a cross-encoder beats an embedding, why a relevance floor can make an answer refuse - falls out of that split.
+
+## One Model Can't Be Both Fast and Precise
+
+When a user asks a question, your knowledge base might hold hundreds of thousands of text chunks. You need the handful that actually answer it. That's two demands pulling in opposite directions:
+
+- **Scan everything** - hundreds of thousands of chunks - so it has to be _cheap per chunk_.
+- **Judge relevance precisely** - so it has to be _smart per chunk_.
+
+You can't have both in one pass. A smart-per-chunk model run over the whole corpus on every query would be impossibly slow. A cheap-per-chunk model precise enough to trust the top result doesn't exist. So real RAG systems stop trying to win both with one model and split the work into two stages:
+
+```text
+  Stage 1: RETRIEVE                    Stage 2: RERANK
+  (cheap, high recall)                 (expensive, high precision)
+
+  300,000 chunks                       ~100 candidates
+       |                                     |
+       v                                     v
+  +-------------+   top ~100..200      +--------------+   top 10
+  | vector /    | ------------------>  | cross-encoder | ----------> to the LLM
+  | hybrid      |                      | reranker      |
+  | search      |                      | (e.g. Cohere) |
+  +-------------+                      +--------------+
+  "cast a wide net,                    "re-judge the net's
+   cheaply - don't                      contents, the
+   miss the answer"                     expensive way"
+```
+
+Stage 1's job is **recall**: don't let the right chunk get missed. Stage 2's job is **precision**: out of what survived, put the genuinely best ones on top. Reranking is that second stage.
+
+## Why Stage 1 Alone Isn't Enough
+
+Stage 1 is almost always embedding search - a **bi-encoder**. The reason it's fast is the same reason it's imprecise, so it's worth being exact about the mechanism.
+
+A bi-encoder embeds the **query** and each **chunk** into a vector _separately_. The chunk vectors are computed ahead of time and indexed. At query time you embed only the query and do fast nearest-neighbor math against the index.
+
+Here's the catch: **the chunk was turned into its vector before your query existed.** Each document got compressed into ~1,000 numbers with no idea what would be asked of it. The model had to guess, in advance, "what might this chunk be relevant to?" and freeze that guess into a single point in space. The query and the chunk never actually read each other - they only meet as two pre-computed vectors compared with a dot product.
+
+That's good enough to get the right chunk _somewhere in the top 100_. It is too lossy to reliably get it into the right _top 5 order_, and too lossy to tell genuinely-relevant from vaguely-adjacent. Concretely:
+
+```text
+Query:  "ibuprofen dosage for children"
+
+Bi-encoder pulls back, all scoring "close":
+  - ibuprofen dosage for children     <- the answer
+  - ibuprofen dosage for adults       <- same drug, wrong population
+  - acetaminophen dosage for children <- right shape, wrong drug
+  - ibuprofen mechanism of action     <- same token, irrelevant
+```
+
+All four land in the same neighborhood because they share tokens and topic. Vector similarity smears "ibuprofen + dosage + children" into a region, and everything in that region scores high - including the three chunks that would mislead an answer. The right chunk is _in the net_. It is not reliably _on top_, and the net is full of plausible-looking junk.
+
+## What the Reranker Does Differently
+
+A reranker is a **cross-encoder**, and the difference from the bi-encoder is the entire point:
+
+```text
+  BI-ENCODER (stage 1)                CROSS-ENCODER (stage 2, reranker)
+
+  query --> [encode] --> vec_q        +------------------------------+
+                            \          |  query + chunk  TOGETHER     |
+  chunk --> [encode] --> vec_c -- dot  |  in one forward pass,        |
+                                score  |  every query word attends to |
+  encoded SEPARATELY, the two          |  every chunk word            |
+  never see each other                 +---------------+--------------+
+                                                       v
+                                                relevance 0..1
+```
+
+The cross-encoder feeds the query and **one** chunk into the model _together_. Every word of the question can attend to every word of the chunk. Now the model can notice the things the bi-encoder smeared away: the query says _children_ and this chunk says _adults_ - not relevant; the query says _ibuprofen_ and this chunk says _acetaminophen_ - wrong drug, push it down.
+
+The bi-encoder asks "are these two vectors near each other?" The cross-encoder asks "does this specific text actually answer this specific question?" Those are different questions, and only the second one is the one you care about.
+
+## Why You're Allowed to Afford It
+
+A cross-encoder is far more expensive per chunk - it runs a full model pass over the query-and-chunk pair instead of a dot product between two cached vectors. You could never run it over 300,000 chunks per query.
+
+You don't have to. It only runs on the ~100 candidates stage 1 already narrowed down. That's the load-bearing idea of the whole architecture:
+
+> Pay the cheap, fuzzy computation at corpus scale to get recall. Pay the expensive, accurate computation at candidate scale to get precision. Each model runs exactly where its cost is affordable.
+
+Stage 1 makes stage 2 possible by shrinking the problem from "the whole corpus" to "a hundred plausible chunks." Stage 2 makes stage 1 trustworthy by re-sorting that hundred with a model good enough to put the real answer first.
+
+## The Score Is a Quality Signal, Not Just a Sort Key
+
+There's a second, easy-to-miss payoff. A cross-encoder doesn't just _reorder_ candidates - it emits a calibrated **relevance score** (0 to 1) per chunk. That number is an _absolute_ judgment of "does this chunk answer the question," not just a relative rank within the batch. Which means you can threshold on it.
+
+This matters because top-N retrieval has a silent failure mode:
+
+```text
+keep top 10, no floor:
+  every chunk is junk  ->  you still return the 10 LEAST-junk chunks
+                           ->  the LLM dutifully answers on garbage
+```
+
+Top-N is a _ranking_, not a _quality bar_. If nothing relevant was retrieved, top-N still hands the LLM its ten least-bad options, and the model writes a confident, ungrounded answer on top of them. That's exactly the kind of answer you don't want a user trusting.
+
+A relevance floor turns the reranker's absolute score into a gate:
+
+```text
+keep top 10 where score >= 0.4:
+  weak tail chunks (0.02..0.30)  ->  dropped from the context
+  nothing clears 0.4             ->  no usable evidence -> refuse, don't answer
+```
+
+The floor doesn't change the _ranking_; it adds a _quality bar_ underneath it. A typical answer is untouched. A weak answer loses its long tail of near-zero padding before that padding can pollute generation. And the handful of questions where _nothing_ genuinely relevant exists flip from "confident answer on junk" to an honest "I don't have evidence for that" - which, in a domain where the answer gets acted on, is the correct behavior.
+
+Pick the floor from real data, not vibes. Look at the rerank scores your system actually persists: where does the weakest chunk you'd _want_ to keep usually sit, and where does the junk sit? If real evidence lands around 0.45 and the padding sits at 0.02-0.04, a floor near 0.4 trims the garbage without touching the good answers. Set it from the traces; don't guess.
+
+## Where Reranking Still Fails
+
+Reranking is a precision stage, not a recall stage - and that's the failure mode to keep in mind. **It can only re-sort what stage 1 already retrieved.** If the right chunk never made it into the candidate set, no reranker can rescue it - there's nothing to promote. A cross-encoder fixes _ordering_ and _filtering_; it cannot fix a recall miss upstream.
+
+That's why the cheap stage is usually tuned for generous recall (wide candidate sets, often hybrid keyword-plus-vector search to catch exact terms the embedding glosses over) and the expensive stage is tuned for precision on top. The two stages aren't redundant - they're covering each other's specific weakness.
+
+## Takeaways
+
+- **Retrieval and reranking solve opposite halves of one problem.** Retrieval is cheap and tuned for recall - don't miss the answer. Reranking is expensive and tuned for precision - put the real answer first and drop the rest.
+- **You afford the expensive judge by only running it on the survivors.** The cross-encoder would be impossible over the whole corpus and is cheap over a hundred candidates. That shrinking is the entire architecture.
+- **A bi-encoder is fast because it encodes query and chunk separately** - the chunk became a vector before your query existed, so the two never read each other. That's also why it smears genuinely-relevant and vaguely-adjacent into the same neighborhood.
+- **A cross-encoder is precise because it reads query and chunk together** - full attention between every query word and every chunk word lets it catch "right tokens, wrong meaning" (children vs adults, ibuprofen vs acetaminophen) that the bi-encoder waved through.
+- **The rerank score is an absolute quality signal, not just a sort key.** A relevance floor turns it into a gate: trim the weak tail, and when _nothing_ clears the bar, refuse instead of answering on junk. Set the floor from your persisted score traces, not from a guess.
+- **Reranking can't fix a recall miss.** It only re-sorts what was retrieved. If the right chunk never entered the candidate set, tune the cheap stage - the reranker has nothing to promote.
+
+## Further Reading
+
+- [Cohere Rerank](https://docs.cohere.com/docs/rerank-overview) - the managed cross-encoder reranker referenced above
+- [Sentence Transformers: Cross-Encoders vs Bi-Encoders](https://www.sbert.net/examples/applications/cross-encoder/README.html) - the architectural distinction at the core of this post, with code

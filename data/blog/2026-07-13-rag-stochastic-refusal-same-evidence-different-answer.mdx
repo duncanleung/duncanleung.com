@@ -1,0 +1,147 @@
+---
+title: 'Stochastic Refusal in RAG: Same Evidence, Different Answer'
+date: '2026-07-13'
+tags: ['ai', 'rag', 'retrieval']
+summary: "Same question, same branch, same retrieval, same 10 evidence chunks with identical rerank scores - and one deployment refused while another answered with full clinical detail. The root cause wasn't retrieval. It was the LLM making a borderline judgment call on evidence that covered half the question well and the other half barely at all."
+images: ['/static/thumbnails/ai.png']
+draft: false
+---
+
+Same question, same branch, same evidence - two different outcomes. One preview deployment refused the question entirely. Another answered it with 15 inline textbook images, structured clinical sections, and full diagnostic detail. The retrieval pipeline was identical. The rerank scores matched to the sixteenth decimal. The only thing that differed was the LLM's stochastic judgment on whether the evidence was "enough."
+
+This post is the investigation report on _why_ that happens in a production RAG system, what the contributing factors are, and what you can do about each one.
+
+## The Question That Broke Differently Twice
+
+The question was: **"What does canine demodicosis look like and how is it diagnosed?"**
+
+A straightforward clinical question. Our knowledge base has an entire BSAVA Dermatology textbook chapter on demodicosis - mite species, pathogenesis, clinical presentation, diagnostic procedures, treatment. The retrieval pipeline found it on both runs.
+
+Here's what happened:
+
+|                       | Refused run                                             | Successful run      |
+| --------------------- | ------------------------------------------------------- | ------------------- |
+| **Status**            | `refused` - model self-refusal                          | `completed`         |
+| **Retrieved chunks**  | 84                                                      | 84                  |
+| **Reranked evidence** | 10 chunks (S1-S10)                                      | 10 chunks (S1-S10)  |
+| **Rerank scores**     | 0.781...0.567                                           | 0.781...0.567       |
+| **Input tokens**      | 4,377                                                   | 4,377               |
+| **Output tokens**     | 495 (refusal JSON)                                      | 1,764 (full answer) |
+| **Rewritten query**   | "Canine demodicosis: clinical appearance and diagnosis" | identical           |
+| **Template**          | `general_evidence`                                      | identical           |
+| **Finish reason**     | `stop`                                                  | `stop`              |
+
+The retrieval was fully deterministic. Same rewritten query, same chunks, same rerank scores, same evidence labels. The 10 evidence chunks presented to the LLM were byte-identical. The _only_ difference was the LLM's generation output.
+
+## What the Evidence Actually Contained
+
+The 10 evidence chunks that both runs saw, ranked by rerank score:
+
+```text
+S1  (0.781)  BSAVA ch22 intro - mite species, body segments, D. canis morphology
+S2  (0.729)  BSAVA - T-lymphocyte deficiency, folliculitis, clinical presentation
+S3  (0.689)  MSD - D. canis in follicles, normal flora, one sentence
+S4  (0.641)  Ettinger - BIBLIOGRAPHY entries naming diagnostic technique papers
+S5  (0.613)  JAVMA - unrelated (Cushing syndrome differential list)
+S6  (0.610)  BSAVA - adult-onset demodicosis photo captions
+S7  (0.587)  BSAVA - pododemodicosis
+S8  (0.586)  BSAVA - classification terms, breed predispositions
+S9  (0.582)  Ettinger - BIBLIOGRAPHY entries: "acetate tape impression vs skin scraping"
+S10 (0.567)  BSAVA - treatment references
+```
+
+Six of ten chunks strongly cover **clinical appearance** - what demodicosis looks like, breed predispositions, classification. That's the first half of the question, well covered.
+
+But where's the **diagnostic methodology**? The question asked "how is it diagnosed?" and the evidence doesn't contain the textbook's "Diagnostic tests" section. The actual diagnostic text - "The diagnosis of demodicosis is based on the microscopic demonstration of mites or eggs in hair plucking samples, skin scrapes, exudate or on histopathological examination" - exists in the BSAVA chapter but landed in a chunk that scored below the rerank top 10.
+
+What _did_ make it through were S4 and S9 - bibliography entries from Ettinger's textbook. These are reference list entries, not clinical text. The diagnostic techniques appear only as paper titles:
+
+```text
+S4:  "Mueller R.S, et al. Diagnosis and treatment of demodicosis
+      in dogs and cats: clinical consensus guidelines..."
+
+S9:  "Pereira A.V, et al. Comparison of acetate tape impression
+      with squeezing versus skin scraping for the diagnosis of
+      canine demodicosis."
+
+     "Sing K.S. Superglue slide impression (SSI) method: a novel
+      diagnostic application for canine demodicosis."
+```
+
+Paper titles _name_ diagnostic techniques (skin scraping, acetate tape impression, superglue slide impression) but they don't _describe_ them. This is the borderline the LLM has to navigate.
+
+## The Model's Dilemma
+
+Our system prompt instructs the model to answer only from verbatim evidence^[The full prompt rule: "Refuse rather than synthesize, infer, or fabricate. Refusing is the correct choice when the evidence is on-topic but cannot be quoted to support a definite clinical claim."]. Every clinical claim in the answer needs a `supporting_excerpt_text` - an exact contiguous substring copied from a cited chunk. The model can't paraphrase, summarize, or infer.
+
+So the model faces this question: can you quote a bibliography title like "Comparison of acetate tape impression with squeezing versus skin scraping for the diagnosis of canine demodicosis" as evidence for the claim "diagnostic techniques include skin scraping and acetate tape impression"?
+
+On the successful run, the model took the generous interpretation - it cited the bibliography entries and wrote: "The evidence specifically names deep skin scrapings, hair pluckings, and exudate microscopy as diagnostic techniques studied for canine demodicosis."
+
+On the refused run, the model took the strict interpretation - a paper _title_ naming a technique is not the same as evidence _describing_ that technique - and self-refused with: "The retrieved evidence supports clinical appearance but does not provide a quotable diagnostic method for canine demodicosis."
+
+Both interpretations are defensible. That's the problem. When a judgment call is genuinely borderline, LLM stochasticity determines the outcome. Same evidence, same prompt, different roll of the dice.
+
+## Why the Diagnostic Chunk Was Missing
+
+The root cause is upstream of generation. The question is: why didn't the "Diagnostic tests" section of BSAVA chapter 22 make it into the top 10 reranked chunks?
+
+The BSAVA dermatology textbook is ingested with Bedrock's semantic chunking, which splits each chapter into multiple chunks along topic boundaries. Chapter 22 covers demodicosis in a natural flow:
+
+```text
+BSAVA Chapter 22 "Demodicosis"
+├── Intro + mite species           ← S1 (in top 10)
+├── Pathogenesis + immune factors  ← S2 (in top 10)
+├── Clinical presentation          ← S6, S7, S8 (in top 10)
+├── Diagnostic tests               ← NOT in top 10
+├── Treatment                      ← S10 references only
+└── References                     ← not retrieved
+```
+
+The combined query "Canine demodicosis: clinical appearance and diagnosis" is dominated by the "appearance" aspect. Six of the initial top-K chunks are clinical presentation content. The Cohere reranker, scoring each chunk against the full query, sees the appearance chunks as stronger matches than the diagnostic chunk because they overlap with _more_ of the query text.
+
+This is a fundamental limitation of single-query retrieval on multi-part questions. The query has two aspects, but retrieval doesn't decompose them - it runs one query and the dominant aspect crowds out the secondary one in the ranked results.
+
+## Three Contributing Factors
+
+### 1. No chapter-level sibling expansion for BSAVA
+
+Our retrieval pipeline has a concept called **corpus expansion**: when a chunk from certain corpora hits the initial top-K, the system issues a second filtered Retrieve to pull in sibling documents. Zoetis product chunks expand to other documents in the same product family. AAHA guideline chunks expand to sibling sections of the same guideline.
+
+BSAVA textbook chunks weren't registered for expansion. Hitting one chunk from chapter 22 didn't pull in sibling chunks from the same chapter. The "Diagnostic tests" section was in the knowledge base but never entered the candidate pool because the initial retrieval and its token budget were saturated with clinical-presentation chunks.
+
+The fix: one line. Register `bsava_derm_textbook` in the corpus expansion config with `chapter_id` as the family key. Now hitting any chunk from a BSAVA chapter pulls its siblings into the candidate pool before reranking.
+
+### 2. Single-query retrieval on a multi-part question
+
+The question asks two things: "what does it look like" _and_ "how is it diagnosed." A single query retrieves for both aspects simultaneously, and the dominant aspect (appearance, with its six strong-match chunks) crowds out the weaker one (diagnosis, with its bibliography-only evidence).
+
+The solution is **fan-out sub-queries** - decompose the question into separate retrieval passes ("demodicosis clinical appearance" + "demodicosis diagnostic methods"), each getting its own top-K retrieval. The pipeline already supports this for some templates via `sectionFanOutRetrieve`, but the general-evidence template doesn't use it yet.
+
+### 3. The refusal prompt is all-or-nothing
+
+The system prompt's refusal rule says: "Refusing is the correct choice when the evidence is on-topic but cannot be quoted to support a definite clinical claim." This is binary - the model either answers the entire question or refuses the entire question. There's no instruction for "answer what you can, note the gap."
+
+When evidence strongly supports half the question and weakly supports the other half, the model has to make a binary choice. That binary choice on borderline evidence is exactly where stochasticity lives.
+
+## The Fix and Its Limits
+
+Adding BSAVA to corpus expansion eliminated the stochastic full refusal. On the post-fix test run, the model answered the clinical appearance half with full detail and honestly noted in the Diagnosis section: "The retrieved evidence here does not provide a diagnostic algorithm or specific diagnostic test description for canine demodicosis."
+
+That's strictly better than the pre-fix behavior - it answers what it can instead of refusing everything. But the diagnostic procedure chunk still didn't surface in the reranked top 10, even with chapter expansion bringing in two new sibling chunks. The combined query still ranks appearance chunks higher than diagnostic chunks.
+
+Getting the diagnostic text to reliably surface requires the fan-out decomposition - separate retrieval for "appearance" and "diagnosis" so each aspect gets its own candidate pool and the dominant aspect can't crowd out the secondary one.
+
+## Takeaways
+
+- **Same evidence, same prompt, different output is real.** Identical retrieval pipelines producing identical evidence sets can yield opposite outcomes from the LLM. When the judgment call is genuinely borderline, stochasticity determines the result.
+
+- **Multi-part questions are a retrieval anti-pattern.** "What is X and how do you diagnose it?" runs one query where the dominant aspect crowds out the secondary one. Fan-out sub-queries - separate retrieval per aspect - are the structural fix.
+
+- **Semantic chunking creates evidence gaps at topic boundaries.** A textbook chapter that covers presentation, diagnosis, and treatment gets split into separate chunks. If only the presentation chunks score high enough for the reranked top-N, the model sees an evidence set that's rich on one topic and barren on another. Sibling expansion (pulling in chunks from the same chapter/document when any chunk hits) is the retrieval-level mitigation.
+
+- **Bibliography chunks are borderline evidence.** A reference list entry names techniques and studies but doesn't describe them. Whether a paper title constitutes "quotable evidence" for a clinical claim is a genuinely ambiguous judgment. Design your prompt rules knowing that bibliography, index, and reference-list chunks will land in your evidence pool and the model will have to decide what to do with them.
+
+- **All-or-nothing refusal amplifies stochasticity.** A binary "answer everything or refuse everything" rule turns a borderline evidence gap on _one_ aspect of a multi-part question into a full refusal of the whole question. Letting the model answer what it can and note the gaps is more robust than forcing a binary choice on partial evidence.
+
+- **Investigate before you fix.** The refusal _looked_ like a retrieval problem (bad chunks? too-strict reranking floor?) but the retrieval was identical on both runs. The actual cause was the LLM's stochastic judgment on borderline evidence from a chunk-boundary gap. Querying the DB for the evidence sets and comparing them side-by-side took five minutes and saved a wrong fix.

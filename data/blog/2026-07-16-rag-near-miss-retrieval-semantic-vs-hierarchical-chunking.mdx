@@ -1,0 +1,182 @@
+---
+title: 'Near-Miss Retrieval in RAG: Why Semantic Chunking Lost the Data and Hierarchical Chunking Found It'
+date: '2026-07-16'
+tags: ['ai', 'rag', 'retrieval']
+summary: "The retrieval pipeline returned chunks that mentioned vaccination schedules but didn't contain the actual schedule data. The model saw evidence that was on-topic but empty of the answer - and correctly refused. The root cause wasn't the model, the reranker, or the query. It was the chunking strategy splitting tables and structured data away from the prose that named them."
+images: ['/static/thumbnails/ai.png']
+draft: false
+---
+
+The question was: **"What is the recommended vaccination schedule for kittens?"**
+
+The AAHA Feline Vaccination Guidelines have an entire section on this - a structured schedule table listing core vaccines, timing intervals, boosters, and age-specific recommendations. The data existed in our knowledge base. The retrieval pipeline found chunks from the right guideline. The reranker scored them well. The model read the evidence, decided it couldn't answer, and refused.
+
+It refused because the evidence _talked about_ vaccination schedules without _containing_ one. The retrieved chunks referenced "the recommended vaccination schedule" and discussed "core vaccine protocols" - but the actual table with ages, intervals, and vaccine names had been split into a different chunk that didn't make the top 10. The model saw an evidence set that was on-topic but empty of the answer, and it did the right thing: it said it couldn't help.
+
+This is a **near-miss retrieval** failure. The system retrieved evidence that was semantically close to the question - close enough to score well in both vector search and reranking - but structurally incomplete. The data the user needed existed in the knowledge base but landed in chunks that described _around_ it rather than chunks that _contained_ it.
+
+## What Near-Miss Retrieval Looks Like
+
+Near-miss retrieval is different from a total retrieval miss. In a total miss, the knowledge base doesn't have the answer and the system correctly refuses. In a near-miss, the knowledge base _does_ have the answer, but the chunking strategy placed the answerable content in chunks that don't surface in the top-N.
+
+What surfaces instead are chunks that are semantically related to the question - they use the same terminology, reference the same concepts, sit in the same document - but they don't carry the specific data the question asks for.
+
+The vaccination schedule question retrieved chunks like:
+
+```text
+S1  (0.74)  AAHA guidelines - "Core vaccines are recommended for all kittens..."
+            Discussion of why core vaccines matter, no schedule.
+
+S2  (0.71)  AAHA guidelines - "The vaccination schedule should be initiated at..."
+            One sentence referencing the schedule, rest is general principles.
+
+S3  (0.68)  AAHA guidelines - "Revaccination intervals depend on..."
+            Booster interval discussion, no specific ages or timing.
+
+S4  (0.65)  AAHA guidelines - "FVRCP is considered a core vaccine..."
+            Vaccine classification, not administration timing.
+
+S5  (0.61)  AAHA guidelines - References section naming vaccination studies
+```
+
+Every one of these chunks is genuinely relevant to "vaccination schedule for kittens." They score well because they share vocabulary, context, and topic. But none of them contains the actual schedule data - the table or structured list saying "FVRCP at 6 weeks, boost at 10 weeks, boost at 14 weeks, annual thereafter."
+
+That table existed. It was in the same guideline document. It just landed in a chunk that, on its own, read as a data table with minimal surrounding prose - and scored below the top-N when ranked against a natural-language query.
+
+## Why Semantic Chunking Creates This Problem
+
+Our knowledge base was using **semantic chunking** for the AAHA corpus. Semantic chunking splits documents at topic boundaries - points where the embedding model detects a shift in meaning. The configuration was: max 300 tokens per chunk, buffer size 1, breakpoint percentile threshold 85.
+
+Semantic chunking is designed to produce chunks where each one is a coherent unit of meaning. The idea is sound: a chunk about "core vaccine rationale" shouldn't bleed into a chunk about "booster intervals" because they're different topics. The model detects the boundary and cuts.
+
+The problem is that structured clinical documents don't organize information the way semantic chunking expects.
+
+A vaccination guideline has a natural structure:
+
+```text
+AAHA Feline Vaccination Guidelines
+├── Introduction and scope
+├── Core vaccine rationale                    ← prose, high semantic similarity to the query
+├── Recommended vaccination schedule          ← TABLE: ages, vaccines, intervals
+│   ├── Initial kitten series
+│   ├── Booster schedule
+│   └── Late-start protocol
+├── Non-core vaccine considerations           ← prose
+├── Adverse reaction management               ← prose
+└── References
+```
+
+The schedule section is a structured table or list. It is semantically _different_ from the surrounding prose sections because its content is data, not discussion. The embedding model sees the shift from "here's why we vaccinate" (prose) to "6–8 weeks: FVRCP first dose" (tabular data) and detects a topic boundary. Correctly - they _are_ different topics in embedding space.
+
+Semantic chunking then does what it's designed to do: it cuts at the boundary, isolating the table into its own chunk (or splitting it across multiple chunks if it exceeds 300 tokens). The result:
+
+```text
+Chunk A (prose):  "Core vaccines are recommended for all kittens. The vaccination
+                   schedule should be initiated at 6-8 weeks of age..."
+
+Chunk B (table):  "| Age | Vaccine | Route | Dose |
+                   | 6-8 weeks | FVRCP | SC | 1.0 mL |
+                   | 10-12 weeks | FVRCP | SC | 1.0 mL |..."
+
+Chunk C (prose):  "Revaccination intervals depend on the vaccine type,
+                   the patient's risk factors, and..."
+```
+
+Chunk A mentions the schedule and scores well against the query. Chunk B _is_ the schedule but scores poorly because tabular data has low semantic similarity to natural-language questions. Chunk C discusses related concepts and scores well enough to crowd Chunk B out of the top-N.
+
+The fundamental mismatch: **semantic chunking optimizes for semantic coherence within each chunk, but the retriever ranks by semantic similarity to the query.** The most coherent chunk is the one that sticks to a single topic - and a data table sticks to "data" while the query is "question." The prose chunks that _discuss_ the data are semantically closer to the question than the data itself.
+
+## What Hierarchical Chunking Does Differently
+
+Hierarchical chunking doesn't try to detect topic boundaries. It operates on two levels: a **parent** chunk and multiple **child** chunks nested inside it.
+
+```text
+HIERARCHICAL chunking
+├── Parent chunk (1500 tokens)
+│   ├── Child chunk 1 (300 tokens, 60-token overlap)
+│   ├── Child chunk 2 (300 tokens, 60-token overlap)
+│   ├── Child chunk 3 (300 tokens, 60-token overlap)
+│   └── ...
+├── Parent chunk (1500 tokens)
+│   ├── Child chunk 1 ...
+│   └── ...
+└── ...
+```
+
+The parent chunk is large enough to span multiple sections. A 1500-token parent starting at "Core vaccine rationale" might extend through the vaccination schedule table and into the beginning of "Booster schedule." The child chunks are small (300 tokens) for precise retrieval, but each child carries a pointer to its parent.
+
+At retrieval time, the system uses the child chunks for vector search - they're small and specific, good for matching against a query. But when assembling context for the LLM, it can pull in the parent chunk, which carries the surrounding context that gives the child meaning.
+
+The key difference from semantic chunking:
+
+1. **The table doesn't get orphaned.** A parent chunk that spans the prose-to-table boundary keeps both the discussion ("The vaccination schedule should be initiated at 6-8 weeks") and the table itself ("FVRCP at 6-8 weeks, boost at 10-12 weeks") in one retrievable unit. Even if the table-only child chunk scores poorly against the query, the prose child chunk that discusses the schedule brings the parent along - and the parent contains the table.
+
+2. **The boundary isn't semantic, it's structural.** Hierarchical chunking doesn't ask "is this a topic shift?" It asks "have I hit 1500 tokens?" A topic shift inside a parent chunk is fine - the parent is supposed to carry context across boundaries. The child handles precision; the parent handles context.
+
+3. **Overlap prevents hard cuts.** The 60-token overlap between child chunks means content at boundaries appears in both adjacent children. A sentence that sits right at a chunk boundary doesn't vanish.
+
+## The Migration and What Changed
+
+We replaced the AAHA data source from SEMANTIC (300 tokens, buffer 1, breakpoint 85) to HIERARCHICAL (parent 1500 tokens, child 300 tokens, overlap 60). The provisioning diff was five lines:
+
+```diff
+  chunkingConfiguration: {
+-   chunkingStrategy: 'SEMANTIC',
+-   semanticChunkingConfiguration: {
+-     maxTokens: 300,
+-     bufferSize: 1,
+-     breakpointPercentileThreshold: 85,
++   chunkingStrategy: 'HIERARCHICAL',
++   hierarchicalChunkingConfiguration: {
++     levelConfigurations: [
++       { maxTokens: 1500 },
++       { maxTokens: 300 },
++     ],
++     overlapTokens: 60,
+    },
+  },
+```
+
+The operational cost was less trivial: delete the old data source (~55 minutes for the vector index to purge), create the new one, re-ingest ~19,000 documents (~90 minutes). About 2.5 hours of wall-clock time per corpus.
+
+The vaccination schedule question that previously refused - "AtlasVet can't answer this" - returned a full structured answer with six inline images from the AAHA guidelines, covering the initial kitten series, booster timing, and core vs non-core vaccine recommendations.
+
+The evidence set changed. Where semantic chunking surfaced chunks that _discussed_ vaccination concepts, hierarchical chunking surfaced parent chunks that _contained_ the schedule data alongside its discussion. The model didn't need to infer that a schedule existed from references to it - the schedule was in the context.
+
+## When Semantic Chunking Works
+
+Semantic chunking isn't wrong for all content. It works well when:
+
+- **The content is uniform prose.** Textbooks, articles, guidelines written in flowing paragraphs without embedded tables or structured data. When every section reads like the sections around it, semantic boundaries are meaningful and produce coherent, self-contained chunks.
+
+- **The answer lives in the prose, not in structured data.** "What causes demodicosis?" is answered by a prose paragraph describing mite pathogenesis. Semantic chunking isolates that paragraph cleanly.
+
+- **The document doesn't have data-dense sections that read differently from the surrounding text.** A document that's all discussion with no tables, no dosage charts, no protocol checklists doesn't create the semantic-distance gap between "prose about data" and "the data itself."
+
+The failure mode is specific: **semantic chunking breaks down when the answer is structured data (tables, schedules, dosage charts, protocol steps) embedded in a document that's otherwise prose.** The embedding model sees the structured section as semantically distant from both the surrounding prose and from natural-language queries, so it gets isolated into low-ranking chunks.
+
+## When Hierarchical Chunking Works Better
+
+Hierarchical chunking handles the mixed-content case because it doesn't treat the prose-to-table transition as a reason to cut. The parent chunk spans across content types, keeping the discussing-the-table prose and the table itself in one retrievable unit.
+
+This matters most for:
+
+- **Clinical guidelines with embedded schedules, dosage tables, and protocol checklists.** Exactly the AAHA case - structured recommendation data sitting inside a larger discussion document.
+
+- **Reference material with data-dense sections.** Drug formularies, diagnostic criteria lists, treatment algorithms. The "answer" is a structured entry; the surrounding text is interpretation and context.
+
+- **Documents where the user question maps to structured data but the query is natural language.** "What's the vaccination schedule for kittens?" is natural language. The answer is a table. Hierarchical chunking bridges that representation gap by keeping both forms in the same parent.
+
+The tradeoff is that hierarchical chunks are larger, so you fit fewer into the LLM's context window. If every chunk is 1500 tokens (parent level) instead of 300 tokens (semantic), your 10-chunk evidence window carries 15,000 tokens instead of 3,000. For a model with a 128K context window, that's fine. For a smaller window or a cost-constrained pipeline, the token budget matters. In practice, the child chunks keep retrieval precise, and the parent context is pulled only when needed - Bedrock's hierarchical strategy manages this automatically.
+
+## Takeaways
+
+- **Near-miss retrieval is harder to debug than a total miss.** The system retrieves chunks that are genuinely relevant - they use the right terminology, they come from the right document, they score well. The failure isn't "nothing was found" but "the wrong _part_ was found." You only see it by reading what the model actually received and asking "could I answer this question from these chunks alone?"
+
+- **Semantic chunking optimizes coherence; retrieval optimizes similarity.** These are different objectives. A coherent chunk is one that sticks to a single topic. A similar chunk is one that shares vocabulary with the query. When the answer is structured data (tables, schedules, lists) embedded in prose, the most coherent chunk is the prose that discusses the data - not the data itself. The data chunk is coherent too (it sticks to "data"), but it's semantically distant from a natural-language query.
+
+- **Hierarchical chunking bridges the prose-data gap.** Parent chunks span content-type boundaries, keeping the discussing-the-data prose and the data in one retrievable unit. Child chunks handle precise matching. This is structural, not heuristic - the parent doesn't need to detect what kind of content it contains.
+
+- **The chunking strategy is per-corpus, not per-knowledge-base.** Different corpora have different content structures. A web-scraped drug reference that's uniform prose may be well served by semantic chunking. A clinical guideline with embedded tables needs hierarchical. Defaulting every corpus to the same strategy is convenient but leaves the mixed-content corpora with a structural retrieval gap.
+
+- **"The data was in the knowledge base" is not the same as "the data was retrievable."** Ingestion succeeded. The vectors existed. The data was there. But the chunking strategy placed it in chunks that couldn't surface through the retrieval pipeline. The gap between "ingested" and "retrievable" is the chunking strategy, and it's invisible until a specific question exposes it.

@@ -1,0 +1,319 @@
+---
+title: "The LLM Dumb Zone: Why Your AI Gets Worse Before It Runs Out of Context"
+date: '2026-08-09'
+tags: ['ai', 'claude-code']
+summary: "LLM context windows have a marketed size and a useful size, and they're not the same number. Research shows quality degrades well before the window fills up - a 1M-token model starts losing reasoning fidelity around 400K tokens. Here's the research behind the Smart Zone, the Warn Zone, and the Dumb Zone - and a Claude Code statusline that tracks which one you're in."
+images: ['/static/thumbnails/ai.png']
+draft: false
+---
+
+Your LLM doesn't suddenly break when the context window fills up. It gets _gradually dumber_ long before that - and by the time you notice, you've been working in the degradation zone for a while.
+
+I was watching my Claude Code statusline tick down from `ctx 85%` to `ctx 40%` and realized the number was answering the wrong question. "How much context is left?" is about when the conversation _dies_. The question I actually cared about was: **how much context is left before the conversation gets noticeably worse?**
+
+Those are different numbers. And the gap between them is bigger than I expected.
+
+## The Research: Context Rot Is Real and Measurable
+
+The core finding comes from three converging lines of research:
+
+### Lost in the Middle (Stanford, 2023)
+
+The original paper that named the problem^[Liu et al., "Lost in the Middle: How Language Models Use Long Contexts," 2023. Replicated across GPT-3.5-Turbo, GPT-4, Claude 1.3, LongChat-13B, MPT-30B-Instruct, and Cohere Command.]. When you give an LLM a set of documents and ask it to find information, its accuracy follows a **U-shaped curve** based on where the relevant information sits:
+
+```text
+Accuracy
+  |
+  |  ██                                        ██
+  |  ████                                    ████
+  |  ██████                                ██████
+  |  ████████                            ████████
+  |  ██████████                        ██████████
+  |  ████████████                    ████████████
+  |  ██████████████              ████████████████
+  |  ████████████████        ████████████████████
+  |  ██████████████████  ████████████████████████
+  +--------------------------------------------------
+     Start          Middle              End
+                Position of relevant information
+```
+
+Information at the start and end of context gets full attention. Information in the middle can see **30%+ accuracy drops**. The model isn't forgetting it exists - the attention mechanism physically under-weights it^[The architectural root cause is RoPE (Rotary Position Embedding) long-term decay. It reduces dot-product similarity between distant token pairs. Then softmax normalization amplifies the gap by concentrating attention weight on the highest-scoring (nearest) tokens.].
+
+This isn't a bug in one model. The Stanford team replicated it across six model families. It's a property of the transformer attention mechanism itself.
+
+### Context Rot (Chroma, 2025)
+
+Chroma tested 18 state-of-the-art models on a straightforward task: find information in a context window at different fill levels. **Every single model got worse as context length increased.** Not some models - all of them.
+
+For 1M-token context window models, the observable effect typically kicks in somewhere around 300K-400K tokens. The degradation isn't linear - it tends to hold relatively steady, then drop.
+
+### Intelligence Degradation Thresholds (2025-2026)
+
+Multiple research groups have converged on similar thresholds. A study testing models at different context utilization percentages found:
+
+- **0-40% of maximum context**: Stable performance. Models achieve strong F1 scores and maintain reasoning fidelity.
+- **At 50% of maximum context**: Performance can drop catastrophically - one study measured a 45.5% F1 degradation at this threshold.
+- **At 60%+**: The model is materially degraded. It skips instructions, loses track of earlier constraints, and starts repeating itself.
+
+The pattern holds across model families, though the exact cliff point varies. Newer models have pushed the threshold further out, but none have eliminated it.
+
+## What Actually Degrades
+
+Context degradation isn't "the model gets dumber at everything." Specific capabilities fail in a predictable order:
+
+**First to go (40-60% used):**
+
+- Recall of constraints or decisions from early in the conversation
+- Tracking multiple parallel threads simultaneously
+- Noticing contradictions between something said 200 messages ago and the current request
+- Following complex multi-step instructions that reference earlier context
+
+**Last to go (60%+ used):**
+
+- Understanding the current message (the model still reads your latest prompt at full fidelity)
+- Following instructions in the system prompt (it sits at the edge of context, where attention is strongest)
+- Basic reasoning on self-contained questions
+- Code generation from a clear, local specification
+
+This is why the degradation is insidious. The model still _sounds_ competent - it's answering your latest question fine. But it's lost the thread of what you decided three refactoring steps ago, or it's forgotten a constraint you set at the start of the session. You don't notice until you review its work and find it contradicted an earlier decision.
+
+## Three Zones, Not a Percentage
+
+Once you frame context usage as zone-based rather than percentage-based, the right thresholds fall out of the research:
+
+```text
+  Context Window Usage
+
+  0%          40%              60%                     100%
+  |============|================|========================|
+  |   SMART    |     WARN       |         DUMB           |
+  |            |                |                        |
+  |  Full      |  Quality       |  Materially            |
+  |  reasoning |  fading.       |  degraded.             |
+  |  fidelity. |  Finish        |  /compact or           |
+  |  Work      |  current work, |  new session.          |
+  |  freely.   |  then compact. |                        |
+  |============|================|========================|
+```
+
+**SMART (0-40% used):** The model has full access to everything in context. Start complex multi-step tasks, set up long-running investigations, establish constraints and conventions. This is where you do your hardest thinking together.
+
+**WARN (40-60% used):** Quality is fading but the model is still functional for the _current_ task. Recent context (last 20-30 exchanges) is fine. Early context is getting unreliable. This is your signal to finish the current line of work and run `/compact` to compress the conversation back toward the SMART zone. Don't start a brand-new complex investigation here.
+
+**DUMB (60%+ used):** The model is materially degraded. Run `/compact` to summarize and free context, or start a new session. The cost of continuing (subtle quality loss, missed constraints, repeated work) exceeds the cost of the context switch.
+
+The key insight for WARN zone: **`/compact` is your escape hatch, not a new session.** Switching sessions loses _all_ context - including the understanding of your codebase, decisions made, and task state. `/compact` preserves a summary of the important bits and frees up the window, pushing you back toward SMART. The cost of a session switch (re-establishing context from scratch) almost always exceeds the marginal quality loss of the WARN zone.
+
+## Tracking It: A Claude Code Statusline
+
+Claude Code's statusline receives a JSON payload on every update that includes `context_window.remaining_percentage`. The default approach is to show that raw percentage with color coding - green when you have plenty, red when you're almost out.
+
+That's the wrong signal. You don't need to know you have 40% of context left. You need to know you've used 60% and are in the DUMB zone.
+
+Here's a statusline script that replaces the raw percentage with a zone-aware indicator. It shows how much of your _usable_ context remains - the percentage of smart zone still available before quality degrades:
+
+```bash
+#!/usr/bin/env bash
+# Claude Code status line
+# Line 1: session | branch | smart zone indicator
+# Line 2: model | cwd | git status (dirty/ahead/behind)
+
+input=$(cat)
+
+session_id=$(echo "$input" | jq -r '.session_id // empty')
+model=$(echo "$input" | jq -r '.model.display_name // empty')
+cwd=$(echo "$input" | jq -r '.workspace.current_dir // .cwd // empty')
+remaining_pct=$(echo "$input" | jq -r '.context_window.remaining_percentage // empty')
+
+# Git branch + status
+branch=""
+git_modified=0
+git_untracked=0
+git_ahead=0
+git_behind=0
+if [ -n "$cwd" ] && { [ -d "$cwd/.git" ] || git -C "$cwd" rev-parse --git-dir >/dev/null 2>&1; }; then
+  branch=$(git -C "$cwd" --no-optional-locks symbolic-ref --short HEAD 2>/dev/null)
+  if [ -n "$branch" ]; then
+    while IFS= read -r line; do
+      case "$line" in
+        '??'*) ((git_untracked++)) ;;
+        *)     ((git_modified++)) ;;
+      esac
+    done < <(git -C "$cwd" --no-optional-locks status --porcelain 2>/dev/null)
+    lr=$(git -C "$cwd" --no-optional-locks rev-list --count --left-right '@{upstream}...HEAD' 2>/dev/null)
+    if [ -n "$lr" ]; then
+      git_behind=$(echo "$lr" | cut -f1)
+      git_ahead=$(echo "$lr" | cut -f2)
+    fi
+  fi
+fi
+
+# --- Session segment ---
+session_part=""
+if [ -n "$session_id" ]; then
+  session_part=$(printf '\033[1;97m%s\033[0m' "$session_id")
+fi
+
+# --- Model segment ---
+model_part=""
+if [ -n "$model" ]; then
+  model_part=$(printf '\033[0;36m%s\033[0m' "$model")
+fi
+
+# --- Branch segment ---
+branch_part=""
+if [ -n "$branch" ]; then
+  branch_part=$(printf '\033[0;35m %s\033[0m' "$branch")
+fi
+
+# --- CWD segment ---
+cwd_part=""
+if [ -n "$cwd" ]; then
+  short_cwd=$(basename "$cwd")
+  cwd_part=$(printf '\033[0;33m%s\033[0m' "$short_cwd")
+fi
+
+# --- Git status segment ---
+git_status_part=""
+if [ -n "$branch" ]; then
+  status_bits=""
+  [ "$git_ahead" -gt 0 ]     && status_bits+="${git_ahead}↑"
+  [ "$git_behind" -gt 0 ]    && status_bits+="${status_bits:+ }${git_behind}↓"
+  [ "$git_modified" -gt 0 ]  && status_bits+="${status_bits:+ }${git_modified}M"
+  [ "$git_untracked" -gt 0 ] && status_bits+="${status_bits:+ }${git_untracked}?"
+  if [ -n "$status_bits" ]; then
+    if [ "$git_modified" -gt 0 ] || [ "$git_untracked" -gt 0 ]; then
+      git_status_part=$(printf '\033[0;31m%s\033[0m' "$status_bits")
+    else
+      git_status_part=$(printf '\033[0;32m%s\033[0m' "$status_bits")
+    fi
+  else
+    git_status_part=$(printf '\033[0;32m✓\033[0m')
+  fi
+fi
+
+# --- Smart Zone context segment ---
+# Research: "Lost in the Middle" (Stanford 2023), "Context Rot" (Chroma 2025)
+# LLM quality degrades as context fills — not linearly, but in zones:
+#   0-40% used  = SMART: full reasoning fidelity
+#   40-60% used = WARN:  attention/quality fading
+#   60%+ used   = DUMB:  materially degraded, /compact recommended
+# "Smart zone remaining" = normalized % of usable context before quality cliff.
+ctx_part=""
+if [ -n "$remaining_pct" ]; then
+  remaining_int=$(printf '%.0f' "$remaining_pct")
+  used_int=$((100 - remaining_int))
+
+  smart_limit=60
+  if [ "$used_int" -lt "$smart_limit" ]; then
+    smart_remaining=$(( (smart_limit - used_int) * 100 / smart_limit ))
+  else
+    smart_remaining=0
+  fi
+
+  if [ "$used_int" -le 40 ]; then
+    ctx_part=$(printf '\033[1;32mSMART %s%%\033[0m' "$smart_remaining")
+  elif [ "$used_int" -lt "$smart_limit" ]; then
+    ctx_part=$(printf '\033[1;33mWARN %s%%\033[0m' "$smart_remaining")
+  else
+    ctx_part=$(printf '\033[1;31mDUMB\033[0m')
+  fi
+fi
+
+# --- Assemble ---
+sep=$(printf ' \033[0;90m|\033[0m ')
+
+line1_parts=()
+[ -n "$session_part" ] && line1_parts+=("$session_part")
+[ -n "$branch_part" ]  && line1_parts+=("$branch_part")
+[ -n "$ctx_part" ]     && line1_parts+=("$ctx_part")
+
+line2_parts=()
+[ -n "$model_part" ]      && line2_parts+=("$model_part")
+[ -n "$cwd_part" ]        && line2_parts+=("$cwd_part")
+[ -n "$git_status_part" ] && line2_parts+=("$git_status_part")
+
+join_parts() {
+  local result=""
+  for i in "${!parts[@]}"; do
+    if [ "$i" -eq 0 ]; then
+      result="${parts[$i]}"
+    else
+      result="${result}${sep}${parts[$i]}"
+    fi
+  done
+  echo "$result"
+}
+
+parts=("${line1_parts[@]}")
+line1=$(join_parts)
+
+parts=("${line2_parts[@]}")
+line2=$(join_parts)
+
+if [ -n "$line2" ]; then
+  printf '%b\n%b\n' "$line1" "$line2"
+else
+  printf '%b\n' "$line1"
+fi
+```
+
+To use it, save the script and point your Claude Code settings at it:
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "~/.claude/statusline.sh",
+    "padding": 0
+  }
+}
+```
+
+The smart zone percentage is **normalized to the usable range**, not the total context window. So `SMART 50%` means you've used half of your smart zone (30% of total context), not that 50% of raw context is left. Here's how the zones map:
+
+```text
+Context used  │  Zone   │  Display     │  What it means
+──────────────┼─────────┼──────────────┼─────────────────────────────────
+0%            │  SMART  │  SMART 100%  │  Full smart zone available
+20%           │  SMART  │  SMART 66%   │  Two-thirds of smart zone left
+40%           │  SMART  │  SMART 33%   │  One-third left, nearing boundary
+50%           │  WARN   │  WARN 16%    │  Quality fading, finish + compact
+59%           │  WARN   │  WARN 1%     │  Almost out of productive context
+60%           │  DUMB   │  DUMB        │  Degraded. /compact now.
+80%           │  DUMB   │  DUMB        │  Degraded. /compact now.
+```
+
+The `smart_limit=60` variable on one line is the single knob to tune. If you find your model holds up well past 60%, raise it. If you notice quality dropping earlier, lower it.
+
+## Why Not Just Use /compact Earlier?
+
+You could. But `/compact` has a cost: it summarizes your conversation, and summaries are lossy. Details, nuances, and the exact reasoning behind decisions get compressed. Running `/compact` too aggressively means you lose context you actually needed.
+
+The zone model gives you a framework for _when_ the cost of compacting is worth it:
+
+- **In SMART zone**: Don't compact. You have full fidelity. Compacting here would throw away detail for no benefit.
+- **In WARN zone**: Compact when you finish your current task. The model is already losing grip on early context - the summary will preserve the important parts better than the degraded attention would.
+- **In DUMB zone**: Compact immediately or start fresh. The model's recall of anything outside your last few messages is unreliable. A summary is strictly better than what the attention mechanism is doing.
+
+## The Tuning Question
+
+The 60% threshold comes from the research consensus, but your mileage will vary by model and task type. Claude with 1M context may hold up better at higher utilization than a 128K model - the absolute token count matters too, not just the percentage^[Chroma's testing found the effect kicks in around 300-400K tokens for 1M-context models. That's 30-40% - actually _below_ our SMART boundary. The 40% SMART ceiling is conservative for small-context models and generous for 1M-context ones.].
+
+If you want to calibrate: pay attention to when the model starts forgetting constraints you set earlier in the conversation, or when it contradicts a decision you already made. That's your personal WARN threshold. The statusline just makes it visible.
+
+## Takeaways
+
+- **LLM quality degrades well before the context window fills up.** The effective capacity is roughly 60% of the advertised maximum - sometimes less. Marketed context size and usable context size are different numbers.
+- **Degradation follows a U-shaped attention curve.** The model attends well to the start and end of context but poorly to the middle. This is an architectural property of transformer attention, not a bug in any specific model.
+- **Track zones, not percentages.** A raw "context remaining" percentage answers the wrong question. You don't need to know when the conversation dies - you need to know when it gets dumb.
+- **`/compact` is the escape hatch, not a new session.** Switching sessions loses all context. Compacting preserves a summary and frees the window. The cost of a session switch almost always exceeds the marginal quality loss of the WARN zone.
+- **The WARN zone is still usable** - finish your current work there, then compact. Don't panic-eject. But don't start complex new investigations there either.
+
+## Further Reading
+
+- [Lost in the Middle: How Language Models Use Long Contexts](https://arxiv.org/abs/2307.03172) - The Stanford paper that named the U-shaped attention problem
+- [Context Rot: Why LLMs Degrade as Context Grows](https://www.trychroma.com/research/context-rot) - Chroma's empirical testing across 18 frontier models
+- [Intelligence Degradation in Long-Context LLMs: Critical Threshold Determination](https://arxiv.org/abs/2601.15300) - Research on specific threshold percentages where performance drops
+- [Claude Code Statusline Documentation](https://code.claude.com/docs/en/statusline) - How to configure the Claude Code statusline

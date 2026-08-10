@@ -1,0 +1,151 @@
+---
+title: "Benchmarks vs Vibes: Why I'm Keeping Opus 4.6 for Daily Coding"
+date: '2026-08-10'
+tags: ['ai', 'claude-code']
+summary: "Opus 5 scores 96.0% on SWE-bench Verified vs Opus 4.6's 80.8% — a 15-point gap. But on blind user-preference coding leaderboards, Opus 4.6 ranks 4th (ELO 1547) while Opus 5 ranks 11th (ELO 1530). Synthetic benchmarks and human preference are telling opposite stories. I ran a two-round adversarial research workflow to figure out which signal to trust and landed on a mixed-model strategy."
+images: ['/static/thumbnails/ai.png']
+draft: false
+---
+
+I've been running Claude Opus 4.6 as my default model in Claude Code for months. It felt right — fast responses, concise output, strong instruction following. When Opus 5 and Fable 5 shipped, the benchmarks said I should switch immediately. SWE-bench Verified: 96.0% vs 80.8%. A 15-point gap. That's not marginal — that's generational.
+
+But I kept putting off the switch. Opus 4.6 just _felt_ better for the interactive back-and-forth of daily coding. I figured I was being irrational — holding onto a worse model because of familiarity bias.
+
+So I did what I do: I ran the numbers. Two rounds of adversarial deep research — 211 agents, 45 sources, 213 claims extracted, 50 adversarially verified^[The adversarial verification works like this: for each factual claim extracted from sources, three independent verifier agents attempt to _refute_ it by cross-checking against other sources. A claim needs 2 of 3 verifiers to confirm it. 26 claims survived; 24 were killed.]. The first round searched for the benchmark case to upgrade. The second searched for the counter-evidence — the case to stay.
+
+What I found: **the vibes are real, and they're measurable.**
+
+## The Headline: Benchmarks and Preference Disagree
+
+The first round of research found what you'd expect. Opus 5 dominates on synthetic coding benchmarks:
+
+| Benchmark           | Opus 4.6 | Opus 4.8 |    Opus 5 |   Fable 5 |
+| :------------------ | -------: | -------: | --------: | --------: |
+| SWE-bench Verified  |    80.8% |    88.6% | **96.0%** |     95.0% |
+| SWE-bench Pro       |    51.9% |    69.2% |     79.2% | **80.3%** |
+| Frontier-Bench v0.1 |        — |    18.7% | **43.3%** |     33.8% |
+
+Sources: vals.ai (updated Aug 8, 2026), Anthropic Opus 5 System Card, morphllm.com^[Minor discrepancies exist across sources. Vals.ai reports Opus 5 at 97.0% on SWE-bench Verified vs 96.0% elsewhere — likely different scaffolding configurations. The directional conclusion doesn't change.].
+
+The second round found the opposite signal. On **blind user-preference coding leaderboards** — where real developers pick which model's output they prefer without knowing which model produced it — Opus 4.6 ranks _above_ every Opus 5 variant.
+
+### Arena.ai Coding Leaderboard
+
+| Model       | Rank |  ELO |  Votes |
+| :---------- | ---: | ---: | -----: |
+| Opus 4.6    |   #4 | 1547 | 20,444 |
+| Opus 5-high |  #11 | 1530 |  4,043 |
+| Opus 5-max  |  #13 | 1527 |  1,910 |
+
+The entire Arena.ai coding top-5 consists of Gen-4 models plus Fable 5. No Opus 5 variant cracks the top 10. The ELO gap is 17-20 points^[The confidence intervals overlap somewhat (Opus 4.6 at 1547±6 vs Opus 5-high at 1530±10), but the ordinal rankings are stable. The bigger caveat: Opus 5 has 5x fewer votes — its ELO is less statistically mature and could shift as more votes accumulate.].
+
+On the **Devin Desktop Arena**, Opus 4.6 holds rank #1 (ELO 1098). Opus 5 doesn't appear at all — though this may mean it wasn't added to the battle pool rather than that it was tested and ranked low^[Devin's own footnote states "Some model tiers may not yet appear."].
+
+So: synthetic benchmarks say Opus 5 is 15 points better at _solving coding puzzles_. Human preference says real developers _prefer working with_ Opus 4.6's output. These are measuring different things.
+
+## Three Quantified Regressions
+
+The second research round surfaced three specific, measurable regressions in Gen-5 models.
+
+### 1. Verbosity: +107% More Output Tokens
+
+Opus 5 at lowest reasoning effort produces a **median 1,141 tokens** per response vs Opus 4.8 at **550 tokens** — a +107% increase (about +60% after correcting for tokenizer differences between generations). This isn't speculation; Anthropic explicitly acknowledges it:
+
+> "Default visible responses and written deliverables run longer on Claude Opus 5 than on Claude Opus 4.8."
+>
+> — Opus 5 Migration Guide, Anthropic
+
+> "Un-steered, Claude Fable 5 can elaborate beyond what the task needs."
+>
+> — Fable 5 Prompting Guide, Anthropic
+
+The migration guide instructs users to "prompt explicitly for conciseness or a target length instead." That's Anthropic telling you the verbosity is a known behavior you need to actively work around.
+
+For Claude Code interactive sessions, this hits hard. More verbose output means more tokens consumed per turn, slower responses, faster context degradation (this ties directly back to the [context rot problem](/blog/llm-attention-mechanism-context-rot) — you're burning through the Smart Zone faster), and more cognitive load parsing each reply. Even though the per-token price is identical ($5/$25 per MTok for both models), **your effective cost roughly doubles** because you're getting ~2x more tokens per interaction.
+
+### 2. Nonsense Detection: -40% Regression
+
+**BullshitBench** is a real, open-source benchmark^[MIT license, 1,808 GitHub stars, by Peter Gostev. Uses a 3-judge panel (Claude Sonnet 4.6, GPT-5.2, Gemini 3.1 Pro). The methodology and data are publicly archived at github.com/petergpt/bullshit-benchmark and pinned to a specific commit for reproducibility.] that measures whether a model can detect when it's being fed plausible-sounding nonsense.
+
+| Model generation        | Strict detection score |
+| :---------------------- | ---------------------: |
+| Gen-4 (Opus 4.6/4.8)    |              **0.870** |
+| Gen-5 (Opus 5/Sonnet 5) |                  0.523 |
+
+Non-overlapping 95% Wilson confidence intervals. A 40% regression.
+
+The regression is selective: Gen-5 retains perfect scores on structural logic errors (where the syntax of the argument is obviously broken) but drops sharply on _narrative_ nonsense — where the claim sounds reasonable but is semantically wrong. Reified metaphors: 0.667 vs 2.0. Temporal category errors: 0.600 vs 1.767. The author hypothesizes this pattern is consistent with RLHF-driven sycophancy — the model has been trained to be more agreeable and is less willing to push back on plausible-sounding statements^[Counter-evidence exists: Anthropic's Transparency Hub reports Sonnet 5 as strongest on MASK sycophantic-dishonesty (lying rate 3.1% vs Opus 4.8 at 6.1%), which complicates the sycophancy hypothesis. The BullshitBench finding is real but the _cause_ is debated.].
+
+Caveats: small sample sizes (n=55 v1, n=100 v2), not peer-reviewed, and per-technique breakdowns rest on approximately 4-5 prompts each. This is a community benchmark, not a rigorous study. But the direction is consistent with the user-preference data.
+
+### 3. Product-Layer Bugs Muddied the Signal
+
+Here's the confounding factor. Anthropic published an engineering postmortem (April 23, 2026) confirming **three separate product-layer bugs** in Claude Code from March–April 2026 that caused real quality degradation independent of model weights:
+
+| Bug                                                       | Shipped |  Fixed | Impact                                     |
+| :-------------------------------------------------------- | ------: | -----: | :----------------------------------------- |
+| Reasoning effort silently dropped from `high` to `medium` |   Mar 4 |  Apr 7 | 34 days at lower quality                   |
+| Caching bug dropped thinking history every turn           |  Mar 26 | Apr 10 | Claude appeared "forgetful and repetitive" |
+| System prompt added 25-word verbosity cap                 |  Apr 16 | Apr 20 | Measurable 3% drop on one internal eval    |
+
+The postmortem explicitly states: _"We never intentionally degrade our models."_
+
+These bugs overlapped with model transitions. Some "Opus 5 feels worse" sentiment may be residual from _confirmed harness bugs_, not model changes. This makes it genuinely difficult to untangle model regressions from product regressions in user reports from that period.
+
+## Why Benchmarks Might Not Tell the Whole Story
+
+An ICML 2026 study of 60 LLM benchmarks (37 authors, peer-reviewed) found that **48.3% (29 of 60)** exhibit high or very high saturation — meaning top-performing models cannot be statistically distinguished from each other on those benchmarks^[arXiv 2602.16763. The paper frames saturation as a measurement resolution problem, not as evidence that capability gains are illusory. It explicitly notes "saturation of benchmarks is not always negative." The application to Opus 4.6 vs 5 is interpretive, not direct.].
+
+SWE-bench Verified, where Opus 5 scores 96.0%, is approaching this zone. At that level, score differences may reflect optimization against the benchmark distribution rather than meaningful capability differences in general coding. This doesn't mean Opus 5 isn't better — SWE-bench Pro, where scores are lower (79.2% vs 51.9%), shows a clearer gap that likely reflects real capability improvement.
+
+The distinction matters: Opus 5 is probably genuinely better at _hard, isolated coding puzzles_. But the qualities that make a model pleasant to _work with interactively_ — conciseness, appropriate pushback on bad ideas, instruction adherence, not over-engineering — aren't what SWE-bench measures.
+
+## The Mixed-Model Strategy
+
+The data doesn't support a wholesale switch _or_ staying put entirely. The honest answer is a mixed strategy based on what each model is actually good at:
+
+**Opus 4.6 for interactive coding.** This is where the preference leaderboards and my own experience agree. Daily Claude Code sessions — skill implementation, bug fixes, code review, architecture discussion. Prompts are tuned for it. Output is concise. Nonsense detection is stronger.
+
+**Opus 5 for hard problem-solving.** When Opus 4.6 struggles — complex multi-file refactors, unfamiliar codebases, tasks where I need raw problem-solving power over conversational quality. The SWE-bench Pro gap (79.2% vs 51.9%) is real and large enough to matter on genuinely hard tasks. But prompt for conciseness.
+
+**Fable 5 for long-horizon autonomous work.** Multi-agent workflows, 100+ agent research pipelines, sustained autonomous tasks where the model runs for minutes without human interaction. Fable 5 costs 2x more ($10/$50 per MTok) and has safety classifiers that can refuse legitimate coding requests^[Anthropic's Fable 5 documentation explicitly warns that "benign cybersecurity work" and "benign machine learning work" can trigger refusals. Categories include `cyber`, `bio`, `frontier_llm`, and `general_harms`.], but it edges ahead on long-horizon coding benchmarks (SWE-bench Pro: 80.3% vs Opus 5's 79.2%).
+
+### Setting It Up in Claude Code
+
+The practical implementation is shell aliases:
+
+```bash
+# In .zshrc
+alias cc='claude --dangerously-skip-permissions'
+alias cc-opus='claude --dangerously-skip-permissions --model claude-opus-5'
+alias cc-fable='claude --dangerously-skip-permissions --model claude-fable-5'
+```
+
+`cc` stays on Opus 4.6 (the default) for interactive work. `cc-opus` and `cc-fable` launch sessions on the stronger models when I know upfront the task needs them.
+
+Within any session, I can also fan out subagents to different models. A lead session on Opus 4.6 can delegate a research subtask to Opus 5 or a complex autonomous task to Fable 5 — the subagent runs on the specified model while the interactive session stays concise:
+
+```text
+Agent({
+  model: "opus",    // subagent runs on Opus 5
+  prompt: "Research the authentication architecture...",
+  description: "Auth research"
+})
+```
+
+This is the same pattern I already use for dual-stack code review^[My `/code-review-dual` skill runs Claude and Codex hunters in parallel, then cross-validates findings. The model routing is already built into the workflow — this just extends it to route different Claude generations to different task types.] — it just extends to routing different Claude model generations to different task types.
+
+## What I'm Still Watching
+
+This analysis reflects the model landscape as of early August 2026. A few things could change the calculus:
+
+- **Arena.ai vote maturity.** Opus 5 has 5x fewer votes than Opus 4.6 (4,043 vs 20,444). The ELO gap could narrow or reverse as more developers evaluate Opus 5.
+- **Prompting for conciseness.** If Anthropic's migration guide is right that explicit conciseness prompts close the verbosity gap, the "feel" difference might be solvable without changing models. I haven't tested this systematically yet.
+- **BullshitBench downstream effects.** The nonsense detection regression is measured on narrative nonsense prompts, not coding tasks. Whether it translates to coding — accepting incorrect user premises, generating code for nonsensical requirements — is an open question.
+- **Anthropic's response.** They addressed the March–April product bugs with a thorough postmortem. If the Arena.ai preference gap persists, I'd expect them to address it — either by improving Opus 5's interactive qualities or by acknowledging the tradeoff.
+
+## The Takeaway
+
+The benchmark story is simple: Opus 5 is better, switch now. The full picture is more nuanced: Opus 5 is better at _solving isolated coding puzzles_, but Opus 4.6 produces code that developers _prefer working with_ in interactive sessions. These are different capabilities, and the right model depends on which one your current task needs.
+
+If you're running autonomous pipelines or tackling genuinely hard problems where Opus 4.6 fails, the switch to Opus 5 or Fable 5 is justified. If you're doing interactive coding where output quality, conciseness, and instruction adherence matter — the data says your instinct to stick with Opus 4.6 might be the right call, at least until the preference leaderboards say otherwise.

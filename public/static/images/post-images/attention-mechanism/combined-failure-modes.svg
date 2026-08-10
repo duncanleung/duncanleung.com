@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 340" width="680" height="340">
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .title { font-size: 14px; font-weight: 600; fill: #1a1a2e; }
+    .zone-title { font-size: 13px; font-weight: 600; }
+    .factor { font-size: 10px; fill: #444; }
+    .factor-good { font-size: 10px; fill: #3A7D5C; }
+    .factor-bad { font-size: 10px; fill: #B8453A; }
+    .result { font-size: 11px; font-weight: 600; }
+    .connector { stroke: #bbb; stroke-width: 1.5; fill: none; }
+    .box { rx: 6; ry: 6; }
+  </style>
+  <defs>
+    <marker id="down-arr" markerWidth="6" markerHeight="5" refX="3" refY="5" orient="auto">
+      <polygon points="0 0, 6 0, 3 5" fill="#bbb"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="680" height="340" fill="#fafaf7" rx="8"/>
+
+  <!-- Title -->
+  <text x="340" y="28" text-anchor="middle" class="title">Why Context Rots: Three Failure Modes Reinforce Each Other</text>
+
+  <!-- === BEGINNING === -->
+  <rect x="20" y="55" width="200" height="180" fill="#E8F4E8" class="box" stroke="#3A7D5C" stroke-width="1.5"/>
+  <text x="120" y="78" text-anchor="middle" class="zone-title" fill="#3A7D5C">Beginning of Context</text>
+  <line x1="40" y1="88" x2="200" y2="88" stroke="#3A7D5C" stroke-width="0.5" opacity="0.4"/>
+
+  <text x="35" y="110" class="factor-good">✓ Attention sink dumps here</text>
+  <text x="48" y="125" class="factor" style="font-size:9px;">(softmax forces Σ=1, excess → token 1)</text>
+  <text x="35" y="148" class="factor-good">✓ Causal masking: visible to all</text>
+  <text x="48" y="163" class="factor" style="font-size:9px;">(token 1 is in every token's window)</text>
+  <text x="35" y="186" class="factor-good">✓ Minimal RoPE decay</text>
+  <text x="48" y="201" class="factor" style="font-size:9px;">(recent query, small distance)</text>
+
+  <rect x="50" y="215" width="140" height="16" fill="#3A7D5C" rx="3"/>
+  <text x="120" y="227" text-anchor="middle" style="font-size:10px;fill:#fff;font-weight:600;">HIGH attention</text>
+
+  <!-- === MIDDLE === -->
+  <rect x="240" y="55" width="200" height="180" fill="#FDE8E8" class="box" stroke="#B8453A" stroke-width="1.5"/>
+  <text x="340" y="78" text-anchor="middle" class="zone-title" fill="#B8453A">Middle of Context</text>
+  <line x1="260" y1="88" x2="420" y2="88" stroke="#B8453A" stroke-width="0.5" opacity="0.4"/>
+
+  <text x="255" y="110" class="factor-bad">✗ No sink advantage</text>
+  <text x="268" y="125" class="factor" style="font-size:9px;">(too far from position 1)</text>
+  <text x="255" y="148" class="factor-bad">✗ Maximum RoPE decay</text>
+  <text x="268" y="163" class="factor" style="font-size:9px;">(farthest from both query and start)</text>
+  <text x="255" y="186" class="factor-bad">✗ Moderate causal exposure</text>
+  <text x="268" y="201" class="factor" style="font-size:9px;">(seen by fewer subsequent tokens)</text>
+
+  <rect x="270" y="215" width="140" height="16" fill="#B8453A" rx="3"/>
+  <text x="340" y="227" text-anchor="middle" style="font-size:10px;fill:#fff;font-weight:600;">LOW attention</text>
+
+  <!-- === END === -->
+  <rect x="460" y="55" width="200" height="180" fill="#E8F4E8" class="box" stroke="#3A7D5C" stroke-width="1.5"/>
+  <text x="560" y="78" text-anchor="middle" class="zone-title" fill="#3A7D5C">End of Context</text>
+  <line x1="480" y1="88" x2="640" y2="88" stroke="#3A7D5C" stroke-width="0.5" opacity="0.4"/>
+
+  <text x="475" y="110" class="factor-good">✓ Recency to query</text>
+  <text x="488" y="125" class="factor" style="font-size:9px;">(query at the end, right next door)</text>
+  <text x="475" y="148" class="factor-good">✓ Minimal RoPE decay</text>
+  <text x="488" y="163" class="factor" style="font-size:9px;">(small relative distance to query)</text>
+  <text x="475" y="186" class="factor-good">✓ No competition</text>
+  <text x="488" y="201" class="factor" style="font-size:9px;">(distant tokens already decayed)</text>
+
+  <rect x="490" y="215" width="140" height="16" fill="#3A7D5C" rx="3"/>
+  <text x="560" y="227" text-anchor="middle" style="font-size:10px;fill:#fff;font-weight:600;">HIGH attention</text>
+
+  <!-- Arrows down to result -->
+  <line x1="120" y1="235" x2="120" y2="268" class="connector" marker-end="url(#down-arr)"/>
+  <line x1="340" y1="235" x2="340" y2="268" class="connector" marker-end="url(#down-arr)"/>
+  <line x1="560" y1="235" x2="560" y2="268" class="connector" marker-end="url(#down-arr)"/>
+
+  <!-- Result bar -->
+  <rect x="20" y="272" width="640" height="50" fill="#fff" class="box" stroke="#888" stroke-width="1"/>
+
+  <!-- Mini U-shape inside result -->
+  <polyline fill="none" stroke="#2A6B7C" stroke-width="3" stroke-linejoin="round"
+    points="60,285 100,286 140,290 180,296 220,302 260,308 300,312 340,314 380,312 420,308 460,302 500,296 540,290 580,286 620,285"/>
+
+  <text x="100" y="315" text-anchor="middle" class="result" fill="#3A7D5C" style="font-size:10px;">strong</text>
+  <text x="340" y="300" text-anchor="middle" class="result" fill="#B8453A" style="font-size:10px;">weak</text>
+  <text x="580" y="315" text-anchor="middle" class="result" fill="#3A7D5C" style="font-size:10px;">strong</text>
+  <text x="340" y="282" text-anchor="middle" style="font-size:10px;fill:#888;">= the U-shaped attention curve</text>
+</svg>

@@ -1,0 +1,229 @@
+---
+title: "The Attention Mechanism: Why Your LLM Forgets the Middle"
+date: '2026-08-10'
+tags: ['ai']
+summary: "LLM context rot isn't a bug — it's a mathematical property of how the attention mechanism works. Three interacting failure modes (softmax's sum-to-one constraint, RoPE's distance decay, and causal masking's primacy bias) combine to produce the U-shaped attention curve where models attend well to the beginning and end of context but lose the middle. Understanding the mechanism changes how you structure prompts and manage context."
+images: ['/static/thumbnails/ai.png']
+draft: false
+---
+
+In the [last post](/blog/llm-smart-zone-dumb-zone-context-window-degradation), I wrote about the Smart Zone and Dumb Zone — the observation that LLM quality degrades based on absolute token count, not context window fill percentage. I described _what_ degrades and _when_, but I hand-waved the _why_:
+
+> The attention mechanism physically under-weights [information in the middle].
+
+> It's a property of the transformer attention mechanism itself.
+
+That's the kind of sentence that sounds like an explanation but isn't one. If you asked me "okay, but _what_ about the attention mechanism causes this?" I would have struggled to give a clear answer. So I spent time actually understanding the mechanism — what it computes, why it was revolutionary, and what specific mathematical properties create the context rot problem.
+
+This post is that explanation.
+
+## Why Attention Changed Everything
+
+Before the transformer, sequence models processed input one token at a time. Recurrent Neural Networks (RNNs) and LSTMs passed a hidden state forward token by token. If a word at position 1 needed to influence a word at position 500, the signal had to survive 499 sequential steps. At each step, the signal was compressed, transformed, and potentially lost — the famous "vanishing gradient" problem, where the training signal fades to near-zero across many steps.
+
+The transformer, introduced in 2017's _"Attention Is All You Need"_^[Vaswani et al., "Attention Is All You Need," 2017. The foundational paper that proposed replacing recurrence entirely with self-attention, achieving state-of-the-art translation quality on WMT 2014 with 28.4 BLEU (EN-DE) while requiring significantly less training time.], replaced all of that with a single operation: **self-attention**. Instead of passing signals through a chain of sequential steps, every token can directly attend to every other token in one shot. The maximum path length between any two positions dropped from O(n) — meaning the signal has to pass through _n_ sequential steps that scale with input length — to O(1), meaning a constant single step regardless of distance.
+
+```text
+  RNN / LSTM:                         Transformer (Self-Attention):
+
+  Token₁ → Token₂ → Token₃ → ... →   Token₁ ←→ Token₂
+  ←───── signal must travel ────→      Token₁ ←→ Token₃
+  n sequential steps, scales with      Token₂ ←→ Token₃
+  input length — signal degrades       ... every pair, all at once
+  at every hop                         1 step, regardless of distance
+                                       fully parallelizable on GPUs
+```
+
+This wasn't incremental. A single-step path length meant long-range dependencies could be learned in a single layer instead of accumulating across hundreds of sequential steps. And because the computation processes all positions simultaneously, it could be fully parallelized on GPUs — training that took weeks with RNNs could happen in days.
+
+The trade-off is real: self-attention has to compare every token to every other token, meaning cost grows quadratically with sequence length (double the input, quadruple the work). That's the root tension of modern LLMs — the mechanism that enabled them gets more expensive and, as we'll see, _less effective_ as the context window grows.
+
+## How Attention Actually Computes
+
+The attention mechanism works by analogy to information retrieval. Each token in the sequence gets projected into three different **vectors** — lists of numbers that represent that token's meaning in a high-dimensional space. (If a word's meaning has many facets — part of speech, sentiment, topic, specificity — each facet gets its own number. The full list is the word's "embedding," and similar-meaning words end up with similar lists.) These three vectors are produced through learned transformations:
+
+- **Query (Q)** — "What information am I looking for?"
+- **Key (K)** — "What information do I contain?"
+- **Value (V)** — "What information should I transmit if selected?"
+
+The separation matters. A pronoun and its antecedent have very different embeddings (different lists of numbers representing their meaning) but need to attend to each other strongly. The QKV projections let the model learn arbitrary matching patterns beyond surface-level similarity.
+
+<Image
+  src="/static/images/post-images/attention-mechanism/qkv-attention-flow.svg"
+  alt="Diagram of the self-attention QKV pipeline: input tokens are projected into Query, Key, and Value vectors. Queries and Keys produce dot-product scores, which are scaled by 1/sqrt(dk), normalized through softmax (weights sum to 1), then multiplied by Values to produce context-aware output."
+  width={720}
+  height={420}
+/>
+
+The core formula:
+
+```text
+  Attention(Q, K, V) = softmax(Q · Kᵀ / √d_k) · V
+```
+
+Each step does something specific:
+
+1. **Q · Kᵀ** — compute how relevant each token is to each other token via a **dot product** (multiply the corresponding numbers in two vectors pairwise, then sum the results — similar vectors produce a high score, dissimilar ones produce a low score)
+2. **÷ √d_k** — scale down to prevent large dot products from pushing softmax into flat regions where gradients vanish
+3. **softmax** — normalize so attention weights across all positions **sum to exactly 1**
+4. **× V** — produce a weighted combination of value vectors based on those weights
+
+### What Is Softmax?
+
+Softmax is one of the most fundamental operations in machine learning. It takes a list of raw numbers — any values, positive or negative — and converts them into **probabilities that sum to exactly 1.0**. It answers: "given these scores, how should I distribute my budget?"
+
+```text
+  Raw attention scores:            After softmax:
+
+  Token A:   5.0                   Token A:  0.84  (84%)
+  Token B:   2.0                   Token B:  0.11  (11%)
+  Token C:   1.0                   Token C:  0.04  ( 4%)
+  Token D:   0.5                   Token D:  0.01  ( 1%)
+                                            ──────
+                                   Total:    1.00  (100%)
+```
+
+The formula: for each score, take e^score, then divide by the sum of all e^scores. The name "softmax" contrasts with a hard **argmax** that would give 100% to the top scorer and 0% to everything else. Softmax is the "softer" version — the highest score still wins most of the weight, but the others get _some_ share.
+
+Two properties of softmax will matter a lot later:
+
+**It amplifies differences.** Because softmax uses an exponential (e^x), small differences in raw scores become large differences in final weights. A raw score of 5.0 vs 2.0 looks close, but e^5.0 (148.4) vs e^2.0 (7.4) is a 20x gap. Softmax is "winner-take-most."
+
+**Everything must sum to 1.** This is the hard constraint. The model has exactly 1.0 of attention probability to distribute across _all_ tokens in the sequence. Every token that gets more attention takes it away from every other token — a zero-sum game. The model can never say "nothing is relevant here, don't attend to anything." It _must_ spend its full budget, every time. This constraint is what makes the attention sink problem inevitable, as we'll see.
+
+The model runs this computation multiple times in parallel through **multi-head attention** — 8 heads in the base transformer, each with its own QKV projections. Different heads can specialize in different types of relationships: one might track syntax, another semantics, another positional patterns.
+
+One critical detail: self-attention is inherently position-agnostic. It treats input as a _set_, not a _sequence_. To inject order, modern LLMs use **Rotary Position Embeddings (RoPE)**^[Su et al., "RoFormer: Enhanced Transformer with Rotary Position Embedding," 2021. RoPE achieves the property that the query-key dot product depends mathematically only on relative position (m-n), not absolute positions individually. This follows from the rotation matrix property R_m^T · R_n = R_(n-m).], which rotate each token's Q and K vectors by an angle proportional to its position. This makes the dot product between any two tokens depend only on their _relative distance_ — not where they sit in absolute terms. Elegant. But as we'll see, this rotation is also part of the problem.
+
+## Three Failure Modes That Create Context Rot
+
+The attention mechanism's strength — every token can attend to every other — is where the failure modes emerge. Three mathematical properties interact to produce the "dumb zone."
+
+### Failure Mode 1: Softmax Creates Attention Sinks
+
+Remember step 3: softmax forces attention weights to sum to exactly 1. The model _must_ distribute all of its attention probability somewhere. When nothing in the context is strongly relevant to the current query, the excess probability has to go _somewhere_.
+
+In practice, the model learns to dump this excess onto the very first tokens in the sequence. These become **attention sinks** — tokens that absorb disproportionate attention not because they carry useful information, but because they're a convenient dumping ground^[Xiao et al., "Efficient Streaming Language Models with Attention Sinks," MIT/Meta, ICLR 2024. Tested on Llama-2-7B and Llama-2-13B with perplexity measurements on PG19 dataset.].
+
+<Image
+  src="/static/images/post-images/attention-mechanism/attention-sink.svg"
+  alt="Bar chart showing attention weight distribution in Llama-2-7B across a 4096-token sequence. Token 1 absorbs over 50% of total attention weight. All other tokens receive only 1-8% each. A callout notes that replacing token 1 with a newline barely changes perplexity (5.40 to 5.60), but removing it entirely causes catastrophic collapse to perplexity 5,158."
+  width={680}
+  height={360}
+/>
+
+The numbers are striking. In Llama-2-7B on 4096-token sequences, **the first token receives over half of total attention** in all layers except the bottom two. And here's the weird part: the content of that token doesn't matter. Replacing it with a newline character barely changes **perplexity** (5.40 → 5.60). But _removing_ it entirely causes catastrophic collapse — perplexity jumps from 5.40 to **5,158**.
+
+(Perplexity measures how surprised the model is by the next word. A well-functioning language model scores around 5-10 — it has a good idea what's coming. A perplexity of 5,158 means the model is essentially guessing randomly. Going from 5.40 to 5,158 is like going from "fluent English speaker" to "keyboard smashing.")
+
+Why the first token? Because of **causal masking**. LLMs are **autoregressive** — they generate text one token at a time, left to right, where each new token is predicted based only on the tokens before it. To enforce this during processing, a "causal mask" blocks each token from seeing anything that comes after it. Token 1 is the only position that's visible to _every_ subsequent token. It's the universal dump target.
+
+The causal chain:
+
+```text
+  softmax forces weights to sum to 1
+       ↓
+  when nothing is strongly relevant, excess probability must go somewhere
+       ↓
+  causal masking means token 1 is visible to ALL subsequent tokens
+       ↓
+  token 1 becomes the dump target → "attention sink"
+       ↓
+  attention budget that should go to middle-of-context tokens
+  is instead absorbed by the sink
+```
+
+A 2025 paper confirmed the mechanism by elimination: replacing softmax with **sigmoid attention** (which doesn't have the sum-to-one constraint) **eliminates attention sinks entirely** in models up to 1B parameters, while maintaining comparable validation loss^[Gu et al., "Sigmoid Attention is All You Need," ICLR 2025 Spotlight. Adding normalization to sigmoid re-introduces the sinks, confirming the sum-to-one constraint as the cause.].
+
+### Failure Mode 2: RoPE Makes Distance Expensive
+
+RoPE encodes position by rotating each pair of Q and K embedding dimensions at a specific frequency. Different dimension pairs rotate at different speeds:
+
+- **Low-indexed dimensions** rotate fast (high frequency) — θ_i is large
+- **High-indexed dimensions** rotate slowly (low frequency) — θ_i is small
+
+When two tokens are close together, even the fast-rotating dimensions haven't rotated much — all dimension pairs contribute constructively to the dot product, and attention scores are strong.
+
+But as relative distance grows, the high-frequency dimensions undergo large, essentially random-looking rotations. Their contributions to the dot product oscillate wildly between positive and negative, canceling out on average. The result: **for long-distance attention, only the slow-rotating dimensions can reliably contribute** — and the effective dimensionality of the attention head _shrinks_.
+
+<Image
+  src="/static/images/post-images/attention-mechanism/rope-decay.svg"
+  alt="Chart showing the RoPE query-key inner product declining as relative distance between tokens increases. The signal oscillates non-monotonically within a decaying envelope, from approximately 20 at distance 0 to approximately 8 at distance 250. Labels indicate that at short distances all dimensions are useful, but at long distances roughly 25% of dimensions are wasted due to high-frequency rotation noise."
+  width={680}
+  height={380}
+/>
+
+The decay is provable mathematically^[Su et al. 2021 (RoFormer) Section 3.4.3 with Figure 2. Proved via Abel transformation with θ_i = 10000^(-2i/d). However, Barbero et al. 2024 (arXiv 2410.06205) showed this proof assumes constant (all-ones) q/k vectors — for Gaussian q/k, the expected inner product equals 0 at all distances. The theoretical decay may not hold under realistic conditions.] — though the envelope is not a smooth decline but an oscillating signal trending downward. From about 20 at distance 0 to about 8 at distance 250.
+
+A February 2025 study validated the dimension inefficiency on production models (LLaMA, QWen, OLMo): high-frequency dimensions become effectively useless for long-distance retrieval because the wide range of rotation angles prevents them from consistently contributing positive values to the dot product^[Chiang and Yogatama, "The Rotary Position Embedding May Cause Dimension Inefficiency in Attention Heads for Long-Distance Retrieval," USC, February 2025 (arXiv 2502.11276).].
+
+To make this concrete: imagine you're searching for your keys in your house. Close by, you can use all your senses — sight, sound, touch, smell. But if you're trying to find something in a house across town, you can only use your phone camera. You've lost most of your sensing dimensions. That's what happens to an attention head trying to attend across long distances — its high-frequency dimensions have become noise, and it's working with a fraction of its representational capacity.
+
+### Failure Mode 3: Causal Masking Creates Primacy Bias
+
+Because LLMs generate left to right, the causal mask means each token can only attend backward. Token 1 is attended to by every token. The last token is attended to by nothing except itself.
+
+This creates an inherent **primacy bias**: beginning tokens undergo more attention processing and accumulate richer representations. (Transformers use **residual connections** — each layer adds its output to the running total rather than replacing it, so information accumulates. Tokens that pass through more attention layers build up richer representations.) A 2025 study showed this bias exists **even at model initialization, before any training or positional encoding takes effect** — it's a geometric property of the causal decoder architecture, not something the model learns^[arXiv 2603.10123, 2025. Showed the U-shape is present at transformer initialization, independent of training data.].
+
+### How They Combine
+
+All three failure modes reinforce each other:
+
+<Image
+  src="/static/images/post-images/attention-mechanism/combined-failure-modes.svg"
+  alt="Diagram showing three context regions: Beginning (high attention from sink effect, causal masking visibility, and minimal RoPE decay), Middle (low attention from no sink advantage, maximum RoPE decay, and moderate causal exposure), and End (high attention from recency to query, minimal RoPE decay, and no competition). Arrows point down to a U-shaped curve showing the combined effect."
+  width={680}
+  height={340}
+/>
+
+- **Beginning**: gets the sink dump (softmax) + is visible to everything (causal masking) + has minimal distance to many tokens (RoPE) → **high attention**
+- **Middle**: no sink advantage + farthest from both query and start (maximum RoPE decay) + less causal exposure → **low attention**
+- **End**: closest to the query (recency) + minimal RoPE decay + distant tokens already decayed away → **high attention**
+
+The result is the U-shaped attention curve. And it's exactly what the empirical research finds.
+
+## The Empirical Evidence
+
+The Stanford "Lost in the Middle" study^[Liu et al., "Lost in the Middle: How Language Models Use Long Contexts," 2023 (TACL 2024). Replicated across six model families.] placed a relevant document at different positions in a 20-document set and measured accuracy. The result:
+
+<Image
+  src="/static/images/post-images/attention-mechanism/u-shaped-curve.svg"
+  alt="U-shaped accuracy curve from the Lost in the Middle paper. GPT-3.5-Turbo multi-document QA accuracy: 75.8% when the relevant document is at position 1, dropping to 53.8% at position 10 (below the 56.1% closed-book baseline), and recovering to 63.2% at position 20. A dashed red line marks the closed-book baseline, showing that middle-placed information performs worse than having no context at all."
+  width={680}
+  height={380}
+/>
+
+The most damning data point: at position 10 of 20, accuracy drops to **53.8%** — below the **56.1%** closed-book baseline where the model has _no context at all_. The model performs worse _with_ the answer in its context than without any context. The irrelevant documents in favorable positions actively compete with and drown out the relevant one.
+
+This isn't a quirk of one model. The Stanford team replicated it across six model families. Subsequent testing in 2024-2026 across 18 modern LLMs — including GPT-4.1, Claude 4, and Gemini 2.5 — shows all still exhibit non-uniform context utilization^[HELMET (2024), RULER (2024), and Chroma (2025) all tested modern frontier models. The U-shaped pattern persists, though magnitudes differ.].
+
+And extending the context window doesn't help. Extended-context models perform nearly identically to standard-context models when input fits both windows. As one 2026 analysis put it: **"Bigger context windows did not fix it. They just gave you more middle to lose things in."**
+
+## What This Means for How You Use LLMs
+
+Understanding _why_ context rot happens changes how you work with LLMs:
+
+**Structure matters more than you think.** Put your most important constraints, instructions, and reference material at the beginning or end of the context — not buried in the middle. The system prompt sits at the start of context for a reason: it gets the attention sink's benefit. Your most recent message sits at the end: it gets the recency benefit. Everything in between is fighting an uphill battle against the math.
+
+**Long context ≠ reliable context.** A model with a 1M-token context window can _hold_ 1M tokens. It can't _attend equally_ to 1M tokens. The window size tells you when the conversation physically dies. The attention curve tells you when quality starts degrading — and that happens much earlier, based on absolute token distance, not fill percentage.
+
+**`/compact` compresses distance, not just size.** When you compact a conversation, you're not just freeing up tokens — you're collapsing the positional distance between your early decisions and your current query. A summary of earlier context that sits _near_ the current query gets strong attention, while the original tokens spread across 200K positions of distance would get progressively weaker attention. The summary is lossy, but the attention it receives is full-strength.
+
+**The three failure modes have different implications.** Attention sinks (softmax) mean token 1 absorbs attention budget that should go elsewhere — this is a fixed tax regardless of context length. RoPE decay means distant information gets progressively harder to retrieve — this scales with distance. Causal masking primacy is an architectural constant. You can't fix any of them from the prompt side, but you can work with the grain: keep critical information at the edges, compact when distance grows, and don't assume that "it's in the context" means "the model can use it."
+
+## The Bigger Picture
+
+The attention mechanism is simultaneously the best and worst thing about transformer-based LLMs. It's what made them possible — O(1) path length between any two tokens, massive parallelism, the ability to learn arbitrary long-range dependencies. And it's what makes them degrade — softmax forces a zero-sum game for attention, RoPE makes distance expensive, causal masking bakes in primacy bias.
+
+The research frontier is exploring alternatives: sigmoid attention eliminates sinks, RoPE rescaling partially addresses decay, and hybrid architectures combining attention with state-space models (Mamba, Jamba) show promise. But the fundamental tension — a mechanism that connects everything while struggling to attend uniformly — is built into the architecture we're all using today.
+
+Knowing that doesn't fix the problem. But it does change you from someone who notices "the model seems to be forgetting things" to someone who understands _why_ and can structure their work accordingly. The Smart Zone, Warn Zone, and Dumb Zone from the previous post aren't arbitrary thresholds — they're practical boundaries derived from how the math actually works.
+
+## Further Reading
+
+- [Attention Is All You Need](https://arxiv.org/abs/1706.03762) — Vaswani et al. 2017, the foundational transformer paper
+- [RoFormer: Enhanced Transformer with Rotary Position Embedding](https://arxiv.org/abs/2104.09864) — Su et al. 2021, the RoPE paper
+- [Lost in the Middle: How Language Models Use Long Contexts](https://arxiv.org/abs/2307.03172) — Liu et al. 2023, the U-shaped attention curve paper
+- [Efficient Streaming Language Models with Attention Sinks](https://arxiv.org/abs/2309.17453) — Xiao et al. 2023 (MIT/Meta), the attention sink paper
+- [Sigmoid Attention is All You Need](https://proceedings.iclr.cc/paper_files/paper/2025/file/f1b04face60081b689ba740d39ea8f37-Paper-Conference.pdf) — Gu et al. 2025 (ICLR Spotlight), proving softmax causes sinks
+- [The LLM Dumb Zone: Why Your AI Gets Worse Before It Runs Out of Context](/blog/llm-smart-zone-dumb-zone-context-window-degradation) — the companion post on practical thresholds

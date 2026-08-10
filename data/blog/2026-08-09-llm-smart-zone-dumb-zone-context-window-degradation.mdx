@@ -2,7 +2,7 @@
 title: "The LLM Dumb Zone: Why Your AI Gets Worse Before It Runs Out of Context"
 date: '2026-08-09'
 tags: ['ai', 'claude-code']
-summary: "LLM context windows have a marketed size and a useful size, and they're not the same number. Research shows quality degrades based on absolute token count — not fill percentage — and a 1M-token model at 40% full is far more degraded than a 200K model at 40%. Here's the research behind the Smart Zone, the Warn Zone, and the Dumb Zone — and a Claude Code statusline that tracks which one you're in."
+summary: "LLM context windows have a marketed size and a useful size, and they're not the same number. Research shows quality degrades gradually based on absolute token count — not fill percentage — and a 1M-token model at 40% full is far more degraded than a 200K model at 40%. Here's the research behind the Smart Zone, the Warn Zone, and the Dumb Zone — plus a Claude Code statusline that tracks which zone you're in and how deep."
 images: ['/static/thumbnails/ai.png']
 draft: false
 ---
@@ -126,7 +126,7 @@ Here's what the zone-aware statusline looks like in practice:
 
 ```text
   ┌─────────────────────────────────────────────────────────────────┐
-  │  3bfa9040-a986-4c55  │  ⎇ master  │  SMART 140K               │
+  │  3bfa9040-a986-4c55  │  SMART 140K  │  ⎇ master               │
   │  Opus 4.6 (1M context)  │  my-project  │  ✓                    │
   └─────────────────────────────────────────────────────────────────┘
 ```
@@ -145,7 +145,7 @@ Here's the statusline script that produces this. It computes absolute tokens use
 ```bash
 #!/usr/bin/env bash
 # Claude Code status line
-# Line 1: session | branch | smart zone indicator
+# Line 1: session | smart zone indicator | branch
 # Line 2: model | cwd | git status (dirty/ahead/behind)
 
 input=$(cat)
@@ -289,12 +289,14 @@ elif [ -n "$remaining_pct" ]; then
 fi
 
 # --- Assemble ---
+# Line 1: session | smart zone indicator | branch
+# Line 2: model | cwd | git status
 sep=$(printf ' \033[0;90m|\033[0m ')
 
 line1_parts=()
 [ -n "$session_part" ] && line1_parts+=("$session_part")
-[ -n "$branch_part" ]  && line1_parts+=("$branch_part")
 [ -n "$ctx_part" ]     && line1_parts+=("$ctx_part")
+[ -n "$branch_part" ]  && line1_parts+=("$branch_part")
 
 line2_parts=()
 [ -n "$model_part" ]      && line2_parts+=("$model_part")

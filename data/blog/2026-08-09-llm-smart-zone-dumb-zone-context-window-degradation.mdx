@@ -46,11 +46,11 @@ This isn't a bug in one model. The Stanford team replicated it across six model 
 
 Chroma tested 18 state-of-the-art models on a straightforward task: find information in a context window at different fill levels. **Every single model got worse as context length increased.** Not some models - all of them.
 
-For 1M-token context window models, the observable effect typically kicks in somewhere around 300K-400K tokens. The degradation isn't linear - it tends to hold relatively steady, then drop.
+For 1M-token context window models, the observable effect typically kicks in somewhere around 300K-400K tokens. The degradation is gradual and continuous — it worsens at every length increment, not as a sudden cliff. But the slope steepens: the first 100K tokens past the threshold cost you less quality than the next 100K.
 
 ### Intelligence Degradation Thresholds (2025-2026)
 
-Multiple research groups have converged on similar findings, and the critical detail is that **the thresholds are absolute, not relative.** A study testing models at different context utilization levels found catastrophic F1 degradation — as much as 45.5% — once the token count crossed certain absolute boundaries. Crucially, the same _percentage_ of context produced wildly different quality depending on the model's window size.
+Multiple research groups have converged on similar findings, and the critical detail is that **the thresholds are absolute, not relative.** A study testing models at different context utilization levels found significant F1 degradation — as much as 45.5% — as token counts grew past certain absolute boundaries. Crucially, the same _percentage_ of context produced wildly different quality depending on the model's window size.
 
 This makes sense architecturally. RoPE (Rotary Position Embedding) decay reduces dot-product similarity between distant token pairs. The decay is a function of the _distance_ between tokens — the absolute positional gap — not what fraction of the window that gap represents. A model that's consumed 400K tokens has 400K tokens of positional distance to attend over, whether its window is 500K or 1M.
 
@@ -91,23 +91,28 @@ The zones are defined by absolute token thresholds:
 ```text
   Tokens Used
 
-  0K          100K             200K                    window max
-  |============|================|========================|
-  |   SMART    |     WARN       |         DUMB           |
-  |            |                |                        |
-  |  Full      |  Quality       |  Materially            |
-  |  reasoning |  fading.       |  degraded.             |
-  |  fidelity. |  Finish        |  /compact or           |
-  |  Work      |  current work, |  new session.          |
-  |  freely.   |  then compact. |                        |
-  |============|================|========================|
+  0K          100K             200K       300K          700K       window max
+  |============|================|==========|==============|==========|
+  |   SMART    |     WARN       | DUMB     | DUMB         | DUMB     |
+  |            |                | +0-100K  | +100K-500K   | +500K+   |
+  |  Full      |  Quality       |          |              |          |
+  |  reasoning |  fading.       | Finish   | /compact     | /compact |
+  |  fidelity. |  Finish        | task,    | soon.        | NOW or   |
+  |  Work      |  current work, | then     |              | new      |
+  |  freely.   |  then compact. | compact. |              | session. |
+  |============|================|==========|==============|==========|
+     (green)      (yellow)       (green)     (yellow)       (red)
 ```
 
 **SMART (< 100K tokens used):** The model has full access to everything in context. Start complex multi-step tasks, set up long-running investigations, establish constraints and conventions. This is where you do your hardest thinking together.
 
 **WARN (100K-200K tokens used):** Quality is fading but the model is still functional for the _current_ task. Recent context (last 20-30 exchanges) is fine. Early context is getting unreliable. This is your signal to finish the current line of work and run `/compact` to compress the conversation back toward the SMART zone. Don't start a brand-new complex investigation here.
 
-**DUMB (> 200K tokens used):** The model is materially degraded. Run `/compact` to summarize and free context, or start a new session. The cost of continuing (subtle quality loss, missed constraints, repeated work) exceeds the cost of the context switch.
+**DUMB (> 200K tokens used):** The model is past the quality threshold — but this is a slope, not a cliff. The Stanford study showed a gradual U-shaped curve, not a step function, and the Chroma study found degradation at _every_ length increment. Crossing 200K doesn't mean everything breaks — it means you've entered a zone where quality is measurably worse and continues to worsen with every additional token. How deep into the DUMB zone you are matters:
+
+- **DUMB +0 to +100K**: You just crossed the threshold. Finish your current task, then `/compact`. The model still handles recent context well — it's early context recall that's suffering.
+- **DUMB +100K to +500K**: You've been degraded for a while. The middle of your conversation is increasingly invisible to the model. `/compact` soon.
+- **DUMB +500K+**: Deep degradation. Most of your early context is effectively gone. `/compact` now or start a new session.
 
 The key insight for WARN zone: **`/compact` is your escape hatch, not a new session.** Switching sessions loses _all_ context - including the understanding of your codebase, decisions made, and task state. `/compact` preserves a summary of the important bits and frees up the window, pushing you back toward SMART. The cost of a session switch (re-establishing context from scratch) almost always exceeds the marginal quality loss of the WARN zone.
 
@@ -115,7 +120,7 @@ The key insight for WARN zone: **`/compact` is your escape hatch, not a new sess
 
 Claude Code's statusline receives a JSON payload on every update that includes `context_window.remaining_percentage` and `context_window.context_window_size`. The default approach is to show that raw remaining percentage with color coding - green when you have plenty, red when you're almost out.
 
-That's the wrong signal. You don't need to know you have 86% of context left. You need to know you've consumed 140K tokens and are approaching the degradation cliff at 200K.
+That's the wrong signal. You don't need to know you have 86% of context left. You need to know you've consumed 140K tokens and are approaching the degradation threshold at 200K — and once past it, how deep into the degradation slope you are.
 
 Here's what the zone-aware statusline looks like in practice:
 
@@ -129,11 +134,11 @@ Here's what the zone-aware statusline looks like in practice:
 The `SMART 140K` indicator means: you're in the smart zone, with 140K tokens of headroom before the dumb zone threshold at 200K. As you consume more context, it shifts:
 
 ```text
-  SMART 140K  →  SMART 80K  →  WARN 50K  →  WARN 12K  →  DUMB
-  (green)        (green)       (yellow)      (yellow)      (red)
+  SMART 140K  →  SMART 80K  →  WARN 50K  →  WARN 12K  →  DUMB +0  →  DUMB +300K  →  DUMB +600K
+  (green)        (green)       (yellow)      (yellow)      (green)     (yellow)        (red)
 ```
 
-The zone label tells you how to act. The token count tells you how long you have. When it says `DUMB`, there's no number — you're past the threshold and should `/compact` now.
+The zone label tells you _where_ you are, the token count tells you _how deep_, and the color tells you _how urgent_. In the SMART and WARN zones, the number counts _down_ to the dumb threshold. In the DUMB zone, the number counts _up_ — `+NK` shows how many tokens past the 200K threshold you've consumed. The color shifts from green (just crossed, low urgency) through yellow (getting stale) to red (deep degradation).
 
 Here's the statusline script that produces this. It computes absolute tokens used from the percentage and window size, then maps to zones:
 
@@ -252,12 +257,30 @@ if [ -n "$remaining_pct" ] && [ -n "$ctx_window_size" ] \
     smart_display="$smart_remaining_tokens"
   fi
 
+  # Tokens past the dumb threshold (for DUMB zone depth display)
+  dumb_depth_tokens=$(( used_tokens - dumb_threshold ))
+  if [ "$dumb_depth_tokens" -lt 0 ]; then
+    dumb_depth_tokens=0
+  fi
+  if [ "$dumb_depth_tokens" -ge 1000 ]; then
+    dumb_depth_display="$(( dumb_depth_tokens / 1000 ))K"
+  else
+    dumb_depth_display="$dumb_depth_tokens"
+  fi
+
   if [ "$used_tokens" -le "$smart_threshold" ]; then
     ctx_part=$(printf '\033[1;32mSMART %s\033[0m' "$smart_display")
   elif [ "$used_tokens" -lt "$dumb_threshold" ]; then
     ctx_part=$(printf '\033[1;33mWARN %s\033[0m' "$smart_display")
   else
-    ctx_part=$(printf '\033[1;31mDUMB\033[0m')
+    # DUMB sub-zones: color by urgency, not just the zone label
+    if [ "$dumb_depth_tokens" -lt 100000 ]; then
+      ctx_part=$(printf '\033[1;32mDUMB +%s\033[0m' "$dumb_depth_display")
+    elif [ "$dumb_depth_tokens" -lt 500000 ]; then
+      ctx_part=$(printf '\033[1;33mDUMB +%s\033[0m' "$dumb_depth_display")
+    else
+      ctx_part=$(printf '\033[1;31mDUMB +%s\033[0m' "$dumb_depth_display")
+    fi
   fi
 elif [ -n "$remaining_pct" ]; then
   # Fallback: no window size available, show raw remaining %
@@ -315,18 +338,21 @@ To use it, save the script and point your Claude Code settings at it:
 }
 ```
 
-The number after the zone label is **tokens remaining before the dumb zone threshold** — not a percentage, and not tokens remaining in the full window. Here's how the zones map for a 1M-context model:
+In the SMART and WARN zones, the number shows **tokens remaining before the dumb zone threshold**. In the DUMB zone, it flips — `+NK` shows **how many tokens past the threshold** you've consumed, and the color shifts from green through yellow to red based on depth. Here's how the full progression maps for a 1M-context model:
 
 ```text
-Tokens used  │  Zone   │  Display     │  What it means
-─────────────┼─────────┼──────────────┼───────────────────────────────────
-0K           │  SMART  │  SMART 200K  │  Full headroom to dumb threshold
-60K          │  SMART  │  SMART 140K  │  Plenty of room
-100K         │  WARN   │  WARN 100K   │  Quality fading, finish + compact
-150K         │  WARN   │  WARN 50K    │  Getting close
-199K         │  WARN   │  WARN 1K     │  Almost at the cliff
-200K         │  DUMB   │  DUMB        │  Degraded. /compact now.
-500K         │  DUMB   │  DUMB        │  Degraded. /compact now.
+Tokens used  │  Zone   │  Display      │  Color   │  What it means
+─────────────┼─────────┼───────────────┼──────────┼───────────────────────────────
+0K           │  SMART  │  SMART 200K   │  green   │  Full headroom
+60K          │  SMART  │  SMART 140K   │  green   │  Plenty of room
+100K         │  WARN   │  WARN 100K    │  yellow  │  Quality fading, finish + compact
+150K         │  WARN   │  WARN 50K     │  yellow  │  Getting close
+200K         │  DUMB   │  DUMB +0      │  green   │  Just crossed. Finish task, compact
+250K         │  DUMB   │  DUMB +50K    │  green   │  Low urgency — wrap up current work
+300K         │  DUMB   │  DUMB +100K   │  yellow  │  Middle context fading. /compact soon
+500K         │  DUMB   │  DUMB +300K   │  yellow  │  Stale. /compact when you can
+700K         │  DUMB   │  DUMB +500K   │  red     │  Deep degradation. /compact NOW
+950K         │  DUMB   │  DUMB +750K   │  red     │  Most early context is gone
 ```
 
 Two variables at the top of the script control the thresholds: `smart_threshold=100000` and `dumb_threshold=200000`. If you find your model holds up past 200K tokens, raise `dumb_threshold`. If you notice quality dropping earlier, lower `smart_threshold`. The thresholds work the same regardless of your model's window size — that's the point.
@@ -341,11 +367,11 @@ The zone model gives you a framework for _when_ the cost of compacting is worth 
 
 - **In SMART zone**: Don't compact. You have full fidelity. Compacting here would throw away detail for no benefit.
 - **In WARN zone**: Compact when you finish your current task. The model is already losing grip on early context - the summary will preserve the important parts better than the degraded attention would.
-- **In DUMB zone**: Compact immediately or start fresh. The model's recall of anything outside your last few messages is unreliable. A summary is strictly better than what the attention mechanism is doing.
+- **In DUMB zone**: How urgently you compact depends on depth. At `DUMB +0` to `+100K`, you've just crossed the threshold — finish your task, then compact. At `DUMB +500K`+, most of your early context is effectively invisible and a summary is strictly better than what the degraded attention mechanism is retaining.
 
 ## The Tuning Question
 
-The 100K/200K thresholds come from the research consensus, but your mileage will vary by model and task type. Newer models may push the boundaries further out — the thresholds are intentionally conservative^[Chroma's testing found the effect kicks in around 300-400K tokens for 1M-context models. Our `dumb_threshold` of 200K is well below that cliff, which gives you a comfortable margin. You could arguably push `dumb_threshold` higher, but the cost of being conservative (compacting slightly early) is much lower than the cost of being aggressive (working in degraded context without realizing it).].
+The 100K/200K thresholds come from the research consensus, but your mileage will vary by model and task type. Newer models may push the boundaries further out — the thresholds are intentionally conservative^[Chroma's testing found the effect kicks in around 300-400K tokens for 1M-context models. Our `dumb_threshold` of 200K is well below that, which gives you a comfortable margin. You could arguably push `dumb_threshold` higher, but the cost of being conservative (compacting slightly early) is much lower than the cost of being aggressive (working in degraded context without realizing it).].
 
 The fact that thresholds are absolute rather than percentage-based is what makes them portable across models. The same `smart_threshold=100000` and `dumb_threshold=200000` work whether you're on a 200K-context model or a 1M-context model. On the smaller model, you'll hit WARN at 50% utilization. On the larger one, you'll hit it at 10%. Both are correct — because the attention mechanism's degradation depends on absolute distance, not relative fill.
 
@@ -353,11 +379,12 @@ If you want to calibrate: pay attention to when the model starts forgetting cons
 
 ## Takeaways
 
-- **LLM quality degrades well before the context window fills up.** The effective capacity depends on absolute token count, not percentage — a 1M model at 20% (200K tokens) is already at the degradation cliff. Marketed context size and usable context size are different numbers.
+- **LLM quality degrades well before the context window fills up.** The effective capacity depends on absolute token count, not percentage — a 1M model at 20% (200K tokens) is already past the degradation threshold. Marketed context size and usable context size are different numbers.
 - **Degradation follows a U-shaped attention curve.** The model attends well to the start and end of context but poorly to the middle. This is an architectural property of transformer attention, not a bug in any specific model.
 - **Track absolute tokens, not percentages.** A raw "context remaining" percentage answers the wrong question. The same percentage means wildly different things on different model sizes. You need to know how many tokens you've consumed, not what fraction of the window is left.
 - **`/compact` is the escape hatch, not a new session.** Switching sessions loses all context. Compacting preserves a summary and frees the window. The cost of a session switch almost always exceeds the marginal quality loss of the WARN zone.
-- **The WARN zone is still usable** - finish your current work there, then compact. Don't panic-eject. But don't start complex new investigations there either.
+- **The WARN zone is still usable** — finish your current work there, then compact. Don't panic-eject. But don't start complex new investigations there either.
+- **The DUMB zone is a slope, not a cliff.** The Stanford study showed a gradual U-shaped curve, not a step function. `DUMB +0` (just crossed the threshold) is a completely different situation from `DUMB +600K` (most of your early context is invisible). Track the depth, not just the label.
 
 ## Further Reading
 

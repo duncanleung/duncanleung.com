@@ -177,11 +177,11 @@ One footgun worth flagging: wrapping the `yield` in a bare `try` / `except: pass
 
 Once you start looking, context managers are everywhere in the standard library. A few that earn their keep in everyday code:
 
-### `open()` — files
+### `open()`: files
 
 Already covered. The canonical example, and the one most Python developers see first.
 
-### `contextlib.suppress` — pythonic exception swallowing
+### `contextlib.suppress`: pythonic exception swallowing
 
 `contextlib.suppress(SomeException)` is the clean replacement for the `try` / `except SomeException: pass` pattern. It says "ignore this exception type if it happens; otherwise behave normally."
 
@@ -212,7 +212,7 @@ with suppress(FileNotFoundError):
 
 The `with` version reads more directly: "delete this file, and shrug if it isn't there."
 
-### `tempfile.TemporaryDirectory` — auto-cleaning scratch directories
+### `tempfile.TemporaryDirectory`: auto-cleaning scratch directories
 
 For tests and scripts that need a real filesystem path but should not leave files behind, `tempfile.TemporaryDirectory()` creates a directory on disk, gives you its path, and deletes the whole tree when the block exits.
 

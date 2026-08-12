@@ -9,7 +9,7 @@ draft: false
 
 One of the patterns I appreciate most about Go is how much of the standard library is built on top of two tiny interfaces: `io.Reader` and `io.Writer`.
 
-Once you understand these two interfaces, a surprising amount of the standard library "just composes" — `os.File`, `bytes.Buffer`, `http.ResponseWriter`, `net.Conn`, `gzip.Writer`, all of them speak the same language.
+Once you understand these two interfaces, a surprising amount of the standard library "just composes": `os.File`, `bytes.Buffer`, `http.ResponseWriter`, `net.Conn`, `gzip.Writer`, all of them speak the same language.
 
 ## The Interfaces
 
@@ -45,7 +45,7 @@ The `Read` signature can look strange the first time you see it. Why pass in `p 
 Read(p []byte) (n int, err error)
 ```
 
-The reason is allocation. If `Read` returned a new `[]byte` on every call, every read would allocate. By passing the same buffer back in, the caller can reuse memory across reads — which matters a lot when you are streaming bytes off a network connection or a large file.
+The reason is allocation. If `Read` returned a new `[]byte` on every call, every read would allocate. By passing the same buffer back in, the caller can reuse memory across reads, which matters a lot when you are streaming bytes off a network connection or a large file.
 
 A few subtle rules to keep in mind:
 
@@ -94,7 +94,7 @@ func main() {
 }
 ```
 
-This works — `gandalf` is serialized to JSON and written to a file. But the struct itself has no idea how to write itself, and the code is locked to `*os.File` as the destination.
+This works. `gandalf` is serialized to JSON and written to a file. But the struct itself has no idea how to write itself, and the code is locked to `*os.File` as the destination.
 
 What if I wanted to write the JSON to an HTTP response instead? Or to `os.Stdout` for debugging? Or to a `bytes.Buffer` in a test?
 
@@ -114,7 +114,7 @@ func (p *Person) Write(w io.Writer) {
 }
 ```
 
-This is misleading. By naming the method `Write`, we are implying that `*Person` implements `io.Writer` — but the signature does not match the interface:
+This is misleading. By naming the method `Write`, we are implying that `*Person` implements `io.Writer`, but the signature does not match the interface:
 
 ```go
 // io.Writer
@@ -230,18 +230,18 @@ gandalf.WriteJson(&buf)
 fmt.Println(buf.String())
 ```
 
-That last one is especially useful. Testing the JSON output no longer requires touching the filesystem — you just write into a `bytes.Buffer` and assert on its contents.
+That last one is especially useful. Testing the JSON output no longer requires touching the filesystem; you just write into a `bytes.Buffer` and assert on its contents.
 
-This is the [Go idiom of accepting interfaces and returning concrete types](/go-idiom-accept-interfaces-return-types/) in action. The struct's behavior — "I know how to encode myself as JSON and write the bytes somewhere" — is fully decoupled from the destination.
+This is the [Go idiom of accepting interfaces and returning concrete types](/go-idiom-accept-interfaces-return-types/) in action. The struct's behavior ("I know how to encode myself as JSON and write the bytes somewhere") is fully decoupled from the destination.
 
 ---
 
 ## The Bigger Idea
 
-`io.Writer` is not a class to inherit from. It is a _behavior_ — a single method that a type either implements or it doesn't.
+`io.Writer` is not a class to inherit from. It is a _behavior_: a single method that a type either implements or it doesn't.
 
 > Anything that implements `Write(p []byte) (n int, err error)` is a `Writer`.
 
-The same goes for `io.Reader`. Once your code speaks in `io.Reader` and `io.Writer` instead of concrete types, you can compose your code freely with files, network connections, in-memory buffers, compression streams, and HTTP request/response bodies — without changing a line of the code that does the actual work.
+The same goes for `io.Reader`. Once your code speaks in `io.Reader` and `io.Writer` instead of concrete types, you can compose your code freely with files, network connections, in-memory buffers, compression streams, and HTTP request/response bodies, without changing a line of the code that does the actual work.
 
 That is the payoff: a small interface that you find _everywhere_, and code that becomes trivially reusable because it accepts the interface instead of a concrete type.

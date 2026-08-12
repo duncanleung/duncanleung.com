@@ -9,7 +9,7 @@ draft: false
 
 A few years ago I wrote about setting up Python with [pyenv, pyenv-virtualenv, and Poetry](/blog/set-up-python-pyenv-virtualenv-poetry/). That stack worked, but it was three separate tools stitched together: one for Python versions, one for virtual environments, and one for packages.
 
-`uv` collapses all three into a single tool. It is built in Rust by [Astral](https://astral.sh/) (the same team behind the Ruff linter), and over the last ~18 months it has become the de-facto industry standard for Python tooling. It is also dramatically faster — installs that took Poetry seconds finish in milliseconds.
+`uv` collapses all three into a single tool. It is built in Rust by [Astral](https://astral.sh/) (the same team behind the Ruff linter), and over the last ~18 months it has become the de-facto industry standard for Python tooling. It is also dramatically faster: installs that took Poetry seconds finish in milliseconds.
 
 This is a guide to install and set up Python with `uv` on a Mac.
 
@@ -72,7 +72,7 @@ $ exec "$SHELL"
 
 Docs: <a href='https://docs.astral.sh/uv/guides/install-python/' target='_blank'>uv - Installing Python</a>
 
-This replaces `pyenv`. `uv` downloads and manages standalone Python builds for you — there is no need to compile from source, so the `zlib` / Xcode header issues from the old `pyenv` workflow disappear.
+This replaces `pyenv`. `uv` downloads and manages standalone Python builds for you, so there is no need to compile from source, so the `zlib` / Xcode header issues from the old `pyenv` workflow disappear.
 
 ```bash
 # List versions available to install
@@ -111,7 +111,7 @@ You usually do not need to set a "global" version. `uv` resolves the right Pytho
 
 Docs: <a href='https://docs.astral.sh/uv/guides/projects/' target='_blank'>uv - Working on Projects</a>
 
-This replaces `Poetry`. `uv` uses the standard `pyproject.toml` for metadata and dependencies, and writes a `uv.lock` file as the snapshot of the exact resolved package set — direct dependencies and their sub-dependencies.
+This replaces `Poetry`. `uv` uses the standard `pyproject.toml` for metadata and dependencies, and writes a `uv.lock` file as the snapshot of the exact resolved package set: direct dependencies and their sub-dependencies.
 
 ### Initialize a new project
 
@@ -154,7 +154,7 @@ $ uv run pytest
 
 ### Sync and lock
 
-`uv` keeps the lockfile and environment in sync automatically on `add` / `remove` / `run`. You can also run them explicitly — useful in CI or after a fresh `git clone`.
+`uv` keeps the lockfile and environment in sync automatically on `add` / `remove` / `run`. You can also run them explicitly, which is useful in CI or after a fresh `git clone`.
 
 ```bash
 # Resolve dependencies and write uv.lock
@@ -202,7 +202,7 @@ $ python --version
 
 Docs: <a href='https://docs.astral.sh/uv/guides/tools/' target='_blank'>uv - Tools</a>
 
-`uvx` runs a command-line tool in a temporary, isolated environment without installing it into your project — handy for one-off invocations of things like `ruff`, `black`, or `httpie`.
+`uvx` runs a command-line tool in a temporary, isolated environment without installing it into your project, handy for one-off invocations of things like `ruff`, `black`, or `httpie`.
 
 ```bash
 # Run ruff once, in a throwaway environment

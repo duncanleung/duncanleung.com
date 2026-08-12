@@ -2,14 +2,14 @@
 title: 'Understanding useEffect: Each Render Has Its Own Props, State, and Effects'
 date: '2020-05-05'
 tags: ['react', 'hooks']
-summary: 'A mental model for useEffect — moving past the lifecycle (mount/update/unmount) mindset to thinking about effects as a way to synchronize side effects with React state and props.'
+summary: 'A mental model for useEffect: moving past the lifecycle (mount/update/unmount) mindset to thinking about effects as a way to synchronize side effects with React state and props.'
 images: ['/static/thumbnails/react.png']
 draft: false
 ---
 
 When I first started using `useEffect`, I kept reaching for the old class-component lifecycle mental model: `componentDidMount`, `componentDidUpdate`, `componentWillUnmount`. I would try to write effects that behave _differently_ depending on whether the component was rendering for the first time or not.
 
-That mental model fights against how `useEffect` actually works, and it produces a lot of subtle bugs — stale closures, missing dependencies, and infinite loops.
+That mental model fights against how `useEffect` actually works, and it produces a lot of subtle bugs: stale closures, missing dependencies, and infinite loops.
 
 This post is my attempt to write down a mental model that has helped me reason about effects more consistently.
 
@@ -19,7 +19,7 @@ This post is my attempt to write down a mental model that has helped me reason a
 
 - `useEffect` is not a lifecycle hook. It is a way to **synchronize side effects** with the current props and state.
 - **Each render has its own props, state, event handlers, and effects.** They are captured at the time of that render.
-- The dependency array tells React when it is safe to **skip** synchronizing — not what the effect "depends on" in a general sense.
+- The dependency array tells React when it is safe to **skip** synchronizing, not what the effect "depends on" in a general sense.
 - When you fight the data flow (missing deps, mutable refs, stale closures), you are usually working around something the effect is trying to tell you.
 
 ---
@@ -78,13 +78,13 @@ function Counter() {
 }
 ```
 
-When `setCount(1)` is called, React does not "mutate" `count`. React calls our function _again_ — and the new render has its own `count` value of `1`.
+When `setCount(1)` is called, React does not "mutate" `count`. React calls our function _again_, and the new render has its own `count` value of `1`.
 
 The `count` inside any given render does not change. The component re-runs, and each run sees its own value.
 
 ### Each Render Has Its Own Event Handlers
 
-Because props and state are captured by the render, **event handlers defined inside the render see those captured values** — even if they fire asynchronously.
+Because props and state are captured by the render, **event handlers defined inside the render see those captured values**, even if they fire asynchronously.
 
 ```js
 function Counter() {
@@ -106,7 +106,7 @@ function Counter() {
 }
 ```
 
-If I click "Show alert" when the count is `3`, then quickly click "Click me" a few more times, the alert will still say **"You clicked on: 3"** — because `handleAlertClick` belongs to the render where `count` was `3`.
+If I click "Show alert" when the count is `3`, then quickly click "Click me" a few more times, the alert will still say **"You clicked on: 3"**, because `handleAlertClick` belongs to the render where `count` was `3`.
 
 This is not a bug. The event handler captured the value from _its_ render.
 
@@ -157,13 +157,13 @@ useEffect(() => {
 })
 ```
 
-When React runs the cleanup for the first render, it cleans up `id: 10` — not the current `id: 20`. This is what makes subscriptions correct: each render is responsible for tearing down its own work before the next render's effect runs.
+When React runs the cleanup for the first render, it cleans up `id: 10`, not the current `id: 20`. This is what makes subscriptions correct: each render is responsible for tearing down its own work before the next render's effect runs.
 
 ---
 
 ## Reading the Latest Value with `useRef`
 
-Sometimes you genuinely want to read the **latest** value, not the captured one — typically inside a callback fired long after the render.
+Sometimes you genuinely want to read the **latest** value, not the captured one, typically inside a callback fired long after the render.
 
 The escape hatch is `useRef`, because a ref's `.current` is a mutable container that lives outside the render closure.
 
@@ -243,13 +243,13 @@ useEffect(() => {
 }, [count]) // 🚨 Interval is torn down and re-created every tick
 ```
 
-The instinct is to remove `count` from the deps. But that would be lying — and the effect would see a stale `count` forever.
+The instinct is to remove `count` from the deps. But that would be lying, and the effect would see a stale `count` forever.
 
 The fix is to **remove the need for the dependency**, not the dependency itself.
 
 ### Strategy 1: Functional Updater Form
 
-If you only need `count` to compute the next state, use the functional form of `setState`. React already knows the current value — you just need to tell it how to change.
+If you only need `count` to compute the next state, use the functional form of `setState`. React already knows the current value; you just need to tell it how to change.
 
 ```js
 useEffect(() => {
@@ -257,7 +257,7 @@ useEffect(() => {
     setCount((c) => c + 1)
   }, 1000)
   return () => clearInterval(id)
-}, []) // ✅ Deps are honest — the effect no longer reads `count`
+}, []) // ✅ Deps are honest: the effect no longer reads `count`
 ```
 
 The effect no longer reads `count` from the render scope, so it does not need it as a dependency.
@@ -291,7 +291,7 @@ function Counter() {
 }
 ```
 
-The effect no longer needs to read `count` or `step`. It just dispatches an _action_ — what happened — and the reducer decides how state updates in response.
+The effect no longer needs to read `count` or `step`. It just dispatches an _action_ (what happened) and the reducer decides how state updates in response.
 
 This decouples "what happened" from "how state changes," which is what lets the effect stay free of state dependencies.
 
@@ -316,7 +316,7 @@ function SearchResults() {
     }
 
     fetchData()
-  }, [query]) // ✅ Honest deps — refetches when `query` changes
+  }, [query]) // ✅ Honest deps: refetches when `query` changes
 }
 ```
 
@@ -325,7 +325,7 @@ function SearchResults() {
 If a function does not use _anything_ from the component scope, hoist it out of the component entirely. It is then not part of the data flow and does not belong in the deps list:
 
 ```js
-// ✅ Lives outside the render — not part of the data flow
+// ✅ Lives outside the render, not part of the data flow
 function getFetchUrl(query) {
   return 'https://hn.algolia.com/api/v1/search?query=' + query
 }
@@ -367,7 +367,7 @@ If I had to compress all of this down to one sentence:
 
 > Stop thinking about _when_ an effect runs. Start thinking about _what it synchronizes_, and let the dependency array tell the truth.
 
-When I follow that, most of the "effect feels weird" bugs disappear on their own — because the design of `useEffect` is _trying_ to point me at a change in the data flow I had not noticed yet.
+When I follow that, most of the "effect feels weird" bugs disappear on their own, because the design of `useEffect` is _trying_ to point me at a change in the data flow I had not noticed yet.
 
 ---
 
